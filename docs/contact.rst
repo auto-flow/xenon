@@ -6,5 +6,5 @@ Development Lead
 
 * Qichun Tang
 
-  * email: <tqichun@gmail.com>
+  * email: <qichun.tang@xtalpi.com>
 

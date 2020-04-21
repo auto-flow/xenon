@@ -5,13 +5,12 @@
 
 Xenon documentation!
 =====================================
-Xenon is a automatic machine learning workflow modeling platform.
+Xenon : XARC AutoML Platform.
 
 
 .. toctree::
    :maxdepth: 1
    :caption: Tutorials
-   :hidden:
 
    introduction
    installation
@@ -20,14 +19,12 @@ Xenon is a automatic machine learning workflow modeling platform.
 .. toctree::
    :maxdepth: 3
    :caption: API
-   :hidden:
 
    api
 
 .. toctree::
    :maxdepth: 1
    :caption: Contribution
-   :hidden:
 
    contact
    license

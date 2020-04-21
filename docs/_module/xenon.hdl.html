@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>xenon.hdl package &mdash; Xenon 0.1.0 documentation</title>
+  <title>xenon.hdl package &mdash; Xenon 0.1.1 documentation</title>
   
 
   
@@ -25,6 +25,7 @@
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -61,7 +62,7 @@
             
             
               <div class="version">
-                0.1.0
+                0.1.1
               </div>
             
           
@@ -193,8 +194,8 @@
 It describes an abstract hyperparametric space that independent with concrete implementation.</p>
 <p><code class="docutils literal notranslate"><span class="pre">HDL_Constructor</span></code> is a class who is responsible for translating dict-type <code class="docutils literal notranslate"><span class="pre">DAG-workflow</span></code> into <code class="docutils literal notranslate"><span class="pre">H.D.L</span></code> .</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">DAG-workflow</span></code> didn’t be explicit assign (str “generic_recommend” is default ),
-a generic <code class="docutils literal notranslate"><span class="pre">DAG-workflow</span></code> will be recommend by analyzing input data in doing <a class="reference internal" href="#xenon.hdl.hdl_constructor.HDL_Constructor.run" title="xenon.hdl.hdl_constructor.HDL_Constructor.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>.</p>
-<p>And then, by using function <a class="reference internal" href="#xenon.hdl.hdl_constructor.HDL_Constructor.run" title="xenon.hdl.hdl_constructor.HDL_Constructor.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a> , <code class="docutils literal notranslate"><span class="pre">DAG-workflow</span></code> will be translated to <code class="docutils literal notranslate"><span class="pre">HDL</span></code>.</p>
+a generic <code class="docutils literal notranslate"><span class="pre">DAG-workflow</span></code> will be recommend by analyzing input data in doing <a class="reference internal" href="../api.html#xenon.hdl.hdl_constructor.HDL_Constructor.run" title="xenon.hdl.hdl_constructor.HDL_Constructor.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>.</p>
+<p>And then, by using function <a class="reference internal" href="../api.html#xenon.hdl.hdl_constructor.HDL_Constructor.run" title="xenon.hdl.hdl_constructor.HDL_Constructor.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a> , <code class="docutils literal notranslate"><span class="pre">DAG-workflow</span></code> will be translated to <code class="docutils literal notranslate"><span class="pre">HDL</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -284,7 +285,7 @@ program will not load <code class="docutils literal notranslate"><span class="pr
 <code class="sig-name descname">data_manager</code><a class="headerlink" href="#xenon.hdl.hdl_constructor.HDL_Constructor.data_manager" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="xenon.manager.html#xenon.manager.data_manager.DataManager" title="xenon.manager.data_manager.DataManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">xenon.manager.data_manager.DataManager</span></code></a></p>
+<dd class="field-odd"><p><a class="reference internal" href="../api.html#xenon.manager.data_manager.DataManager" title="xenon.manager.data_manager.DataManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">xenon.manager.data_manager.DataManager</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -292,7 +293,7 @@ program will not load <code class="docutils literal notranslate"><span class="pr
 <dl class="py attribute">
 <dt id="xenon.hdl.hdl_constructor.HDL_Constructor.hdl">
 <code class="sig-name descname">hdl</code><a class="headerlink" href="#xenon.hdl.hdl_constructor.HDL_Constructor.hdl" title="Permalink to this definition">¶</a></dt>
-<dd><p>construct by <a class="reference internal" href="#xenon.hdl.hdl_constructor.HDL_Constructor.run" title="xenon.hdl.hdl_constructor.HDL_Constructor.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a></p>
+<dd><p>construct by <a class="reference internal" href="../api.html#xenon.hdl.hdl_constructor.HDL_Constructor.run" title="xenon.hdl.hdl_constructor.HDL_Constructor.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
@@ -338,7 +339,7 @@ program will not load <code class="docutils literal notranslate"><span class="pr
 <dl class="py method">
 <dt id="xenon.hdl.hdl_constructor.HDL_Constructor.generic_recommend">
 <code class="sig-name descname">generic_recommend</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/xenon/hdl/hdl_constructor.html#HDL_Constructor.generic_recommend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xenon.hdl.hdl_constructor.HDL_Constructor.generic_recommend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Recommend a generic DAG workflow space back.</p>
+<dd><p>Recommend a generic DAG workflow-space.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><strong>DAG_workflow</strong></p>
@@ -383,7 +384,7 @@ program will not load <code class="docutils literal notranslate"><span class="pr
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data_manager</strong> (<a class="reference internal" href="xenon.manager.html#xenon.manager.data_manager.DataManager" title="xenon.manager.data_manager.DataManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">xenon.manager.data_manager.DataManager</span></code></a>) – </p></li>
+<li><p><strong>data_manager</strong> (<a class="reference internal" href="../api.html#xenon.manager.data_manager.DataManager" title="xenon.manager.data_manager.DataManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">xenon.manager.data_manager.DataManager</span></code></a>) – </p></li>
 <li><p><strong>random_state</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – </p></li>
 <li><p><strong>highR_cat_threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – </p></li>
 </ul>
@@ -397,6 +398,11 @@ program will not load <code class="docutils literal notranslate"><span class="pr
 <div class="section" id="module-xenon.hdl.utils">
 <span id="xenon-hdl-utils-module"></span><h2>xenon.hdl.utils module<a class="headerlink" href="#module-xenon.hdl.utils" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
+<dt id="xenon.hdl.utils.add_leader_model">
+<code class="sig-prename descclassname">xenon.hdl.utils.</code><code class="sig-name descname">add_leader_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">leader_model</span></em>, <em class="sig-param"><span class="n">SERIES_CONNECT_LEADER_TOKEN</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/xenon/hdl/utils.html#add_leader_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xenon.hdl.utils.add_leader_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt id="xenon.hdl.utils.get_default_hdl_bank">
 <code class="sig-prename descclassname">xenon.hdl.utils.</code><code class="sig-name descname">get_default_hdl_bank</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<a class="reference internal" href="../_modules/xenon/hdl/utils.html#get_default_hdl_bank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xenon.hdl.utils.get_default_hdl_bank" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -407,8 +413,23 @@ program will not load <code class="docutils literal notranslate"><span class="pr
 <dd></dd></dl>
 
 <dl class="py function">
+<dt id="xenon.hdl.utils.get_origin_models">
+<code class="sig-prename descclassname">xenon.hdl.utils.</code><code class="sig-name descname">get_origin_models</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw_models</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/xenon/hdl/utils.html#get_origin_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xenon.hdl.utils.get_origin_models" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt id="xenon.hdl.utils.is_hdl_bottom">
 <code class="sig-prename descclassname">xenon.hdl.utils.</code><code class="sig-name descname">is_hdl_bottom</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/xenon/hdl/utils.html#is_hdl_bottom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xenon.hdl.utils.is_hdl_bottom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="xenon.hdl.utils.purify_key">
+<code class="sig-prename descclassname">xenon.hdl.utils.</code><code class="sig-name descname">purify_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/xenon/hdl/utils.html#purify_key"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xenon.hdl.utils.purify_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="xenon.hdl.utils.purify_keys">
+<code class="sig-prename descclassname">xenon.hdl.utils.</code><code class="sig-name descname">purify_keys</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dict_</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></span></em><span class="sig-paren">)</span> &#x2192; Iterator<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><a class="reference internal" href="../_modules/xenon/hdl/utils.html#purify_keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xenon.hdl.utils.purify_keys" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>

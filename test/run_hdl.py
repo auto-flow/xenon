@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
-# @Contact    : tqichun@gmail.com
+# @Contact    : qichun.tang@xtalpi.com
 
 from xenon.hdl.hdl_constructor import HDL_Constructor
 from xenon.manager.data_manager import DataManager

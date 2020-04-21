@@ -7,7 +7,6 @@ from importlib import import_module
 from multiprocessing import Manager
 from typing import Union, Optional, Dict, List, Any
 
-import json5 as json
 import numpy as np
 import pandas as pd
 from frozendict import frozendict
@@ -26,7 +25,7 @@ from xenon.pipeline.dataframe import GenericDataFrame
 from xenon.tuner.tuner import Tuner
 from xenon.utils.concurrence import get_chunks
 from xenon.utils.config_space import replace_phps, estimate_config_space_numbers
-from xenon.utils.dict import update_placeholder_from_other_dict
+from xenon.utils.dict import update_mask_from_other_dict
 from xenon.utils.klass import instancing, sequencing
 from xenon.utils.logging import get_logger, setup_logger
 from xenon.utils.packages import get_class_name_of_module
@@ -45,6 +44,9 @@ class XenonEstimator(BaseEstimator):
             log_config: Optional[dict] = None,
             highR_nan_threshold=0.5,
             highR_cat_threshold=0.5,
+            should_store_intermediate_result=False,
+            should_finally_fit=False,
+            should_calc_all_metrics=True,
             **kwargs
     ):
         '''
@@ -78,7 +80,7 @@ class XenonEstimator(BaseEstimator):
         highR_cat_threshold: float
             high ratio categorical feature's cardinality threshold, you can find example and practice in :class:`xenon.hdl.hdl_constructor.HDL_Constructor`
 
-        kwargs: dict
+        kwargs
             if parameters like ``tuner`` or ``hdl_constructor`` and ``resource_manager`` are passing None,
 
             you can passing kwargs to make passed parameter work. See the following example.
@@ -100,6 +102,9 @@ class XenonEstimator(BaseEstimator):
             hdl_bank={'classification': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
             included_classifiers=('adaboost', 'catboost', 'decision_tree', 'extra_trees', 'gaussian_nb', 'k_nearest_neighbors', 'liblinear_svc', 'lib...
         '''
+        self.should_finally_fit = should_finally_fit
+        self.should_store_intermediate_result = should_store_intermediate_result
+        self.should_calc_all_metrics = should_calc_all_metrics
         self.log_config = log_config
         self.highR_nan_threshold = highR_nan_threshold
         self.highR_cat_threshold = highR_cat_threshold
@@ -119,7 +124,7 @@ class XenonEstimator(BaseEstimator):
         hdl_constructor = instancing(hdl_constructor, HDL_Constructor, kwargs)
         # ---hdl_constructors-------------------------
         self.hdl_constructors = sequencing(hdl_constructor, HDL_Constructor)
-        self.hdl_constructor=self.hdl_constructors[0]
+        self.hdl_constructor = self.hdl_constructors[0]
         # ---resource_manager-----------------------------------
         self.resource_manager = instancing(resource_manager, ResourceManager, kwargs)
         # ---member_variable------------------------------------
@@ -135,10 +140,8 @@ class XenonEstimator(BaseEstimator):
             column_descriptions: Optional[Dict] = None,
             dataset_metadata: dict = frozenset(),
             metric=None,
-            should_calc_all_metrics=True,
             splitter=KFold(5, True, 42),
             specific_task_token="",
-            should_store_intermediate_result=False,
             additional_info: dict = frozendict(),
             fit_ensemble_params: Union[str, Dict[str, Any], None, bool] = "auto",
 
@@ -177,8 +180,6 @@ class XenonEstimator(BaseEstimator):
         -------
         self
         '''
-
-        self.should_store_intermediate_result = should_store_intermediate_result
         dataset_metadata = dict(dataset_metadata)
         additional_info = dict(additional_info)
         # build data_manager
@@ -208,7 +209,6 @@ class XenonEstimator(BaseEstimator):
         self.resource_manager.insert_to_tasks_table(self.data_manager, metric, splitter, specific_task_token)
         self.resource_manager.close_tasks_table()
         # store other params
-        self.should_calc_all_metrics = should_calc_all_metrics
         self.splitter = splitter
         assert len(self.hdl_constructors) == len(self.tuners)
         n_step = len(self.hdl_constructors)
@@ -219,8 +219,7 @@ class XenonEstimator(BaseEstimator):
             raw_hdl = hdl_constructor.get_hdl()
             if step != 0:
                 last_best_dhp = self.resource_manager.load_best_dhp()
-                last_best_dhp = json.loads(last_best_dhp)
-                hdl = update_placeholder_from_other_dict(raw_hdl, last_best_dhp)
+                hdl = update_mask_from_other_dict(raw_hdl, last_best_dhp)
                 self.logger.debug(f"Updated HDL(Hyperparams Descriptions Language) in step {step}:\n{hdl}")
             else:
                 hdl = raw_hdl
@@ -231,12 +230,13 @@ class XenonEstimator(BaseEstimator):
             self.resource_manager.insert_to_experiments_table(general_experiment_timestamp,
                                                               current_experiment_timestamp,
                                                               self.hdl_constructors, hdl_constructor, raw_hdl, hdl,
-                                                              self.tuners, tuner, should_calc_all_metrics,
+                                                              self.tuners, tuner, self.should_calc_all_metrics,
                                                               self.data_manager,
                                                               column_descriptions,
                                                               dataset_metadata, metric, splitter,
-                                                              should_store_intermediate_result, fit_ensemble_params,
-                                                              additional_info)
+                                                              self.should_store_intermediate_result,
+                                                              fit_ensemble_params,
+                                                              additional_info, self.should_finally_fit)
             self.resource_manager.close_experiments_table()
             self.task_id = self.resource_manager.task_id
             self.hdl_id = self.resource_manager.hdl_id
@@ -251,6 +251,14 @@ class XenonEstimator(BaseEstimator):
                 self.start_final_step(fit_ensemble_params)
 
         return self
+
+    def get_sync_dict(self, n_jobs, tuner):
+        if n_jobs > 1 and tuner.search_method != "grid":
+            sync_dict = Manager().dict()
+            sync_dict["exit_processes"] = tuner.exit_processes
+        else:
+            sync_dict = None
+        return sync_dict
 
     def start_tuner(self, tuner: Tuner, hdl: dict):
         self.logger.debug(f"Start fine tune task, \nwhich HDL(Hyperparams Descriptions Language) is:\n{hdl}")
@@ -271,14 +279,9 @@ class XenonEstimator(BaseEstimator):
             tuner.design_initial_configs(n_jobs),
             n_jobs)
         random_states = np.arange(n_jobs) + self.random_state
-        if n_jobs > 1 and tuner.search_method != "grid":
-            sync_dict = Manager().dict()
-            sync_dict["exit_processes"] = tuner.exit_processes
-        else:
-            sync_dict = None
-        self.resource_manager.close_trials_table()
+        sync_dict = self.get_sync_dict(n_jobs, tuner)
         self.resource_manager.clear_pid_list()
-        self.resource_manager.close_redis()
+        self.resource_manager.close_all()
         resource_managers = [deepcopy(self.resource_manager) for i in range(n_jobs)]
         tuners = [deepcopy(tuner) for i in range(n_jobs)]
         processes = []
@@ -349,7 +352,8 @@ class XenonEstimator(BaseEstimator):
                 should_calc_all_metric=self.should_calc_all_metrics,
                 splitter=self.splitter,
                 should_store_intermediate_result=self.should_store_intermediate_result,
-                resource_manager=resource_manager
+                resource_manager=resource_manager,
+                should_finally_fit=self.should_finally_fit
             ),
             instance_id=resource_manager.task_id,
             rh_db_type=resource_manager.db_type,
@@ -400,6 +404,7 @@ class XenonEstimator(BaseEstimator):
             return self.ensemble_estimator
 
     def auto_fit_ensemble(self):
+        # todo: 调研stacking等ensemble方法的表现评估
         pass
 
     def _predict(

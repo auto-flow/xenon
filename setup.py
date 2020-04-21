@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
-# @Contact    : tqichun@gmail.com
+# @Contact    : qichun.tang@xtalpi.com
 import os
 import re
 import sys
@@ -71,8 +71,8 @@ setup(
     name='xenon',
     version=version,
     author='qichun tang',
-    author_email='tqichun@gmail.com',
-    description='Xenon: Automatic machine learning workflow modeling platform.',
+    author_email='qichun.tang@xtalpi.com',
+    description='Xenon: XARC AutoML Platform.',
     long_description=long_description,
     long_description_content_type='text/x-rst',
     license='BSD',

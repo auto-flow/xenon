@@ -2,6 +2,7 @@ import re
 import sys
 from collections import defaultdict
 from contextlib import redirect_stderr
+from copy import deepcopy
 from io import StringIO
 from time import time
 from typing import Dict, Optional
@@ -9,8 +10,7 @@ from typing import Dict, Optional
 import numpy as np
 from ConfigSpace import Configuration
 
-from dsmac.runhistory.utils import get_id_of_config
-from xenon.constants import PHASE2, PHASE1
+from xenon.constants import PHASE2, PHASE1, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN
 from xenon.ensemble.utils import vote_predicts, mean_predicts
 from xenon.evaluation.base import BaseEvaluator
 from xenon.manager.data_manager import DataManager
@@ -19,12 +19,13 @@ from xenon.metrics import Scorer, calculate_score
 from xenon.pipeline.dataframe import GenericDataFrame
 from xenon.pipeline.pipeline import GenericPipeline
 from xenon.shp2dhp.shp2dhp import SHP2DHP
-from xenon.utils.dict import group_dict_items_before_first_dot
+from xenon.utils.dict import group_dict_items_before_first_token
 from xenon.utils.logging import get_logger
 from xenon.utils.ml_task import MLTask
 from xenon.utils.packages import get_class_object_in_pipeline_components
 from xenon.utils.pipeline import concat_pipeline
 from xenon.utils.sys import get_trance_back_msg
+from dsmac.runhistory.utils import get_id_of_config
 
 
 class TrainEvaluator(BaseEvaluator):
@@ -40,7 +41,8 @@ class TrainEvaluator(BaseEvaluator):
             should_calc_all_metric: bool,
             splitter,
             should_store_intermediate_result: bool,
-            resource_manager: ResourceManager
+            resource_manager: ResourceManager,
+            should_finally_fit: bool
     ):
         self.random_state = random_state
         if hasattr(splitter, "random_state"):
@@ -64,6 +66,7 @@ class TrainEvaluator(BaseEvaluator):
 
         self.logger = get_logger(self)
         self.resource_manager = resource_manager
+        self.should_finally_fit = should_finally_fit
 
     def loss(self, y_true, y_hat):
         score = calculate_score(
@@ -113,6 +116,7 @@ class TrainEvaluator(BaseEvaluator):
             status = "SUCCESS"
             failed_info = ""
             for train_index, valid_index in self.splitter.split(X, y):
+                cloned_model = deepcopy(model)
                 X: GenericDataFrame
                 X_train, X_valid = X.split([train_index, valid_index])
                 y_train, y_valid = y[train_index], y[valid_index]
@@ -121,8 +125,9 @@ class TrainEvaluator(BaseEvaluator):
                 else:
                     intermediate_result = None
                 try:
-                    procedure_result = model.procedure(self.ml_task, X_train, y_train, X_valid, y_valid, X_test, y_test,
-                                                       self.resource_manager, intermediate_result)
+                    procedure_result = cloned_model.procedure(self.ml_task, X_train, y_train, X_valid, y_valid, X_test,
+                                                              y_test,
+                                                              self.resource_manager, intermediate_result)
                 except Exception as e:
                     failed_info = get_trance_back_msg()
                     status = "FAILED"
@@ -130,15 +135,30 @@ class TrainEvaluator(BaseEvaluator):
                         self.logger.error("re-raise exception")
                         raise sys.exc_info()[1]
                     break
-                models.append(model)
+                models.append(cloned_model)
                 y_true_indexes.append(valid_index)
                 y_pred = procedure_result["pred_valid"]
                 y_test_pred = procedure_result["pred_test"]
                 y_preds.append(y_pred)
-                y_test_preds.append(y_test_pred)
+                if y_test_pred is not None:
+                    y_test_preds.append(y_test_pred)
                 loss, all_score = self.loss(y_valid, y_pred)
                 losses.append(float(loss))
                 all_scores.append(all_score)
+            # finally fit
+            if status == "SUCCESS" and self.should_finally_fit:
+                # make sure have resource_manager to do things like connect redis
+                model.resource_manager = self.resource_manager
+                finally_fit_model = model.fit(X, y, X_test=X_test, y_test=y_test)
+                if self.ml_task.mainTask == "classification":
+                    y_test_pred_by_finally_fit_model = model.predict_proba(X_test)
+                else:
+                    y_test_pred_by_finally_fit_model = model.predict(X_test)
+                model.resource_manager = None
+            else:
+                finally_fit_model = None
+                y_test_pred_by_finally_fit_model = None
+
             if len(losses) > 0:
                 final_loss = float(np.array(losses).mean())
             else:
@@ -162,6 +182,7 @@ class TrainEvaluator(BaseEvaluator):
                 "all_score": all_score,
                 "all_scores": all_scores,
                 "models": models,
+                "finally_fit_model": finally_fit_model,
                 "y_true_indexes": y_true_indexes,
                 "y_preds": y_preds,
                 "intermediate_result": intermediate_result,
@@ -171,10 +192,13 @@ class TrainEvaluator(BaseEvaluator):
             # todo
             if y_test is not None:
                 # 验证集训练模型的组合去预测测试集的数据
-                if self.ml_task.mainTask == "classification":
-                    y_test_pred = vote_predicts(y_test_preds)
+                if self.should_finally_fit:
+                    y_test_pred = y_test_pred_by_finally_fit_model
                 else:
-                    y_test_pred = mean_predicts(y_test_preds)
+                    if self.ml_task.mainTask == "classification":
+                        y_test_pred = vote_predicts(y_test_preds)
+                    else:
+                        y_test_pred = mean_predicts(y_test_preds)
                 test_loss, test_all_score = self.loss(y_test, y_test_pred)
                 info.update({
                     "test_loss": test_loss,
@@ -285,8 +309,8 @@ class TrainEvaluator(BaseEvaluator):
         assert phase in (PHASE1, PHASE2)
         packages = list(sub_dhp.keys())[0]
         params = sub_dhp[packages]
-        packages = packages.split("|")
-        grouped_params = group_dict_items_before_first_dot(params)
+        packages = packages.split(SERIES_CONNECT_SEPARATOR_TOKEN)
+        grouped_params = group_dict_items_before_first_token(params, SERIES_CONNECT_LEADER_TOKEN)
         if len(packages) == 1:
             if bool(grouped_params):
                 grouped_params[packages[0]] = grouped_params.pop("single")
