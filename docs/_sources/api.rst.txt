@@ -38,5 +38,25 @@ Tuner
 .. autoclass:: xenon.tuner.tuner.Tuner
     :members:
 
+Algorithm Components
+=====================
+
+Classification
+---------------
+
+:ref:`xenon.pipeline.components.classification package`
+
+Regression
+-----------
+
+:ref:`xenon.pipeline.components.regression package`
+
+
+Preprocessing
+---------------
+
+:ref:`xenon.pipeline.components.preprocessing package`
+
+
 
 

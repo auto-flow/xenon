@@ -16,7 +16,7 @@ from xenon.constants import PHASE2, SERIES_CONNECT_LEADER_TOKEN
 from xenon.hdl.utils import is_hdl_bottom, get_origin_models, purify_keys, purify_key, add_leader_model
 from xenon.utils.dict import filter_item_by_key_condition
 from xenon.utils.klass import StrSignatureMixin
-from xenon.utils.logging import get_logger
+from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask
 from xenon.utils.packages import get_class_name_of_module
 

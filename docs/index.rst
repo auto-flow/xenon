@@ -18,7 +18,7 @@ Xenon : XARC AutoML Platform.
 
 .. toctree::
    :maxdepth: 3
-   :caption: API
+   :caption: API Document
 
    api
 

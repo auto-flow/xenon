@@ -84,18 +84,18 @@ xenon.utils.list module
    :undoc-members:
    :show-inheritance:
 
-xenon.utils.logging module
------------------------------
+xenon.utils.logging\_ module
+-------------------------------
 
-.. automodule:: xenon.utils.logging
+.. automodule:: xenon.utils.logging_
    :members:
    :undoc-members:
    :show-inheritance:
 
-xenon.utils.math module
---------------------------
+xenon.utils.math\_ module
+----------------------------
 
-.. automodule:: xenon.utils.math
+.. automodule:: xenon.utils.math_
    :members:
    :undoc-members:
    :show-inheritance:
@@ -116,14 +116,6 @@ xenon.utils.packages module
    :undoc-members:
    :show-inheritance:
 
-xenon.utils.peewee module
-----------------------------
-
-.. automodule:: xenon.utils.peewee
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 xenon.utils.pipeline module
 ------------------------------
 
@@ -140,10 +132,10 @@ xenon.utils.sys module
    :undoc-members:
    :show-inheritance:
 
-xenon.utils.typing module
-----------------------------
+xenon.utils.typing\_ module
+------------------------------
 
-.. automodule:: xenon.utils.typing
+.. automodule:: xenon.utils.typing_
    :members:
    :undoc-members:
    :show-inheritance:

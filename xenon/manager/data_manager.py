@@ -10,7 +10,7 @@ from xenon.pipeline.dataframe import GenericDataFrame
 from xenon.utils.data import is_nan, is_cat, is_highR_nan, to_array
 from xenon.utils.dataframe import pop_if_exists
 from xenon.utils.klass import StrSignatureMixin
-from xenon.utils.logging import get_logger
+from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask, get_ml_task_from_y
 
 

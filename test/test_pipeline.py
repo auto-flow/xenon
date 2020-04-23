@@ -11,7 +11,7 @@ from xenon.pipeline.components.preprocessing.impute.fill_cat import FillCat
 from xenon.pipeline.components.preprocessing.impute.fill_num import FillNum
 from xenon.pipeline.dataframe import GenericDataFrame
 from xenon.pipeline.pipeline import GenericPipeline
-from xenon.utils.logging import get_logger
+from xenon.utils.logging_ import get_logger
 
 
 class TestPipeline(unittest.TestCase):

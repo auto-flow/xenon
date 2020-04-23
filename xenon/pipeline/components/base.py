@@ -13,7 +13,7 @@ from xenon.pipeline.dataframe import GenericDataFrame
 from xenon.utils.data import densify
 from xenon.utils.dataframe import rectify_dtypes
 from xenon.utils.hash import get_hash_of_Xy, get_hash_of_dict
-from xenon.utils.logging import get_logger
+from xenon.utils.logging_ import get_logger
 
 
 class XenonComponent(BaseEstimator):

@@ -16,7 +16,7 @@ from xenon.manager.resource_manager import ResourceManager
 from xenon.utils.concurrence import parse_n_jobs
 from xenon.utils.config_space import get_random_initial_configs, get_grid_initial_configs
 from xenon.utils.klass import StrSignatureMixin
-from xenon.utils.logging import get_logger
+from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask
 
 class Tuner(StrSignatureMixin):

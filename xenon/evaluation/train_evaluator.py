@@ -20,7 +20,7 @@ from xenon.pipeline.dataframe import GenericDataFrame
 from xenon.pipeline.pipeline import GenericPipeline
 from xenon.shp2dhp.shp2dhp import SHP2DHP
 from xenon.utils.dict import group_dict_items_before_first_token
-from xenon.utils.logging import get_logger
+from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask
 from xenon.utils.packages import get_class_object_in_pipeline_components
 from xenon.utils.pipeline import concat_pipeline

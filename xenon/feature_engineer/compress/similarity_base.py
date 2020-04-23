@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from xenon.utils.logging import get_logger
+from xenon.utils.logging_ import get_logger
 
 
 def get_start_end_tuples(threads, L):

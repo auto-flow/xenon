@@ -2,7 +2,7 @@ from typing import List, Tuple
 from numpy import ndarray
 from xenon.manager.resource_manager import ResourceManager
 from xenon.utils.klass import StrSignatureMixin
-from xenon.utils.typing import GenericEstimator
+from xenon.utils.typing_ import GenericEstimator
 
 
 class TrainedDataFetcher(StrSignatureMixin):
