@@ -161,7 +161,7 @@ we can reduce time complexity to :math:`O({A} + {B})` .
 This is a very simple greedy thought, but it is very powerful and make sense if there is little correlation between each variable.
 
 In Xenon, we support such search method by ``phased search``, you should define a list of :class:`xenon.hdl.hdl_constructor.HDL_Constructor` and a list of
-:class:`xenon.tuner.tuner.Tuner`, and Xenon will run each ``hdl_constructor`` and ``tuner`` .
+:class:`xenon.tuner.Tuner`, and Xenon will run each ``hdl_constructor`` and ``tuner`` .
 After finish one of phases, the best configuration will be extracted, and passing the intersted super parameter into the next ``HDL`` to cover ``placeholder``.
 
 Back to ``feature selection`` example, there are almost two kinds of hyper-parameters: ``feature selection algorithm`` and
@@ -212,7 +212,7 @@ In second step, we should choose the best ``feature selection algorithm`` search
 
     from xenon.estimator.base import XenonEstimator
     from xenon.hdl.hdl_constructor import HDL_Constructor
-    from xenon.tuner.tuner import Tuner
+    from xenon.tuner import Tuner
 
     df_train = pd.read_csv("./data/train_classification.csv")
 

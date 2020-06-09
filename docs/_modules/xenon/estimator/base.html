@@ -192,7 +192,7 @@
 <span class="kn">from</span> <span class="nn">xenon.manager.resource_manager</span> <span class="kn">import</span> <span class="n">ResourceManager</span>
 <span class="kn">from</span> <span class="nn">xenon.metrics</span> <span class="kn">import</span> <span class="n">r2</span><span class="p">,</span> <span class="n">accuracy</span>
 <span class="kn">from</span> <span class="nn">xenon.pipeline.dataframe</span> <span class="kn">import</span> <span class="n">GenericDataFrame</span>
-<span class="kn">from</span> <span class="nn">xenon.tuner.tuner</span> <span class="kn">import</span> <span class="n">Tuner</span>
+<span class="kn">from</span> <span class="nn">xenon.tuner</span> <span class="kn">import</span> <span class="n">Tuner</span>
 <span class="kn">from</span> <span class="nn">xenon.utils.concurrence</span> <span class="kn">import</span> <span class="n">get_chunks</span>
 <span class="kn">from</span> <span class="nn">xenon.utils.config_space</span> <span class="kn">import</span> <span class="n">replace_phps</span><span class="p">,</span> <span class="n">estimate_config_space_numbers</span>
 <span class="kn">from</span> <span class="nn">xenon.utils.dict</span> <span class="kn">import</span> <span class="n">update_mask_from_other_dict</span>
@@ -222,7 +222,7 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        tuner: :class:`xenon.tuner.tuner.Tuner` or None</span>
+<span class="sd">        tuner: :class:`xenon.tuner.Tuner` or None</span>
 <span class="sd">            ``Tuner`` if class who agent an abstract search process.</span>
 
 <span class="sd">        hdl_constructor: :class:`xenon.hdl.hdl_constructor.HDL_Constructor` or None</span>
@@ -380,7 +380,7 @@
         <span class="c1"># get task_id, and insert record into &quot;tasks.tasks&quot; database</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">insert_to_tasks_table</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">splitter</span><span class="p">,</span>
                                                     <span class="n">specific_task_token</span><span class="p">,</span> <span class="n">dataset_metadata</span><span class="p">,</span> <span class="n">task_metadata</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">close_tasks_table</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">close_task_table</span><span class="p">()</span>
         <span class="c1"># store other params</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">splitter</span> <span class="o">=</span> <span class="n">splitter</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdl_constructors</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tuners</span><span class="p">)</span>
@@ -397,10 +397,10 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">hdl</span> <span class="o">=</span> <span class="n">raw_hdl</span>
             <span class="c1"># get hdl_id, and insert record into &quot;{task_id}.hdls&quot; database</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">insert_to_hdls_table</span><span class="p">(</span><span class="n">hdl</span><span class="p">,</span> <span class="n">hdl_constructor</span><span class="o">.</span><span class="n">hdl_metadata</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">close_hdls_table</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">insert_to_hdl_table</span><span class="p">(</span><span class="n">hdl</span><span class="p">,</span> <span class="n">hdl_constructor</span><span class="o">.</span><span class="n">hdl_metadata</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">close_hdl_table</span><span class="p">()</span>
             <span class="c1"># now we get task_id and hdl_id, we can insert current runtime information into &quot;experiments.experiments&quot; database</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">insert_to_experiments_table</span><span class="p">(</span><span class="n">general_experiment_timestamp</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">insert_to_experiment_table</span><span class="p">(</span><span class="n">general_experiment_timestamp</span><span class="p">,</span>
                                                               <span class="n">current_experiment_timestamp</span><span class="p">,</span>
                                                               <span class="bp">self</span><span class="o">.</span><span class="n">hdl_constructors</span><span class="p">,</span> <span class="n">hdl_constructor</span><span class="p">,</span> <span class="n">raw_hdl</span><span class="p">,</span> <span class="n">hdl</span><span class="p">,</span>
                                                               <span class="bp">self</span><span class="o">.</span><span class="n">tuners</span><span class="p">,</span> <span class="n">tuner</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_calc_all_metrics</span><span class="p">,</span>
@@ -410,7 +410,7 @@
                                                               <span class="bp">self</span><span class="o">.</span><span class="n">should_store_intermediate_result</span><span class="p">,</span>
                                                               <span class="n">fit_ensemble_params</span><span class="p">,</span>
                                                               <span class="n">additional_info</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_finally_fit</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">close_experiments_table</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">close_experiment_table</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">task_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">task_id</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">hdl_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">hdl_id</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_manager</span><span class="o">.</span><span class="n">experiment_id</span>

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
-# @Contact    : qichun.tang@xtalpi.com
+# @Contact    : tqichun@gmail.com
 import os
 import re
 import sys
@@ -65,19 +65,19 @@ def get_package_data(name, suffixes):
     return ret
 
 
-needed_suffixes = ['.json', '.txt', '.yml', '.yaml']
+needed_suffixes = ['.json', '.txt', '.yml', '.yaml', '.bz2', '.csv']
 
 setup(
     name='xenon',
     version=version,
     author='qichun tang',
-    author_email='qichun.tang@xtalpi.com',
+    author_email='tqichun@gmail.com',
     description='Xenon: XARC AutoML Platform.',
     long_description=long_description,
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
-    packages=find_packages("./", exclude=['test', 'examples']),
+    packages=find_packages("./", exclude=['test', 'examples', 'xenon_server']),
     package_dir={
         'xenon': './xenon',
         'dsmac': './dsmac',

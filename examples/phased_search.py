@@ -1,8 +1,8 @@
 import pandas as pd
 
-from xenon.estimator.base import XenonEstimator
+from xenon.core.base import XenonEstimator
 from xenon.hdl.hdl_constructor import HDL_Constructor
-from xenon.tuner.tuner import Tuner
+from xenon.tuner import Tuner
 
 df_train = pd.read_csv("./data/train_classification.csv")
 
@@ -13,7 +13,7 @@ hdl_constructors = [
             "lowR_nan->nan": "impute.fill_abnormal",
             "highR_nan->nan": "operate.drop",
             "all->{cat_name=cat,num_name=num}": "operate.split.cat_num",
-            "cat->num": "encode.label",
+            "cat->num": "encode.ordinal",
             "num->selected": [
                 {"_name": "select.from_model_clf", "_select_percent": 80},
                 {"_name": "select.rfe_clf", "_select_percent": 80},
@@ -27,7 +27,7 @@ hdl_constructors = [
             "lowR_nan->nan": "impute.fill_abnormal",
             "highR_nan->nan": "operate.drop",
             "all->{cat_name=cat,num_name=num}": "operate.split.cat_num",
-            "cat->num": "encode.label",
+            "cat->num": "encode.ordinal",
             "num->selected": {"_name": "<mask>",
                          "_select_percent": {"_type": "quniform", "_value": [1, 100, 0.5],
                                              "_default": 80}},

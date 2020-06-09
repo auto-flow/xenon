@@ -1,3 +1,4 @@
+import logging
 import random
 from copy import deepcopy
 from typing import List, Union, Dict
@@ -6,31 +7,18 @@ import numpy as np
 from ConfigSpace import ConfigurationSpace, Configuration, CategoricalHyperparameter, OrdinalHyperparameter, Constant, \
     UniformFloatHyperparameter, UniformIntegerHyperparameter
 
-from xenon.constants import PHASE1,PHASE2
 from xenon.hdl.smac import _encode
+
+logger = logging.getLogger(__name__)
 
 
 def get_random_initial_configs(shps: ConfigurationSpace, n_configs, random_state=42) -> List[Configuration]:
-    None_name = "None:NoneType"
     shps = deepcopy(shps)
     shps.seed(random_state)
-    for config in shps.get_hyperparameters():
-        name: str = config.name
-        if name.startswith(PHASE1) and name.endswith("__choice__") and (None_name in config.choices):  # fixme 重构之后 None_name是不是改变了？
-            config.default_value = None_name
-
-    model_choice = shps.get_hyperparameter(f"{PHASE2}:__choice__")
-    result = []
-    for choice in model_choice.choices:
-        cur_phps = deepcopy(shps)
-        cur_phps.get_hyperparameter(f"{PHASE2}:__choice__").default_value = choice
-        default = cur_phps.get_default_configuration()
-        result.append(default)
-    if len(result) < n_configs:
-        result.extend(shps.sample_configuration(n_configs - len(result)))
-    elif len(result) > n_configs:
-        result = random.sample(result, n_configs)
-    return result
+    results = shps.sample_configuration(n_configs)
+    if not isinstance(results, list):
+        results = [results]
+    return results
 
 
 def replace_phps(shps: ConfigurationSpace, key, value):
@@ -45,6 +33,7 @@ def get_grid_initial_configs(shps: ConfigurationSpace, n_configs=-1, random_stat
     if n_configs > 0:
         random.seed(random_state)
         grid_configs = random.sample(grid_configs, n_configs)
+    logger.info(f"Length of grid_initial_configs = {len(grid_configs)}.")
     return grid_configs
 
 
@@ -196,4 +185,3 @@ class ConfigSpaceGrid:
             grid.append(config_dict)
 
         return grid
-

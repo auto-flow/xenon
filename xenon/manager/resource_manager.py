@@ -1,28 +1,62 @@
 import datetime
 import hashlib
 import os
+import traceback
 from copy import deepcopy
-from getpass import getuser
+from math import ceil
 from typing import Dict, Tuple, List, Union, Any
 
-# import json5 as json
+import h5py
+import numpy as np
+import pandas as pd
 import peewee as pw
 from frozendict import frozendict
-from playhouse.fields import PickleField
+# from playhouse.fields import PickleField
+from playhouse.reflection import generate_models
 from redis import Redis
 
+from xenon.constants import RESOURCE_MANAGER_CLOSE_ALL_LOGGER, CONNECTION_POOL_CLOSE_MSG, START_SAFE_CLOSE_MSG, \
+    END_SAFE_CLOSE_MSG, ExperimentType
 from xenon.ensemble.mean.regressor import MeanRegressor
 from xenon.ensemble.vote.classifier import VoteClassifier
 from xenon.manager.data_manager import DataManager
 from xenon.metrics import Scorer
-from xenon.utils.dict import update_data_structure
-from xenon.utils.hash import get_hash_of_Xy, get_hash_of_str, get_hash_of_dict
+from xenon.utils.dataframe import replace_nan_to_None, get_unique_col_name, replace_dicts, inverse_dict
+from xenon.utils.dict_ import update_data_structure
+from xenon.utils.hash import get_hash_of_str, get_hash_of_dict
 from xenon.utils.klass import StrSignatureMixin
 from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask
 from generic_fs import FileSystem
-from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, PickleField, create_database
+from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, create_database
 from generic_fs.utils.fs import get_file_system
+
+
+def get_field_of_type(type_, df, column):
+    if not isinstance(type_, str):
+        type_ = str(type_)
+    type2field = {
+        "int64": pw.IntegerField(null=True),
+        "int32": pw.IntegerField(null=True),
+        "float64": pw.FloatField(null=True),
+        "float32": pw.FloatField(null=True),
+        "bool": pw.BooleanField(null=True),
+    }
+    if type_ in type2field:
+        return type2field[type_]
+    elif type_ == "object":
+        try:
+            series = df[column]
+            N = series.str.len().max()
+            if N < 128:
+                return pw.CharField(max_length=255, null=True)
+            else:
+                return pw.TextField(null=True)
+        except:
+            series = df[column]
+            raise NotImplementedError(f"Unsupported type in 'get_field_of_type': '{type(series[0])}'")
+    else:
+        raise NotImplementedError
 
 
 class ResourceManager(StrSignatureMixin):
@@ -38,9 +72,11 @@ class ResourceManager(StrSignatureMixin):
             db_type="sqlite",
             db_params=frozendict(),
             redis_params=frozendict(),
-            max_persistent_estimators=50,
-            compress_suffix="bz2"
-
+            max_persistent_estimators=-1,
+            compress_suffix="bz2",
+            user_id=0,
+            search_record_db_name="xenon",
+            dataset_table_db_name="xenon_dataset",
     ):
         '''
 
@@ -81,8 +117,12 @@ class ResourceManager(StrSignatureMixin):
         compress_suffix: str
             compress file's suffix, default is bz2
         '''
+        self.dataset_table_db_name = dataset_table_db_name
+        self.search_record_db_name = search_record_db_name
+        self.user_id = user_id
         # --logger-------------------
         self.logger = get_logger(self)
+        self.close_all_logger = get_logger(RESOURCE_MANAGER_CLOSE_ALL_LOGGER)
         # --preprocessing------------
         file_system_params = dict(file_system_params)
         db_params = dict(db_params)
@@ -108,12 +148,15 @@ class ResourceManager(StrSignatureMixin):
         # ---post_process------------
         self.store_path = store_path
         self.file_system.mkdir(self.store_path)
-        self.is_init_experiments_db = False
-        self.is_init_tasks_db = False
-        self.is_init_hdls_db = False
-        self.is_init_trials_db = False
+        self.is_init_experiment = False
+        self.is_init_task = False
+        self.is_init_hdl = False
+        self.is_init_trial = False
+        self.is_init_dataset = False
         self.is_init_redis = False
         self.is_master = False
+        self.is_init_record_db = False
+        self.is_init_dataset_db = False
         # --some specific path based on file_system---
         self.datasets_dir = self.file_system.join(self.store_path, "datasets")
         self.databases_dir = self.file_system.join(self.store_path, "databases")
@@ -127,16 +170,28 @@ class ResourceManager(StrSignatureMixin):
         self.JSONField = get_JSONField(self.db_type)
         # --database_name---------------------------------
         # None means didn't create database
-        self._meta_records_db_name = None  # meta records database
-        self._tasks_db_name = None
+        self._dataset_db_name = None
+        self._record_db_name = None
 
     def close_all(self):
         self.close_redis()
-        self.close_experiments_table()
-        self.close_tasks_table()
-        self.close_hdls_table()
-        self.close_trials_table()
+        self.close_experiment_table()
+        self.close_task_table()
+        self.close_hdl_table()
+        self.close_trial_table()
+        self.close_dataset_table()
+        self.close_dataset_db()
+        self.close_record_db()
         self.file_system.close_fs()
+        self.close_all_logger.warning(CONNECTION_POOL_CLOSE_MSG)
+        stack_txt = "".join(traceback.format_stack())
+        self.close_all_logger.info(stack_txt)
+
+    def start_safe_close(self):
+        self.close_all_logger.info(START_SAFE_CLOSE_MSG)
+
+    def end_safe_close(self):
+        self.close_all_logger.info(END_SAFE_CLOSE_MSG)
 
     def __reduce__(self):
         self.close_all()
@@ -170,48 +225,54 @@ class ResourceManager(StrSignatureMixin):
         return estimated_id
 
     def persistent_evaluated_model(self, info: Dict, model_id) -> Tuple[str, str, str]:
+        y_info = {
+            # 这个变量还是很有必要的，因为可能用户指定的切分器每次切的数据不一样
+            "y_true_indexes": info.get("y_true_indexes"),
+            "y_preds": info.get("y_preds"),
+            "y_test_pred": info.get("y_test_pred")
+        }
+        # ----dir---------------------
         self.trial_dir = self.file_system.join(self.parent_trials_dir, self.task_id, self.hdl_id)
         self.file_system.mkdir(self.trial_dir)
         # ----get specific URL---------
-        model_path = self.file_system.join(self.trial_dir, f"{model_id}.{self.compress_suffix}")
-        if info["intermediate_result"] is not None:
-            intermediate_result_path = self.file_system.join(self.trial_dir,
-                                                             f"{model_id}_inter-res.{self.compress_suffix}")
-        else:
-            intermediate_result_path = ""
-        if info["finally_fit_model"] is not None:
+        models_path = self.file_system.join(self.trial_dir, f"{model_id}_models.{self.compress_suffix}")
+        y_info_path = self.file_system.join(self.trial_dir, f"{model_id}_y-info.{self.compress_suffix}")
+        if info.get("finally_fit_model") is not None:
             finally_fit_model_path = self.file_system.join(self.trial_dir,
                                                            f"{model_id}_final.{self.compress_suffix}")
         else:
             finally_fit_model_path = ""
         # ----do dump---------------
-        self.file_system.dump_pickle(info["models"], model_path)
-        if intermediate_result_path:
-            self.file_system.dump_pickle(info["intermediate_result"], intermediate_result_path)
+        self.file_system.dump_pickle(info["models"], models_path)
+        self.file_system.dump_pickle(y_info, y_info_path)
         if finally_fit_model_path:
             self.file_system.dump_pickle(info["finally_fit_model"], finally_fit_model_path)
         # ----return----------------
-        return model_path, intermediate_result_path, finally_fit_model_path
+        return models_path, finally_fit_model_path, y_info_path
 
-    def get_ensemble_needed_info(self, task_id, hdl_id) -> Tuple[MLTask, Any, Any]:
+    def get_ensemble_needed_info(self, task_id) -> Tuple[MLTask, Any]:
+        from xenon import NdArrayContainer
+
         self.task_id = task_id
-        self.hdl_id = hdl_id
-        self.init_tasks_table()
-        task_record = self.TasksModel.select().where(self.TasksModel.task_id == task_id)[0]
+        self.init_task_table()
+        # 操作task而不是trial
+        task_record = self.TaskModel.select().where(
+            (self.TaskModel.task_id == self.task_id) & (self.TaskModel.user_id == self.user_id)
+        )[0]
         ml_task_str = task_record.ml_task
         ml_task = eval(ml_task_str)
-        Xy_train_path = task_record.Xy_train_path
-        Xy_train = self.file_system.load_pickle(Xy_train_path)
-        Xy_test_path = task_record.Xy_test_path
-        Xy_test = self.file_system.load_pickle(Xy_test_path)
-
-        return ml_task, Xy_train, Xy_test
+        train_set_id = task_record.train_set_id
+        test_set_id = task_record.test_set_id
+        train_label_id = task_record.train_label_id
+        test_label_id = task_record.test_label_id
+        y_train = NdArrayContainer(dataset_id=train_label_id, resource_manager=self)
+        return ml_task, y_train
 
     def load_best_estimator(self, ml_task: MLTask):
-        # todo: 最后调用分析程序？
-        self.init_trials_table()
-        record = self.TrialsModel.select() \
-            .order_by(self.TrialsModel.loss, self.TrialsModel.cost_time).limit(1)[0]
+        self.init_trial_table()
+        record = self.TrialsModel.select().where(
+            (self.TrialsModel.task_id == self.task_id) & (self.TrialsModel.user_id == self.user_id)
+        ).order_by(self.TrialsModel.loss, self.TrialsModel.cost_time).limit(1)[0]
         models = self.file_system.load_pickle(record.models_path)
         if ml_task.mainTask == "classification":
             estimator = VoteClassifier(models)
@@ -220,20 +281,23 @@ class ResourceManager(StrSignatureMixin):
         return estimator
 
     def load_best_dhp(self):
+        # fixme: 限制hdl_id
         trial_id = self.get_best_k_trials(1)[0]
         record = self.TrialsModel.select().where(self.TrialsModel.trial_id == trial_id)[0]
         return record.dict_hyper_param
 
     def get_best_k_trials(self, k):
-        self.init_trials_table()
+        self.init_trial_table()
         trial_ids = []
-        records = self.TrialsModel.select().order_by(self.TrialsModel.loss, self.TrialsModel.cost_time).limit(k)
+        records = self.TrialsModel.select().where(
+            (self.TrialsModel.task_id == self.task_id) & (self.TrialsModel.user_id == self.user_id)
+        ).order_by(self.TrialsModel.loss, self.TrialsModel.cost_time).limit(k)
         for record in records:
             trial_ids.append(record.trial_id)
         return trial_ids
 
     def load_estimators_in_trials(self, trials: Union[List, Tuple]) -> Tuple[List, List, List]:
-        self.init_trials_table()
+        self.init_trial_table()
         records = self.TrialsModel.select().where(self.TrialsModel.trial_id << trials)
         estimator_list = []
         y_true_indexes_list = []
@@ -245,39 +309,70 @@ class ResourceManager(StrSignatureMixin):
             else:
                 estimator_list.append(self.file_system.load_pickle(record.models_path))
             if exists:
-                y_true_indexes_list.append(record.y_true_indexes)
-                y_preds_list.append(record.y_preds)
+                y_info = self.file_system.load_pickle(record.y_info_path)
+                y_true_indexes_list.append(y_info["y_true_indexes"])
+                y_preds_list.append(y_info["y_preds"])
         return estimator_list, y_true_indexes_list, y_preds_list
 
     def set_is_master(self, is_master):
         self.is_master = is_master
 
     # ----------runhistory------------------------------------------------------------------
+
     @property
     def runhistory_db_params(self):
-        return self.update_db_params(self.tasks_db_name)
+        self.init_record_db()
+        return self.update_db_params(self.record_db_name)
+
+    def get_runhistory_table_name(self, hdl_id):
+        return "run_history"
 
     @property
     def runhistory_table_name(self):
-        return f"runhistory_{self.hdl_id}"
+        return self.get_runhistory_table_name(self.hdl_id)
 
-    # ----------database name------------------------------------------------------------------
+    # ----------xenon_dataset------------------------------------------------------------------
+    @property
+    def dataset_db_name(self):
+        if self._dataset_db_name is not None:
+            return self._dataset_db_name
+        self._dataset_db_name = self.dataset_table_db_name
+        create_database(self._dataset_db_name, self.db_type, self.db_params)
+        return self._dataset_db_name
+
+    def init_dataset_db(self):
+        if self.is_init_dataset_db:
+            return self.dataset_db
+        else:
+            self.is_init_dataset_db = True
+            self.dataset_db: pw.Database = self.Datebase(**self.update_db_params(self.dataset_db_name))
+            return self.dataset_db
+
+    def close_dataset_db(self):
+        self.dataset_db = None
+        self.is_init_dataset_db = False
+
+    # ----------xenon------------------------------------------------------------------
 
     @property
-    def meta_records_db_name(self):
-        if self._meta_records_db_name is not None:
-            return self._meta_records_db_name
-        self._meta_records_db_name = "meta_records"
-        create_database(self._meta_records_db_name, self.db_type, self.db_params)
-        return self._meta_records_db_name
+    def record_db_name(self):
+        if self._record_db_name is not None:
+            return self._record_db_name
+        self._record_db_name = self.search_record_db_name
+        create_database(self._record_db_name, self.db_type, self.db_params)
+        return self._record_db_name
 
-    @property
-    def tasks_db_name(self):
-        if self._tasks_db_name is not None:
-            return self._tasks_db_name
-        self._tasks_db_name = f"task_{self.task_id}"
-        create_database(self._tasks_db_name, self.db_type, self.db_params)
-        return self._tasks_db_name
+    def init_record_db(self):
+        if self.is_init_record_db:
+            return self.record_db
+        else:
+            self.is_init_record_db = True
+            self.record_db: pw.Database = self.Datebase(**self.update_db_params(self.record_db_name))
+            return self.record_db
+
+    def close_record_db(self):
+        self.record_db = None
+        self.is_init_record_db = False
 
     # ----------redis------------------------------------------------------------------
 
@@ -320,354 +415,482 @@ class ResourceManager(StrSignatureMixin):
         else:
             return None
 
+    def redis_hset(self, name, key, value):
+        if self.connect_redis():
+            try:
+                self.redis_client.hset(name, key, value)
+            except Exception as e:
+                pass
+
+    def redis_hgetall(self, name):
+        if self.connect_redis():
+            return self.redis_client.hgetall(name)
+        else:
+            return None
+
     def redis_delete(self, name):
         if self.connect_redis():
             self.redis_client.delete(name)
 
-    # ----------experiments_model------------------------------------------------------------------
-    def get_experiments_model(self) -> pw.Model:
-        class Experiments(pw.Model):
-            experiment_id = pw.AutoField(primary_key=True)
-            general_experiment_timestamp = pw.DateTimeField(default=datetime.datetime.now)
-            current_experiment_timestamp = pw.DateTimeField(default=datetime.datetime.now)
-            hdl_id = pw.CharField(default="")
-            task_id = pw.CharField(default="")
-            hdl_constructors = self.JSONField(default=[])
-            hdl_constructor = pw.TextField(default="")
-            raw_hdl = self.JSONField(default={})
-            hdl = self.JSONField(default={})
-            tuners = self.JSONField(default=[])
-            tuner = pw.TextField(default="")
-            should_calc_all_metric = pw.BooleanField(default=True)
-            data_manager_path = pw.TextField(default="")
-            resource_manager_path = pw.TextField(default="")
-            column_descriptions = self.JSONField(default={})
-            column2feature_groups = self.JSONField(default={})
+    # ----------dataset_model------------------------------------------------------------------
+    def get_dataset_model(self) -> pw.Model:
+        class Dataset(pw.Model):
+            dataset_id = pw.FixedCharField(max_length=32)
+            user_id = pw.IntegerField()
             dataset_metadata = self.JSONField(default={})
-            metric = pw.CharField(default=""),
-            splitter = pw.CharField(default="")
-            ml_task = pw.CharField(default="")
-            should_store_intermediate_result = pw.BooleanField(default=False)
-            fit_ensemble_params = pw.TextField(default="auto"),
-            should_finally_fit = pw.BooleanField(default=False)
-            additional_info = self.JSONField(default={})  # additional_info 应该存储在trials中
-            user = pw.CharField(default=getuser)
+            dataset_path = pw.TextField(default="")
+            upload_type = pw.CharField(max_length=32)
+            dataset_type = pw.CharField(max_length=32)
+            dataset_source = pw.CharField(max_length=32)
+            column_descriptions = self.JSONField(default={})
+            columns_mapper = self.JSONField(default={})
+            columns = self.JSONField(default={})
+            create_time = pw.DateTimeField(default=datetime.datetime.now)
+            modify_time = pw.DateTimeField(default=datetime.datetime.now)
 
             class Meta:
-                database = self.experiments_db
+                database = self.record_db
+                primary_key = pw.CompositeKey('dataset_id', 'user_id')
 
-        self.experiments_db.create_tables([Experiments])
-        return Experiments
+        self.record_db.create_tables([Dataset])
+        return Dataset
 
-    def get_experiment_id_by_task_id(self, task_id):
-        self.init_tasks_table()
-        return self.TasksModel.select(self.TasksModel.experiment_id).where(self.TasksModel.task_id == task_id)[
-            0].experiment_id
-
-    def load_data_manager_by_experiment_id(self, experiment_id):
-        self.init_experiments_table()
-        experiment_id = int(experiment_id)
-        record = self.ExperimentsModel.select().where(self.ExperimentsModel.experiment_id == experiment_id)[0]
-        data_manager_path = record.data_manager_path
-        data_manager = self.file_system.load_pickle(data_manager_path)
-        return data_manager
-
-    def insert_to_experiments_table(
+    def insert_to_dataset_table(
             self,
-            general_experiment_timestamp,
-            current_experiment_timestamp,
-            hdl_constructors,
-            hdl_constructor,
-            raw_hdl,
-            hdl,
-            tuners,
-            tuner,
-            should_calc_all_metric,
-            data_manager,
-            column_descriptions,
+            dataset_hash,
             dataset_metadata,
-            metric,
-            splitter,
-            should_store_intermediate_result,
-            fit_ensemble_params,
+            upload_type,
+            dataset_source,
+            column_descriptions,
+            columns_mapper,
+            columns
+    ) -> Tuple[int, str, str]:
+        self.init_dataset_table()
+        records = self.DatasetModel.select().where(
+            (self.DatasetModel.dataset_id == dataset_hash) & (self.DatasetModel.user_id == self.user_id)
+        )
+        L = len(records)
+        dataset_path = ""
+        if L != 0:
+            record = records[0]
+            record.modify_time = datetime.datetime.now()
+            record.dataset_metadata = dataset_metadata
+            record.save()
+        else:
+            if upload_type == "fs":
+                dataset_path = self.file_system.join(self.datasets_dir, f"{dataset_hash}.h5")
+            record = self.DatasetModel().create(
+                dataset_id=dataset_hash,
+                user_id=self.user_id,
+                dataset_metadata=dataset_metadata,
+                dataset_path=dataset_path,
+                dataset_type="dataframe",
+                upload_type=upload_type,
+                dataset_source=dataset_source,
+                column_descriptions=column_descriptions,
+                columns_mapper=columns_mapper,
+                columns=columns
+            )
+        dataset_id = record.dataset_id
+
+        return L, dataset_id, dataset_path
+
+    def init_dataset_table(self):
+        if self.is_init_dataset:
+            return
+        self.is_init_dataset = True
+        self.init_record_db()
+        self.DatasetModel = self.get_dataset_model()
+
+    def close_dataset_table(self):
+        self.is_init_dataset = False
+        self.DatasetModel = None
+
+    def upload_df_to_table(self, df, dataset_hash, column_mapper):
+        dataset_db = self.init_dataset_db()
+
+        class Meta:
+            database = dataset_db
+            table_name = f"dataset_{dataset_hash}"
+
+        origin_columns = deepcopy(df.columns)
+        df.columns = pd.Series(df.columns).map(column_mapper)
+        database_id = get_unique_col_name(df.columns, "id")
+        dict_ = {"Meta": Meta, database_id: pw.AutoField()}
+        for col_name, dtype in zip(df.columns, df.dtypes):
+            dict_[col_name] = get_field_of_type(dtype, df, col_name)
+        DataframeModel = type("DataframeModel", (pw.Model,), dict_)
+        dataset_db.create_tables([DataframeModel])
+        sp0 = df.shape[0]
+        L = 500
+        N = ceil(sp0 / L)
+        for i in range(N):
+            sub_df = df.iloc[i * L:min(sp0, (i + 1) * L)]
+            sub_df = replace_nan_to_None(sub_df)
+            dicts = sub_df.to_dict('records')
+            DataframeModel.insert_many(dicts).execute()
+        df.columns = origin_columns
+
+    def upload_df_to_fs(self, df: pd.DataFrame, dataset_path):
+        tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        df.to_hdf(tmp_path, "dataset")
+        self.file_system.upload(dataset_path, tmp_path)
+
+    def upload_ndarray_to_fs(self, arr: np.ndarray, dataset_path):
+        tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        with h5py.File(tmp_path, 'w') as hf:
+            hf.create_dataset("dataset", data=arr)
+        self.file_system.upload(dataset_path, tmp_path)
+
+    def query_dataset_record(self, dataset_hash) -> List[Dict[str, Any]]:
+        self.init_dataset_table()
+        records = self.DatasetModel.select().where(
+            (self.DatasetModel.dataset_id == dataset_hash) & (self.DatasetModel.user_id == self.user_id)
+        ).dicts()
+        return list(records)
+
+    def download_df_from_table(self, dataset_hash, columns, columns_mapper):
+        inv_columns_mapper = inverse_dict(columns_mapper)
+        dataset_db = self.init_dataset_db()
+        models = generate_models(dataset_db)
+        table_name = f"dataset_{dataset_hash}"
+        if table_name not in models:
+            raise ValueError(f"Table {table_name} didn't exists.")
+        model = models[table_name]
+        L = 500
+        offset = 0
+        dataframes = []
+        while True:
+            dicts = list(model().select().limit(L).offset(offset).dicts())
+            replace_dicts(dicts, None, np.nan)
+            sub_df = pd.DataFrame(dicts)
+            dataframes.append(sub_df)
+            if len(dicts) < L:
+                break
+            offset += L
+        df = pd.concat(dataframes, axis=0)
+        df.index = range(df.shape[0])
+        # 删除第一列数据库主键列
+        database_id = df.columns[0]
+        df.pop(database_id)
+        df.columns = df.columns.map(inv_columns_mapper)
+        if columns is not None:
+            df = df[columns]
+        return df
+
+    def download_df_from_fs(self, dataset_path, columns=None):
+        tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
+        self.file_system.download(dataset_path, tmp_path)
+        df: pd.DataFrame = pd.read_hdf(tmp_path, "dataset")
+        if columns is not None:
+            df = df[columns]
+        return df
+
+    def download_arr_from_fs(self, dataset_path):
+        tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
+        self.file_system.download(dataset_path, tmp_path)
+        with h5py.File(tmp_path, 'r') as hf:
+            arr = hf['dataset'][:]
+        return arr
+
+    # ----------experiment_model------------------------------------------------------------------
+    def get_experiment_model(self) -> pw.Model:
+        class Experiment(pw.Model):
+            experiment_id = pw.AutoField(primary_key=True)
+            user_id = pw.IntegerField()
+            hdl_id = pw.FixedCharField(max_length=32, default="")
+            task_id = pw.FixedCharField(max_length=32)
+            experiment_type = pw.CharField(max_length=128)  # auto_modeling, manual_modeling, ensemble_modeling
+            experiment_config = self.JSONField(default={})  # 实验配置，将一些不可优化的部分存储起来
+            additional_info = self.JSONField(default={})  # trials与experiments同时存储
+            final_model_path = pw.TextField(null=True)
+            log_path = pw.TextField(null=True)
+            start_time = pw.DateTimeField(default=datetime.datetime.now)
+            end_time = pw.DateTimeField(null=True)
+
+            class Meta:
+                database = self.record_db
+
+        self.record_db.create_tables([Experiment])
+        return Experiment
+
+    def insert_to_experiment_table(
+            self,
+            experiment_type: ExperimentType,
+            experiment_config,
             additional_info,
-            should_finally_fit
     ):
-        self.close_all()
-        copied_resource_manager = deepcopy(self)
-        self.init_experiments_table()
-        # estimate new experiment_id
-        experiment_id = self.forecast_new_id(self.ExperimentsModel, "experiment_id")
-        # todo: 是否需要删除data_manager的Xy
-        data_manager = deepcopy(data_manager)
-        data_manager.X_train = None
-        data_manager.X_test = None
-        data_manager.y_train = None
-        data_manager.y_test = None
-        self.experiment_dir = self.file_system.join(self.parent_experiments_dir, str(experiment_id))
-        self.file_system.mkdir(self.experiment_dir)
-        data_manager_path = self.file_system.join(self.experiment_dir, f"data_manager.{self.compress_suffix}")
-        resource_manager_path = self.file_system.join(self.experiment_dir, f"resource_manager.{self.compress_suffix}")
-        self.file_system.dump_pickle(data_manager, data_manager_path)
-        self.file_system.dump_pickle(copied_resource_manager, resource_manager_path)
+        self.init_experiment_table()
         self.additional_info = additional_info
-        experiment_record = self.ExperimentsModel.create(
-            general_experiment_timestamp=general_experiment_timestamp,
-            current_experiment_timestamp=current_experiment_timestamp,
+        assert isinstance(experiment_type, ExperimentType)
+        experiment_record = self.ExperimentModel.create(
+            user_id=self.user_id,
             hdl_id=self.hdl_id,
             task_id=self.task_id,
-            hdl_constructors=[str(item) for item in hdl_constructors],
-            hdl_constructor=str(hdl_constructor),
-            raw_hdl=raw_hdl,
-            hdl=hdl,
-            tuners=[str(item) for item in tuners],
-            tuner=str(tuner),
-            should_calc_all_metric=should_calc_all_metric,
-            data_manager_path=data_manager_path,
-            resource_manager_path=resource_manager_path,
-            column_descriptions=column_descriptions,
-            column2feature_groups=data_manager.column2feature_groups,  # todo
-            dataset_metadata=dataset_metadata,
-            metric=metric.name,
-            splitter=str(splitter),
-            ml_task=str(data_manager.ml_task),
-            should_store_intermediate_result=should_store_intermediate_result,
-            fit_ensemble_params=str(fit_ensemble_params),
+            experiment_type=experiment_type.value,
+            experiment_config=experiment_config,
             additional_info=additional_info,
-            should_finally_fit=should_finally_fit
         )
-        fetched_experiment_id = experiment_record.experiment_id
-        if fetched_experiment_id != experiment_id:
-            self.logger.warning("fetched_experiment_id != experiment_id")
-        self.experiment_id = experiment_id
+        self.experiment_id = experiment_record.experiment_id
 
-    def init_experiments_table(self):
-        if self.is_init_experiments_db:
+    def finish_experiment(self, log_path, final_model):
+        self.experiment_path = self.file_system.join(self.parent_experiments_dir, str(self.experiment_id))
+        self.file_system.mkdir(self.experiment_path)
+        experiment_log_path = self.file_system.join(self.experiment_path, "log_file.log")
+        experiment_model_path = self.file_system.join(self.experiment_path, "model.bz2")
+        final_model = final_model.copy()
+        assert final_model.data_manager.is_empty()
+        self.file_system.dump_pickle(final_model, experiment_model_path)
+        self.file_system.upload(experiment_log_path, log_path)
+        if os.path.exists(log_path):
+            os.remove(log_path)
+        self.finish_experiment_update_info(experiment_model_path, experiment_log_path, datetime.datetime.now())
+
+    def finish_experiment_update_info(self, final_model_path, log_path, end_time):
+        self.init_experiment_table()
+        experiment = self.ExperimentModel.select().where(self.ExperimentModel.experiment_id == self.experiment_id)[0]
+        experiment.final_model_path = final_model_path
+        experiment.log_path = log_path
+        experiment.end_time = end_time
+        experiment.save()
+
+    def init_experiment_table(self):
+        if self.is_init_experiment:
             return
-        self.is_init_experiments_db = True
-        self.experiments_db: pw.Database = self.Datebase(**self.update_db_params(self.meta_records_db_name))
-        self.ExperimentsModel = self.get_experiments_model()
+        self.is_init_experiment = True
+        self.init_record_db()
+        self.ExperimentModel = self.get_experiment_model()
 
-    def close_experiments_table(self):
-        self.is_init_experiments_db = False
-        self.experiments_db = None
-        self.ExperimentsModel = None
+    def close_experiment_table(self):
+        self.is_init_experiment = False
+        self.ExperimentModel = None
 
     # ----------tasks_model------------------------------------------------------------------
-    def get_tasks_model(self) -> pw.Model:
-        class Tasks(pw.Model):
-            # task_id = md5(X_train, y_train, X_test, y_test, splitter, metric)
-            task_id = pw.CharField(primary_key=True)
-            metric = pw.CharField(default="")
-            splitter = pw.CharField(default="")
-            ml_task = pw.CharField(default="")
-            specific_task_token = pw.CharField(default="")
-            # Xy_train
-            Xy_train_hash = pw.CharField(default="")
-            Xy_train_path = pw.TextField(default="")
-            # Xy_test
-            Xy_test_hash = pw.CharField(default="")
-            Xy_test_path = pw.TextField(default="")
-            # meta info
-            meta_data = self.JSONField(default={})
+    def get_task_model(self) -> pw.Model:
+        class Task(pw.Model):
+            task_id = pw.FixedCharField(max_length=32)
+            user_id = pw.IntegerField()
+            metric = pw.CharField(max_length=256)
+            splitter = pw.TextField()
+            ml_task = pw.CharField(max_length=256)
+            specific_task_token = pw.CharField(max_length=256, default="")
+            train_set_id = pw.FixedCharField(max_length=32)
+            test_set_id = pw.FixedCharField(max_length=32, default="")
+            train_label_id = pw.FixedCharField(max_length=32)
+            test_label_id = pw.FixedCharField(max_length=32, default="")
+            sub_sample_indexes = self.JSONField(default=[])
+            sub_feature_indexes = self.JSONField(default=[])
+            task_metadata = self.JSONField(default={})
+            create_time = pw.DateTimeField(default=datetime.datetime.now)
+            modify_time = pw.DateTimeField(default=datetime.datetime.now)
 
             class Meta:
-                database = self.tasks_db
+                database = self.record_db
+                primary_key = pw.CompositeKey('task_id', 'user_id')
 
-        self.tasks_db.create_tables([Tasks])
-        return Tasks
+        self.record_db.create_tables([Task])
+        return Task
 
     def insert_to_tasks_table(self, data_manager: DataManager,
                               metric: Scorer, splitter,
-                              specific_task_token, dataset_metadata, task_metadata):
-        self.init_tasks_table()
-        Xy_train_hash = get_hash_of_Xy(data_manager.X_train, data_manager.y_train)
-        Xy_test_hash = get_hash_of_Xy(data_manager.X_test, data_manager.y_test)
+                              specific_task_token, dataset_metadata,
+                              task_metadata, sub_sample_indexes, sub_feature_indexes, set_id=True):
+        self.init_task_table()
+        train_set_id = data_manager.train_set_hash
+        test_set_id = data_manager.test_set_hash
+        train_label_id = data_manager.train_label_hash
+        test_label_id = data_manager.test_label_hash
         metric_str = metric.name
         splitter_str = str(splitter)
         ml_task_str = str(data_manager.ml_task)
+        if sub_sample_indexes is None:
+            sub_sample_indexes = []
+        if sub_feature_indexes is None:
+            sub_feature_indexes = []
+        if not isinstance(sub_sample_indexes, list):
+            sub_sample_indexes = list(sub_sample_indexes)
+        if not isinstance(sub_feature_indexes, list):
+            sub_feature_indexes = list(sub_feature_indexes)
+        sub_sample_indexes_str = str(sub_sample_indexes)
+        sub_feature_indexes_str = str(sub_feature_indexes)
         # ---task_id----------------------------------------------------
         m = hashlib.md5()
-        get_hash_of_Xy(data_manager.X_train, data_manager.y_train, m)
-        get_hash_of_Xy(data_manager.X_test, data_manager.y_test, m)
+        get_hash_of_str(train_set_id, m)
+        get_hash_of_str(test_set_id, m)
+        get_hash_of_str(train_label_id, m)
+        get_hash_of_str(test_label_id, m)
         get_hash_of_str(metric_str, m)
         get_hash_of_str(splitter_str, m)
         get_hash_of_str(ml_task_str, m)
+        get_hash_of_str(sub_sample_indexes_str, m)
+        get_hash_of_str(sub_feature_indexes_str, m)
         get_hash_of_str(specific_task_token, m)
         task_hash = m.hexdigest()
         task_id = task_hash
-        records = self.TasksModel.select().where(self.TasksModel.task_id == task_id)
-        meta_data = dict(
+        records = self.TaskModel.select().where(
+            (self.TaskModel.task_id == task_id) & (self.TaskModel.user_id == self.user_id)
+        )
+        task_metadata = dict(
             dataset_metadata=dataset_metadata, **task_metadata
         )
         # ---store_task_record----------------------------------------------------
         if len(records) == 0:
-            # ---store_datasets----------------------------------------------------
-            Xy_train = [data_manager.X_train, data_manager.y_train]
-            Xy_test = [data_manager.X_test, data_manager.y_test]
-            Xy_train_path = self.file_system.join(self.datasets_dir,
-                                                  f"{Xy_train_hash}.{self.compress_suffix}")
-            self.file_system.dump_pickle(Xy_train, Xy_train_path)
-
-            if Xy_test_hash:
-                Xy_test_path = self.file_system.join(self.datasets_dir,
-                                                     f"{Xy_test_hash}.{self.compress_suffix}")
-                self.file_system.dump_pickle(Xy_test, Xy_test_path)
-            else:
-                Xy_test_path = ""
-
-            self.TasksModel.create(
+            self.TaskModel.create(
                 task_id=task_id,
+                user_id=self.user_id,
                 metric=metric_str,
                 splitter=splitter_str,
                 ml_task=ml_task_str,
                 specific_task_token=specific_task_token,
-                # Xy_train
-                Xy_train_hash=Xy_train_hash,
-                Xy_train_path=Xy_train_path,
-                # Xy_test
-                Xy_test_hash=Xy_test_hash,
-                Xy_test_path=Xy_test_path,
-                meta_data=meta_data
+                train_set_id=train_set_id,
+                test_set_id=test_set_id,
+                train_label_id=train_label_id,
+                test_label_id=test_label_id,
+                sub_sample_indexes=sub_sample_indexes,
+                sub_feature_indexes=sub_feature_indexes,
+                task_metadata=task_metadata
             )
         else:
-            old_meta_data = records[0].meta_data
-            new_meta_data = update_data_structure(old_meta_data, meta_data)
-            self.TasksModel(
-                task_id=task_id,
-                meta_data=new_meta_data
-            ).save()
-        self.task_id = task_id
+            record = records[0]
+            old_meta_data = record.task_metadata
+            new_meta_data = update_data_structure(old_meta_data, task_metadata)
+            record.task_metadata = new_meta_data
+            record.save()
+        if set_id:
+            self.task_id = task_id
 
-    def init_tasks_table(self):
-        if self.is_init_tasks_db:
+    def init_task_table(self):
+        if self.is_init_task:
             return
-        self.is_init_tasks_db = True
-        self.tasks_db: pw.Database = self.Datebase(**self.update_db_params(self.meta_records_db_name))
-        self.TasksModel = self.get_tasks_model()
+        self.is_init_task = True
+        self.init_record_db()
+        self.TaskModel = self.get_task_model()
 
-    def close_tasks_table(self):
-        self.is_init_tasks_db = False
-        self.tasks_db = None
-        self.TasksModel = None
+    def close_task_table(self):
+        self.is_init_task = False
+        self.TaskModel = None
 
-    # ----------hdls_model------------------------------------------------------------------
-    def get_hdls_model(self) -> pw.Model:
-        class HDLs(pw.Model):
-            hdl_id = pw.CharField(primary_key=True)
+    # ----------hdl_model------------------------------------------------------------------
+    def get_hdl_model(self) -> pw.Model:
+        class Hdl(pw.Model):
+            task_id = pw.FixedCharField(max_length=32)
+            hdl_id = pw.FixedCharField(max_length=32)
+            user_id = pw.IntegerField()
             hdl = self.JSONField(default={})
-            meta_data = self.JSONField(default={})
+            hdl_metadata = self.JSONField(default={})
+            create_time = pw.DateTimeField(default=datetime.datetime.now)
+            modify_time = pw.DateTimeField(default=datetime.datetime.now)
 
             class Meta:
-                database = self.hdls_db
+                database = self.record_db
+                primary_key = pw.CompositeKey('task_id', 'hdl_id', 'user_id')
 
-        self.hdls_db.create_tables([HDLs])
-        return HDLs
+        self.record_db.create_tables([Hdl])
+        return Hdl
 
-    def insert_to_hdls_table(self, hdl, hdl_metadata):
-        self.init_hdls_table()
+    def insert_to_hdl_table(self, hdl, hdl_metadata):
+        self.init_hdl_table()
         hdl_hash = get_hash_of_dict(hdl)
         hdl_id = hdl_hash
-        records = self.HDLsModel.select().where(self.HDLsModel.hdl_id == hdl_id)
+        # task_id 和 hdl_id 是 联合主键
+        records = self.HdlModel.select().where(
+            (self.HdlModel.task_id == self.task_id) & (self.HdlModel.hdl_id == hdl_id))
         if len(records) == 0:
-            self.HDLsModel.create(
+            self.HdlModel.create(
+                task_id=self.task_id,
                 hdl_id=hdl_id,
+                user_id=self.user_id,
                 hdl=hdl,
-                meta_data=hdl_metadata
+                hdl_metadata=hdl_metadata
             )
         else:
-            old_meta_data = records[0].meta_data
-            meta_data = update_data_structure(old_meta_data, hdl_metadata)
-            self.HDLsModel(
-                hdl_id=hdl_id,
-                hdl=hdl,
-                meta_data=meta_data
-            ).save()
+            record = records[0]
+            old_meta_data = record.hdl_metadata
+            new_meta_data = update_data_structure(old_meta_data, hdl_metadata)
+            record.hdl_metadata = new_meta_data
+            record.save()
         self.hdl_id = hdl_id
 
-    def init_hdls_table(self):
-        if self.is_init_hdls_db:
+    def init_hdl_table(self):
+        if self.is_init_hdl:
             return
-        self.is_init_hdls_db = True
-        self.hdls_db: pw.Database = self.Datebase(**self.update_db_params(self.tasks_db_name))
-        self.HDLsModel = self.get_hdls_model()
+        self.is_init_hdl = True
+        self.init_record_db()
+        self.HdlModel = self.get_hdl_model()
 
-    def close_hdls_table(self):
-        self.is_init_hdls_db = False
-        self.hdls_db = None
-        self.HDLsModel = None
+    def close_hdl_table(self):
+        self.is_init_hdl = False
+        self.HdlModel = None
 
-    # ----------trials_model------------------------------------------------------------------
+    # ----------trial_model------------------------------------------------------------------
 
-    def get_trials_model(self) -> pw.Model:
-        class Trials(pw.Model):
+    def get_trial_model(self) -> pw.Model:
+        class Trial(pw.Model):
             trial_id = pw.AutoField(primary_key=True)
-            config_id = pw.CharField(default="")
-            task_id = pw.CharField(default="")
-            hdl_id = pw.CharField(default="")
-            experiment_id = pw.IntegerField(default=0)
-            estimator = pw.CharField(default="")
+            user_id = pw.IntegerField()
+            config_id = pw.FixedCharField(max_length=32)
+            run_id = pw.FixedCharField(max_length=256)
+            instance_id = pw.FixedCharField(max_length=128)
+            experiment_id = pw.IntegerField()
+            task_id = pw.FixedCharField(max_length=32, index=True)  # 加索引
+            hdl_id = pw.FixedCharField(max_length=32)
+            estimator = pw.CharField(max_length=256, default="")
             loss = pw.FloatField(default=65535)
             losses = self.JSONField(default=[])
-            test_loss = self.JSONField(default=[])
+            test_loss = self.JSONField(default=[])  # 测试集
             all_score = self.JSONField(default={})
             all_scores = self.JSONField(default=[])
-            test_all_score = self.JSONField(default={})
+            test_all_score = self.JSONField(default={})  # 测试集
             models_path = pw.TextField(default="")
             final_model_path = pw.TextField(default="")
-            # 都是将python对象进行序列化存储，是否合适？
-            y_true_indexes = PickleField(default=0)
-            y_preds = PickleField(default=0)
-            y_test_true = PickleField(default=0)
-            y_test_pred = PickleField(default=0)
-            # --理论上测试集的结果是不可知的，这两个field由用户手动填写-----
-            y_test_score = pw.FloatField(default=0)
-            y_test_scores = self.JSONField(default={})
-            # ------------被附加的额外信息---------------
+            y_info_path = pw.TextField(default="")
             additional_info = self.JSONField(default={})
-            # -------------------------------------
-            smac_hyper_param = PickleField(default=0)
+            # smac_hyper_param = PickleField(default=0)
             dict_hyper_param = self.JSONField(default={})
             cost_time = pw.FloatField(default=65535)
-            status = pw.CharField(default="SUCCESS")
+            status = pw.CharField(max_length=32, default="SUCCESS")
             failed_info = pw.TextField(default="")
             warning_info = pw.TextField(default="")
-            intermediate_result_path = pw.TextField(default=""),
-            timestamp = pw.DateTimeField(default=datetime.datetime.now)
-            user = pw.CharField(default=getuser)
-            pid = pw.IntegerField(default=os.getpid)
+            intermediate_results = self.JSONField(default=[])
+            start_time = pw.DateTimeField()
+            end_time = pw.DateTimeField()
 
             class Meta:
-                database = self.trials_db
+                database = self.record_db
 
-        self.trials_db.create_tables([Trials])
-        return Trials
+        self.record_db.create_tables([Trial])
+        return Trial
 
-    def init_trials_table(self):
-        if self.is_init_trials_db:
+    def init_trial_table(self):
+        if self.is_init_trial:
             return
-        self.is_init_trials_db = True
-        self.trials_db: pw.Database = self.Datebase(**self.update_db_params(self.tasks_db_name))
-        self.TrialsModel = self.get_trials_model()
+        self.is_init_trial = True
+        self.init_record_db()
+        self.TrialsModel = self.get_trial_model()
 
-    def close_trials_table(self):
-        self.is_init_trials_db = False
-        self.trials_db = None
+    def close_trial_table(self):
+        self.is_init_trial = False
         self.TrialsModel = None
 
-    def insert_to_trials_table(self, info: Dict):
-        self.init_trials_table()
+    def do_insert_to_trial_table(self, info: Dict):
         config_id = info.get("config_id")
-        # todo: 考虑更特殊的情况，不同的任务下，相同的配置
-        models_path, intermediate_result_path, finally_fit_model_path = \
+        models_path, finally_fit_model_path, y_info_path = \
             self.persistent_evaluated_model(info, config_id)
-
+        additional_info = deepcopy(self.additional_info)
+        additional_info.update(info["additional_info"])
         self.TrialsModel.create(
+            user_id=self.user_id,
             config_id=config_id,
+            run_id=info.get("run_id"),
+            instance_id=info.get("instance_id"),
             task_id=self.task_id,
             hdl_id=self.hdl_id,
             experiment_id=self.experiment_id,
-            estimator=info.get("estimator", ""),
+            estimator=info.get("component", ""),
             loss=info.get("loss", 65535),
             losses=info.get("losses", []),
             test_loss=info.get("test_loss", 65535),
@@ -676,18 +899,40 @@ class ResourceManager(StrSignatureMixin):
             test_all_score=info.get("test_all_score", {}),
             models_path=models_path,
             final_model_path=finally_fit_model_path,
-            y_true_indexes=info.get("y_true_indexes"),
-            y_preds=info.get("y_preds"),
-            y_test_true=info.get("y_test_true"),
-            y_test_pred=info.get("y_test_pred"),
-            smac_hyper_param=info.get("program_hyper_param"),
+            y_info_path=y_info_path,
+            additional_info=additional_info,
+            # smac_hyper_param=info.get("program_hyper_param"),
             dict_hyper_param=info.get("dict_hyper_param", {}),
             cost_time=info.get("cost_time", 65535),
             status=info.get("status", "failed"),
             failed_info=info.get("failed_info", ""),
             warning_info=info.get("warning_info", ""),
-            intermediate_result_path=intermediate_result_path,
+            intermediate_results=info.get("intermediate_results", []),
+            start_time=info.get("start_time"),
+            end_time=info.get("end_time"),
         )
+
+    def insert_to_trial_table(self, info: Dict):
+        self.init_trial_table()
+        success = False
+        max_try_times = 3
+        for i in range(max_try_times):
+            try:
+                self.do_insert_to_trial_table(info)
+                success = True
+            except Exception as e:
+                self.logger.error(e)
+                self.logger.error(f"Insert 'trial' table failed, {i + 1} try.")
+                # 关闭连接池， 重新连接
+                self.close_trial_table()
+                self.close_record_db()
+                self.init_record_db()
+                self.init_trial_table()
+            if success:
+                break
+        if not success:
+            self.logger.error(f"After {max_try_times} times try, trial info cannot insert into trial table.")
+        # todo: 把无法保存的info序列化到savedpath
 
     def delete_models(self):
         if hasattr(self, "sync_dict"):
@@ -701,29 +946,30 @@ class ResourceManager(StrSignatureMixin):
         # master segment
         if not self.is_master:
             return True
-        self.init_trials_table()
-        # estimators = []
-        # for record in self.TrialsModel.select(self.TrialsModel.trial_id, self.TrialsModel.estimator).group_by(
-        #         self.TrialsModel.estimator):
-        #     estimators.append(record.estimator)
-        # for estimator in estimators:
-        # .where(self.TrialsModel.estimator == estimator)
-        should_delete = self.TrialsModel.select().order_by(
-            self.TrialsModel.loss, self.TrialsModel.cost_time).offset(self.max_persistent_estimators)
-        if len(should_delete):
-            for record in should_delete:
-                models_path = record.models_path
-                self.logger.info(f"Delete expire Model in path : {models_path}")
-                self.file_system.delete(models_path)
-            self.TrialsModel.delete().where(
-                self.TrialsModel.trial_id.in_(should_delete.select(self.TrialsModel.trial_id))).execute()
+        self.init_trial_table()
+        # todo: 设置一个取余
+        if self.max_persistent_estimators > 0:
+            # 只删除这次task & hdl中表现最差的模型
+            should_delete = self.TrialsModel.select().where(
+                (self.TrialsModel.task_id == self.task_id) & (self.TrialsModel.user_id == self.user_id)
+                & (self.TrialsModel.hdl_id == self.hdl_id)
+            ).order_by(
+                self.TrialsModel.loss, self.TrialsModel.cost_time
+            ).offset(self.max_persistent_estimators)
+            if len(should_delete):
+                for record in should_delete:
+                    models_path = record.models_path
+                    self.logger.info(f"Delete expire Model in path : {models_path}")
+                    self.file_system.delete(models_path)
+                self.TrialsModel.delete().where(
+                    self.TrialsModel.trial_id.in_(should_delete.select(self.TrialsModel.trial_id))).execute()
         return True
 
 
 if __name__ == '__main__':
     rm = ResourceManager("/home/tqc/PycharmProjects/xenon/test/test_db")
     rm.init_dataset_path("default_dataset_name")
-    rm.init_trials_table()
+    rm.init_trial_table()
     estimators = []
     for record in rm.TrialsModel.select().group_by(rm.TrialsModel.estimator):
         estimators.append(record.estimator)

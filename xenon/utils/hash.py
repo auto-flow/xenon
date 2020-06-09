@@ -1,5 +1,6 @@
 import hashlib
 from copy import deepcopy
+from math import ceil
 from typing import Union
 
 import numpy as np
@@ -7,7 +8,15 @@ import pandas as pd
 from scipy.sparse import issparse
 
 from xenon.utils.dataframe import get_object_columns
-from xenon.utils.dict import sort_dict
+from xenon.utils.dict_ import sort_dict
+
+
+def get_hash_of_file(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
 
 def get_hash_of_array(X, m=None):
@@ -36,8 +45,8 @@ def get_hash_of_dict(dict_, m=None):
     if m is None:
         m = hashlib.md5()
 
-    # sorted_dict = sort_dict(deepcopy(dict_))
-    sorted_dict = deepcopy(dict_)
+    sorted_dict = sort_dict(deepcopy(dict_))
+    # sorted_dict = deepcopy(dict_)
     m.update(str(sorted_dict).encode("utf-8"))
     return m.hexdigest()
 
@@ -57,7 +66,7 @@ def get_hash_decimal_of_str(x, m=None):
         raise NotImplementedError
 
 
-def get_hash_of_dataframe(df: pd.DataFrame, m=None):
+def get_hash_of_dataframe_deprecated(df: pd.DataFrame, m=None):
     if m is None:
         m = hashlib.md5()
     df_ = deepcopy(df)
@@ -67,6 +76,33 @@ def get_hash_of_dataframe(df: pd.DataFrame, m=None):
     df_.sort_index(axis=0, inplace=True)
     df_.sort_index(axis=1, inplace=True)
     return get_hash_of_array(df_.values, m)
+
+
+def get_hash_of_dataframe_csv(df: pd.DataFrame, m=None, L=500):
+    if m is None:
+        m = hashlib.md5()
+    sp0 = df.shape[0]
+    N = ceil(sp0 / L)
+    result = ""
+    s = df.iloc[:0, :].to_csv(float_format="%.3f", index=False).encode()
+    get_hash_of_str(s, m)
+    for i in range(N):
+        s = df.iloc[i * L:min(sp0, (i + 1) * L)].to_csv(float_format="%.3f", index=False, header=None).encode()
+        result = get_hash_of_str(s, m)
+    return result
+
+
+def get_hash_of_dataframe(df: pd.DataFrame, m=None, L=500):
+    if m is None:
+        m = hashlib.md5()
+    eq_obj = (df.dtypes == object)
+    if np.any(eq_obj):
+        get_hash_of_dataframe_csv(df.select_dtypes(include=object), m, L)
+        result = get_hash_of_array(df.select_dtypes(exclude=object).values, m)
+    else:
+        result = get_hash_of_array(df.values, m)
+
+    return result
 
 
 def get_hash_of_Xy(X: Union[pd.DataFrame, np.ndarray, None],
@@ -88,8 +124,10 @@ def get_hash_of_Xy(X: Union[pd.DataFrame, np.ndarray, None],
     return get_hash_of_dataframe(df, m)
 
 
-def get_hash_of_str(s: str, m=None):
+def get_hash_of_str(s: Union[str, bytes], m=None):
     if m is None:
         m = hashlib.md5()
-    m.update(s.encode("utf-8"))
+    if isinstance(s, str):
+        s = s.encode("utf-8")
+    m.update(s)
     return m.hexdigest()

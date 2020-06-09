@@ -4,10 +4,10 @@ xenon.tuner package
 Submodules
 ----------
 
-xenon.tuner.tuner module
+xenon.tuner module
 ---------------------------
 
-.. automodule:: xenon.tuner.tuner
+.. automodule:: xenon.tuner
    :members:
    :undoc-members:
    :show-inheritance:

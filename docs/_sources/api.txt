@@ -35,7 +35,7 @@ Resource Manager
 Tuner
 =================
 
-.. autoclass:: xenon.tuner.tuner.Tuner
+.. autoclass:: xenon.tuner.Tuner
     :members:
 
 

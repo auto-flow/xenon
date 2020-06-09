@@ -49,6 +49,7 @@ class RunHistory(object):
             overwrite_existing_runs: bool = False,
             file_system=LocalFS(),
             config_space=None,
+            instance_id="",
             db_type="sqlite",
             db_params=frozendict(),
             db_table_name="runhistory"
@@ -64,7 +65,7 @@ class RunHistory(object):
             algorithm-instance-seed were measured
             multiple times
         """
-        self.db: RunHistoryDB = RunHistoryDB(config_space, self, db_type, db_params, db_table_name)
+        self.db: RunHistoryDB = RunHistoryDB(config_space, self, db_type, db_params, db_table_name,instance_id=instance_id)
         self.file_system = file_system
         self.logger = PickableLoggerAdapter(
             self.__module__ + "." + self.__class__.__name__
@@ -95,12 +96,12 @@ class RunHistory(object):
         self.aggregate_func = aggregate_func
         self.overwrite_existing_runs = overwrite_existing_runs
 
-    def get_incumbent(self):
+    def get_incumbent(self, instance_id):
         incumbent = None
         min_cost = np.inf
         for run_key, run_value in self.data.items():
             cost = run_value.cost
-            if cost < min_cost:
+            if cost < min_cost and run_key.instance_id == instance_id:
                 incumbent = self.ids_config[run_key.config_id]
                 min_cost = cost
         return incumbent
@@ -303,6 +304,13 @@ class RunHistory(object):
         """
         return list(self.config_ids.keys())
 
+    def get_instance_configs(self, instance_id):
+        result = []
+        for run_key in self.data:
+            if run_key.instance_id == instance_id:
+                result.append(self.ids_config[run_key.config_id])
+        return result
+
     def empty(self):
         """Check whether or not the RunHistory is empty.
 
@@ -435,5 +443,3 @@ class RunHistory(object):
                      status=status, instance_id=instance_id,
                      seed=seed, additional_info=additional_info,
                      origin=origin)
-
-

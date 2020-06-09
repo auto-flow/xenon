@@ -1,7 +1,7 @@
 import datetime
-import json
 import os
 import pickle
+from typing import Tuple, Optional
 
 import peewee as pw
 from ConfigSpace import ConfigurationSpace, Configuration
@@ -17,8 +17,9 @@ from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, PickleFi
 class RunHistoryDB():
 
     def __init__(self, config_space: ConfigurationSpace, runhistory, db_type="sqlite",
-                 db_params=frozendict(), db_table_name="runhistory"):
+                 db_params=frozendict(), db_table_name="runhistory", instance_id=""):
 
+        self.instance_id = instance_id
         self.db_table_name = db_table_name
         self.runhistory = runhistory
         self.db_type = db_type
@@ -34,21 +35,22 @@ class RunHistoryDB():
 
     def get_model(self) -> pw.Model:
         class Run_History(pw.Model):
-            run_id = pw.CharField(primary_key=True)
-            config_id = pw.CharField(default="")
+            run_id = pw.FixedCharField(max_length=256, primary_key=True)
+            config_id = pw.FixedCharField(max_length=128, default="")
             config = self.JSONField(default={})
             config_bin = PickleField(default=b"")
-            config_origin = pw.TextField(default="")
+            config_origin = pw.CharField(max_length=64, default="")
             cost = pw.FloatField(default=65535)
             time = pw.FloatField(default=0.0)
-            instance_id = pw.CharField(default="")
+            instance_id = pw.FixedCharField(max_length=128, default="", index=True)  # 设置索引
             seed = pw.IntegerField(default=0)
             status = pw.IntegerField(default=0)
-            additional_info = pw.CharField(default="")
+            additional_info = self.JSONField(default={})
             origin = pw.IntegerField(default=0)
             weight = pw.FloatField(default=0.0)
-            pid = pw.IntegerField(default=os.getpid)
-            timestamp = pw.DateTimeField(default=datetime.datetime.now)
+            pid = pw.IntegerField(default=os.getpid)  # todo: 改为 worker id
+            create_time = pw.DateTimeField(default=datetime.datetime.now)
+            modify_time = pw.DateTimeField(default=datetime.datetime.now)
 
             class Meta:
                 database = self.db
@@ -57,23 +59,30 @@ class RunHistoryDB():
         self.db.create_tables([Run_History])
         return Run_History
 
-    def get_run_id(self, instance_id, config_id):
+    @staticmethod
+    def get_run_id( instance_id, config_id):
         return instance_id + "-" + config_id
 
-    def appointment_config(self, config, instance_id) -> bool:
+    def appointment_config(self, config, instance_id) -> Tuple[bool, Optional[pw.Model]]:
         config_id = get_id_of_config(config)
         run_id = self.get_run_id(instance_id, config_id)
         query = self.Model.select().where(self.Model.run_id == run_id)
-        if query.exists():
-            return False
+        if len(query) > 0:
+            query_ = query[0]
+            if query_.origin >= 0:
+                record = query_
+            else:
+                record = None
+            return False, record
         try:
             self.Model.create(
                 run_id=run_id,
+                instance_id=instance_id,
                 origin=-1
             )
         except Exception as e:
-            return False
-        return True
+            return False, None
+        return True, None
 
     def insert_runhistory(self, config: Configuration, cost: float, time: float,
                           status: StatusType, instance_id: str = "",
@@ -98,19 +107,23 @@ class RunHistoryDB():
                 status=status.value,
                 additional_info=dict(additional_info),
                 origin=origin.value,
+                modify_time=datetime.datetime.now()
             ).save()
         except Exception as e:
             pass
         self.timestamp = datetime.datetime.now()
 
-    def fetch_new_runhistory(self, is_init=False):
+    def fetch_new_runhistory(self, instance_id, is_init=False):
         if is_init:
-            n_del = self.Model.delete().where(self.Model.origin < 0).execute()
-            if n_del > 0:
-                self.logger.info(f"Delete {n_del} invalid records in run_history database.")
-            query = self.Model.select().where(self.Model.origin >= 0)
+            # n_del = self.Model.delete().where(self.Model.origin < 0).execute()
+            # if n_del > 0:
+            #     self.logger.info(f"Delete {n_del} invalid records in run_history database.")
+            query = self.Model.select(). \
+                where((self.Model.origin >= 0) & (self.Model.instance_id == instance_id))
         else:
-            query = self.Model.select().where(self.Model.pid != os.getpid()).where(self.Model.origin >= 0)
+            query = self.Model.select(). \
+                where(
+                (self.Model.origin >= 0) & (self.Model.instance_id == instance_id) & (self.Model.pid != os.getpid()))
         for model in query:
             run_id = model.run_id
             config_id = model.config_id
@@ -124,17 +137,11 @@ class RunHistoryDB():
             status = model.status
             additional_info = model.additional_info
             origin = model.origin
-            timestamp = model.timestamp
             try:
                 config = pickle.loads(config_bin)
             except Exception as e:
                 self.logger.error(f"{e}\nUsing config json instead to build Configuration.")
                 config = Configuration(self.config_space, values=config, origin=config_origin)
-            try:
-                additional_info = json.loads(additional_info)
-            except Exception as e:
-                self.logger.error(f"{e}\nSet default to additional_info.")
-                additional_info = {}
             self.runhistory.add(config, cost, time, StatusType(status), instance_id, seed, additional_info,
                                 DataOrigin(origin))
         self.timestamp = datetime.datetime.now()

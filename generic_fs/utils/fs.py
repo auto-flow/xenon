@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
-# @Contact    : qichun.tang@xtalpi.com
+# @Contact    : tqichun@gmail.com
 from generic_fs.hdfs_ import HDFS
 from generic_fs.local import LocalFS
 

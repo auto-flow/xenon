@@ -21,7 +21,8 @@ lazy_import
 pyDOE
 emcee
 json5
-peewee
+peewee==3.13.1
+psycopg2==2.8.5
 pyyaml
 dill
 typing_extensions
@@ -30,5 +31,13 @@ scikit-optimize==0.7.4
 hyperopt==0.1.2
 hdfs==2.5.8
 redis
-imbalanced-learn
-psycopg2
+inflection
+h5py
+datefinder
+tables
+click
+ipython
+jupyter
+graphviz
+gensim
+openpyxl

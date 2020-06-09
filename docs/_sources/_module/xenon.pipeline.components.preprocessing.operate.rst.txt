@@ -20,10 +20,10 @@ xenon.pipeline.components.preprocessing.operate.drop module
    :undoc-members:
    :show-inheritance:
 
-xenon.pipeline.components.preprocessing.operate.merge module
+xenon.pipeline.components.preprocessing.operate.keep_going module
 ---------------------------------------------------------------
 
-.. automodule:: xenon.pipeline.components.preprocessing.operate.merge
+.. automodule:: xenon.pipeline.components.preprocessing.operate.keep_going
    :members:
    :undoc-members:
    :show-inheritance:

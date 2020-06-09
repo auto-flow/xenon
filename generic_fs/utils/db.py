@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
-# @Contact    : qichun.tang@xtalpi.com
+# @Contact    : tqichun@gmail.com
 import logging
 import pickle
 
@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_database(database,db_type, db_params: dict):
+    return
     if db_type == "sqlite":
         pass
     elif db_type == "postgresql":
@@ -21,6 +22,7 @@ def create_database(database,db_type, db_params: dict):
             user=db_params.get("user", "postgres"),
             host=db_params.get("host", "0.0.0.0"),
             port=db_params.get("port", 5432),
+            password=db_params.get("password", None)
         )
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cur = conn.cursor()

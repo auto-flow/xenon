@@ -2,16 +2,19 @@ from collections import OrderedDict
 from copy import deepcopy
 from typing import Union, Tuple, List, Any, Dict
 
+import numpy as np
 import pandas as pd
 from frozendict import frozendict
 
 from xenon.constants import PHASE1, PHASE2, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN
+from xenon.hdl.smac import _encode
 from xenon.hdl.utils import get_hdl_bank, get_default_hdl_bank
-from xenon.utils.dict import add_prefix_in_dict_keys
+from xenon.utils.dict_ import add_prefix_in_dict_keys, sort_dict
 from xenon.utils.graphviz import ColorSelector
 from xenon.utils.klass import StrSignatureMixin
 from xenon.utils.logging_ import get_logger
 from xenon.utils.math_ import get_int_length
+from xenon.utils.packages import get_class_object_in_pipeline_components
 
 
 class HDL_Constructor(StrSignatureMixin):
@@ -41,13 +44,28 @@ class HDL_Constructor(StrSignatureMixin):
                     "adaboost", "bayesian_ridge", "catboost", "decision_tree", "elasticnet", "extra_trees",
                     "gaussian_process", "k_nearest_neighbors", "kernel_ridge",
                     "liblinear_svr", "lightgbm", "random_forest", "sgd"),
-            included_highR_nan_imputers=("operate.drop", {"_name": "operate.merge", "__rely_model": "boost_model"}),
-            included_cat_nan_imputers=(
-                    "impute.fill_cat", {"_name": "impute.fill_abnormal", "__rely_model": "boost_model"}),
-            included_num_nan_imputers=(
-                    "impute.fill_num", {"_name": "impute.fill_abnormal", "__rely_model": "boost_model"}),
-            included_highR_cat_encoders=("operate.drop", "encode.label", "encode.cat_boost"),
-            included_lowR_cat_encoders=("encode.one_hot", "encode.label", "encode.cat_boost"),
+            included_highR_nan_imputers=("operate.drop", "operate.keep_going"),
+            included_nan_imputers=(
+                    "impute.adaptive_fill",),
+            included_highR_cat_encoders=("operate.drop", "encode.ordinal", "encode.cat_boost"),
+            included_cat_encoders=("encode.one_hot", "encode.ordinal", "encode.cat_boost"),
+            num2purified_workflow=frozendict({
+                "num->scaled": ["scale.standardize", "operate.keep_going"],
+                "scaled->purified": ["operate.keep_going", "transform.power"]
+            }),
+            text2purified_workflow=frozendict({
+                "text->tokenized": "text.tokenize.simple",
+                "tokenized->purified": [
+                    "text.topic.tsvd",
+                    "text.topic.lsi",
+                    "text.topic.nmf",
+                ]
+            }),
+            date2purified_workflow=frozendict({
+            }),
+            purified2final_workflow=frozendict({
+                "purified->final": ["operate.keep_going"]
+            })
 
     ):
         '''
@@ -167,11 +185,14 @@ class HDL_Constructor(StrSignatureMixin):
         {'preprocessing': {}, 'estimating(choice)': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
 
         '''
+        self.date2purified_workflow = date2purified_workflow
+        self.text2purified_workflow = text2purified_workflow
+        self.purified2final_workflow = purified2final_workflow
+        self.num2purified_workflow = num2purified_workflow
         self.hdl_metadata = dict(hdl_metadata)
-        self.included_lowR_cat_encoders = included_lowR_cat_encoders
+        self.included_cat_encoders = included_cat_encoders
         self.included_highR_cat_encoders = included_highR_cat_encoders
-        self.included_num_nan_imputers = included_num_nan_imputers
-        self.included_cat_nan_imputers = included_cat_nan_imputers
+        self.included_nan_imputers = included_nan_imputers
         self.included_highR_nan_imputers = included_highR_nan_imputers
         self.included_regressors = included_regressors
         self.included_classifiers = included_classifiers
@@ -192,6 +213,7 @@ class HDL_Constructor(StrSignatureMixin):
         self.data_manager = None
 
     def parse_item(self, value: Union[dict, str]) -> Tuple[str, dict, bool]:
+        value = deepcopy(value)
         if isinstance(value, dict):
             packages = value.pop("_name")
             if "_vanilla" in value:
@@ -253,36 +275,62 @@ class HDL_Constructor(StrSignatureMixin):
         '''
         DAG_workflow = OrderedDict()
         contain_highR_nan = False
-        contain_nan = False
-        # todo: 对于num特征进行scale transform
+        essential_feature_groups = self.data_manager.essential_feature_groups
+        nan_column2essential_fg = self.data_manager.nan_column2essential_fg
+        fg_set = set(essential_feature_groups)
+        nan_fg_set = set(nan_column2essential_fg.values())
         # --------Start imputing missing(nan) value--------------------
         if "highR_nan" in self.data_manager.feature_groups:
             DAG_workflow["highR_nan->nan"] = self.included_highR_nan_imputers
             contain_highR_nan = True
         if contain_highR_nan or "nan" in self.data_manager.feature_groups:
-            # split nan to cat_nan and num_nan
-            DAG_workflow["nan->{cat_name=cat_nan,num_name=num_nan}"] = "operate.split.cat_num"
-            DAG_workflow["num_nan->num"] = self.included_num_nan_imputers
-            DAG_workflow["cat_nan->cat"] = self.included_cat_nan_imputers
-            contain_nan = True
+            DAG_workflow["nan->imputed"] = self.included_nan_imputers
+            if len(nan_fg_set) > 1:
+                sorted_nan_column2essential_fg = sort_dict(nan_column2essential_fg)
+                sorted_nan_fg = sort_dict(list(nan_fg_set))
+                DAG_workflow[f"imputed->{','.join(sorted_nan_fg)}"] = {"_name": "operate.split",
+                                                                       "column2fg": _encode(
+                                                                           sorted_nan_column2essential_fg)}
+            elif len(nan_fg_set) == 1:
+                elem = list(nan_fg_set)[0]
+                DAG_workflow[f"imputed->{elem}"] = "operate.keep_going"
+            else:
+                raise NotImplementedError
         # --------Start encoding categorical(cat) value --------------------
-        if contain_nan or "cat" in self.data_manager.feature_groups:
-            DAG_workflow["cat->{highR=highR_cat,lowR=lowR_cat}"] = {"_name": "operate.split.cat",
-                                                                    "threshold": self.highR_cat_threshold}
-            DAG_workflow["highR_cat->num"] = self.included_highR_cat_encoders
-            DAG_workflow["lowR_cat->num"] = self.included_lowR_cat_encoders
+        if "cat" in fg_set:
+            DAG_workflow["cat->purified"] = self.included_cat_encoders
+        if "highR_cat" in fg_set:
+            DAG_workflow["highR_cat->purified"] = self.included_highR_cat_encoders
+        # --------processing text features--------------------
+        if "text" in fg_set:
+            for k, v in self.text2purified_workflow.items():
+                DAG_workflow[k] = v
+        # --------processing numerical features--------------------
+        if "num" in fg_set:
+            for k, v in self.num2purified_workflow.items():
+                DAG_workflow[k] = v
+        # --------finally processing--------------------
+        for k, v in self.purified2final_workflow.items():
+            DAG_workflow[k] = v
         # --------Start estimating--------------------
         mainTask = self.ml_task.mainTask
         if mainTask == "classification":
-            DAG_workflow["num->target"] = self.included_classifiers
+            DAG_workflow["final->target"] = self.included_classifiers
         elif mainTask == "regression":
-            DAG_workflow["num->target"] = self.included_regressors
+            DAG_workflow["final->target"] = self.included_regressors
         else:
             raise NotImplementedError
         # todo: 如果特征多，做特征选择或者降维。如果特征少，做增维
+        # todo: 处理样本不平衡
         return DAG_workflow
 
-    def draw_workflow_space(self):
+    def draw_workflow_space(
+            self,
+            colorful=True,
+            candidates_colors=("#663366", "#663300", "#666633", "#333366", "#660033"),
+            feature_groups_colors=("#0099CC", "#0066CC", "#339933", "#FFCC33", "#33CC99", "#FF0033", "#663399",
+                                   "#FF6600")
+    ):
         '''
 
         Notes
@@ -303,71 +351,161 @@ class HDL_Constructor(StrSignatureMixin):
             You can find usage of :class:`graphviz.dot.Digraph` in https://graphviz.readthedocs.io/en/stable/manual.html
 
         '''
-        candidates_colors = ["#663366", "#663300", "#666633", "#333366", "#660033"]
-        feature_groups_colors = ["#0099CC", "#0066CC", "#339933", "#FFCC33", "#33CC99", "#FF0033", "#663399", "#FF6600"]
-        cand2c = ColorSelector(candidates_colors)
-        feat2c = ColorSelector(feature_groups_colors)
+        cand2c = ColorSelector(list(candidates_colors), colorful)
+        feat2c = ColorSelector(list(feature_groups_colors), colorful)
 
-        def parsed_candidates(candidates):
-            parsed_candidates = []
-            for candidate in candidates:
-                if isinstance(candidate, dict):
-                    parsed_candidates.append(candidate["_name"])
+        def parsed_algorithms(algorithms):
+            parsed_algorithms = []
+            for algorithm in algorithms:
+                if isinstance(algorithm, dict):
+                    parsed_algorithms.append(algorithm["_name"])
                 else:
-                    parsed_candidates.append(candidate)
-            return parsed_candidates
+                    parsed_algorithms.append(algorithm)
+            return parsed_algorithms
 
         def get_node_label(node_name):
-            return f'''<<font color="{feat2c[node_name]}">{node_name}</font>>'''
+            if colorful:
+                return f'''<<font color="{feat2c[node_name]}">{node_name}</font>>'''
+            else:
+                return node_name
 
-        from graphviz import Digraph
+        def get_multi_out_edge_label(label_name, tail):
+            if colorful:
+                return f'''<{label_name}: <font color="{feat2c[tail]}">{tail}</font>>'''
+            else:
+                return f'''{label_name}: {tail}'''
+
+        def get_single_algo_edge_label(algorithm):
+            if colorful:
+                return f'<<font color="{cand2c[algorithm]}">{algorithm}</font>>'
+            else:
+                return algorithm
+
+        def get_algo_selection_edge_label(algorithms):
+            if colorful:
+                return "<{" + ", ".join(
+                    [f'<font color="{cand2c[algorithm]}">{algorithm}</font>'
+                     for algorithm in algorithms]) + "}>"
+            else:
+                return "{" + ", ".join(algorithms) + "}"
+
+        try:
+            from graphviz import Digraph
+        except Exception as e:
+            self.logger.warning("Cannot import graphviz!")
+            self.logger.error(str(e))
+            return None
         DAG_workflow = deepcopy(self.DAG_workflow)
         graph = Digraph("workflow_space")
         graph.node("data")
         for parsed_node in pd.unique(self.data_manager.feature_groups):
             graph.node(parsed_node, color=feat2c[parsed_node], label=get_node_label(parsed_node))
             graph.edge("data", parsed_node,
-                       label=f'''<data_manager: <font color="{feat2c[parsed_node]}">{parsed_node}</font>>''')
-        for indicate, candidates in DAG_workflow.items():
+                       label=get_multi_out_edge_label("data_manager", parsed_node))
+        for indicate, algorithms in DAG_workflow.items():
             if "->" not in indicate:
                 continue
             _from, _to = indicate.split("->")
             graph.node(_from, color=feat2c[_from], label=get_node_label(_from))
-            candidates = parsed_candidates(candidates)
-            if _to.startswith("{") and _to.endswith("}"):
-                candidate = candidates[0]
-                _to = _to[1:-1]
+            algorithms = parsed_algorithms(algorithms)
+            if len(_to.split(",")) > 1:
+                algorithm = algorithms[0]
                 tails = []
                 for item in _to.split(","):
                     tails.append(item.split("=")[-1])
                 for tail in tails:
                     graph.node(tail, color=feat2c[tail], label=get_node_label(tail))
-                    graph.edge(_from, tail, f'''<{candidate}: <font color="{feat2c[tail]}">{tail}</font>>''')
+                    graph.edge(_from, tail, get_multi_out_edge_label(algorithm, tail))
             else:
                 graph.node(_to, color=feat2c[_to], label=get_node_label(_to))
-                if len(candidates) == 1:
-                    candidates_str = f'<<font color="{cand2c[candidates[0]]}">{candidates[0]}</font>>'
+                if len(algorithms) == 1:
+                    edge_label = get_single_algo_edge_label(algorithms[0])
                 else:
-                    candidates_str = "<{" + ", ".join(
-                        [f'<font color="{cand2c[candidate]}">{candidate}</font>' for candidate in candidates]) + "}>"
-                graph.edge(_from, _to, candidates_str)
+                    edge_label = get_algo_selection_edge_label(algorithms)
+                graph.edge(_from, _to, edge_label)
         graph.attr(label=r'WorkFlow Space')
         return graph
 
-    def run(self, data_manager, random_state, highR_cat_threshold):
+    def purify_step_name(self, step: str):
+        # xenon/evaluation/train_evaluator.py:252
+        cnt = ""
+        ix = 0
+        for i, c in enumerate(step):
+            if c.isdigit():
+                cnt += c
+            else:
+                ix = i
+                break
+        cnt = int(cnt) if cnt else -1
+        step = step[ix:]
+        ignored_suffixs = ["(choice)"]
+        for ignored_suffix in ignored_suffixs:
+            if step.endswith(ignored_suffix):
+                step = step[:len(step) - len(ignored_suffix)]
+        return step
+
+    def get_hdl_dataframe(self) -> pd.DataFrame:
+        preprocessing = self.hdl.get(PHASE1)
+        dicts = []
+        tuple_multi_index = []
+
+        def push(step, algorithm_selection, hyper_params):
+            step = self.purify_step_name(step)
+            if hyper_params:
+                for hp_name, hp_dict in hyper_params.items():
+                    tuple_multi_index.append((step, algorithm_selection, hp_name))
+                    if isinstance(hp_dict, dict):
+                        dicts.append({"_type": hp_dict.get("_type"),
+                                      "_value": hp_dict.get("_value"),
+                                      "_default": hp_dict.get("_default")})
+                    else:
+                        dicts.append({"_type": f"constant {hp_dict.__class__.__name__}",
+                                      "_value": hp_dict,
+                                      "_default": ""})
+            else:
+                tuple_multi_index.append((step, algorithm_selection, ""))
+                dicts.append({"_type": "", "_value": "", "_default": ""})
+
+        if preprocessing is not None:
+            for step, algorithm_selections in preprocessing.items():
+                for algorithm_selection, hyper_params in algorithm_selections.items():
+                    push(step, algorithm_selection, hyper_params)
+        step = PHASE2
+        algorithm_selections = self.hdl[f"{step}(choice)"]
+        for algorithm_selection, hyper_params in algorithm_selections.items():
+            push(step, algorithm_selection, hyper_params)
+        df = pd.DataFrame(dicts)
+        multi_index = pd.MultiIndex.from_tuples(tuple_multi_index,
+                                                names=["step", "algorithm_selections", "hyper_param_name"])
+        df.index = multi_index
+        return df
+
+    def interactive_display_workflow_space(self):
+        try:
+            from IPython.display import display
+        except Exception as e:
+            self.logger.warning("Cannot import IPython")
+            self.logger.error(str(e))
+            return None
+        display(self.draw_workflow_space())
+        display(self.get_hdl_dataframe())
+
+    def run(self, data_manager, model_registry=None):
         '''
 
         Parameters
         ----------
         data_manager: :class:`xenon.manager.data_manager.DataManager`
-        random_state: int
         highR_cat_threshold: float
 
         '''
-        self.highR_cat_threshold = highR_cat_threshold
+        if model_registry is None:
+            model_registry={}
         self.data_manager = data_manager
         self.ml_task = data_manager.ml_task
-        self.random_state = random_state
+        self.highR_cat_threshold = data_manager.highR_cat_threshold
+        self.highR_nan_threshold = data_manager.highR_nan_threshold
+        self.consider_ordinal_as_cat = data_manager.consider_ordinal_as_cat
         if isinstance(self.DAG_workflow, str):
             if self.DAG_workflow == "generic_recommend":
                 self.hdl_metadata.update({"source": "generic_recommend"})
@@ -387,9 +525,9 @@ class HDL_Constructor(StrSignatureMixin):
 
         # ---- 开始将 DAG_workflow 解析成 HDL
         DAG_workflow = deepcopy(self.DAG_workflow)
-        for key in DAG_workflow.keys():
-            if key.split("->")[-1] == "target":
-                target_key = key
+        for step in DAG_workflow.keys():
+            if step.split("->")[-1] == "target":
+                target_key = step
         estimator_values = DAG_workflow.pop(target_key)
         if not isinstance(estimator_values, (list, tuple)):
             estimator_values = [estimator_values]
@@ -399,11 +537,14 @@ class HDL_Constructor(StrSignatureMixin):
         # 遍历DAG_describe，构造preprocessing
         n_steps = len(DAG_workflow)
         int_len = get_int_length(n_steps)
-        for i, (key, values) in enumerate(DAG_workflow.items()):
-            formed_key = f"{i:0{int_len}d}{key}(choice)"
+        for i, (step, values) in enumerate(DAG_workflow.items()):
+            formed_key = f"{i:0{int_len}d}{step}(choice)"
             sub_dict = {}
             for value in values:
                 packages, addition_dict, is_vanilla = self.parse_item(value)
+                assert get_class_object_in_pipeline_components("preprocessing", packages, model_registry) is not None,\
+                    f"In step '{step}', user defined packege : '{packages}' does not exist!"
+                # todo: 适配用户自定义模型
                 params = {} if is_vanilla else self.get_params_in_dict(hdl_bank, packages, PHASE1, mainTask)
                 sub_dict[packages] = params
                 sub_dict[packages].update(addition_dict)
@@ -412,6 +553,8 @@ class HDL_Constructor(StrSignatureMixin):
         estimator_dict = {}
         for estimator_value in estimator_values:
             packages, addition_dict, is_vanilla = self.parse_item(estimator_value)
+            assert get_class_object_in_pipeline_components(data_manager.ml_task.mainTask, packages, model_registry) is not None, \
+                f"In step '{target_key}', user defined packege : '{packages}' does not exist!"
             params = {} if is_vanilla else self.get_params_in_dict(hdl_bank, packages, PHASE2, mainTask)
             estimator_dict[packages] = params
             estimator_dict[packages].update(addition_dict)
@@ -427,8 +570,6 @@ class HDL_Constructor(StrSignatureMixin):
         Returns
         -------
         hdl: dict
-
-
         '''
         # 获取hdl
         return self.hdl

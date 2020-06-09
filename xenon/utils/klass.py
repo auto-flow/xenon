@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
-# @Contact    : qichun.tang@xtalpi.com
+# @Contact    : tqichun@gmail.com
 import inspect
 from typing import Dict, Any, Sequence
+
+NONE_TOKEN = "NaN"
 
 
 class StrSignatureMixin():
@@ -11,8 +13,10 @@ class StrSignatureMixin():
         result = f"{self.__class__.__name__}("
         valid_params = []
         for key in inspect.signature(self.__init__).parameters.keys():
-            value = getattr(self, key, "NaN")
-            if value != "NaN":
+            value = getattr(self, key, NONE_TOKEN)
+            if isinstance(value, str) and value == NONE_TOKEN:
+                pass
+            else:
                 valid_params.append([key, value])
         valid_params_str_list = [f"{key}={repr(value)}" for key, value in valid_params]
         N = len(valid_params_str_list)
@@ -36,6 +40,10 @@ def get_valid_params_in_kwargs(klass, kwargs: Dict[str, Any]):
         if key in inspect.signature(klass.__init__).parameters.keys():
             validated[key] = value
     return validated
+
+
+def gather_kwargs_from_signature_and_attributes(klass, instance):
+    return get_valid_params_in_kwargs(klass, instance.__dict__)
 
 
 def instancing(variable, klass, kwargs):

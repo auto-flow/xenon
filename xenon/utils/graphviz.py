@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
-# @Contact    : qichun.tang@xtalpi.com
+# @Contact    : tqichun@gmail.com
 from xenon.utils.klass import StrSignatureMixin
 
 
 class ColorSelector(StrSignatureMixin):
-    def __init__(self, colors):
+    def __init__(self, colors, colorful):
+        self.colorful = colorful
         self.colors = colors
         self.N = len(self.colors)
         self.id = 0
@@ -14,6 +15,8 @@ class ColorSelector(StrSignatureMixin):
         self.id2label = {}
 
     def __getitem__(self, label):
+        if not self.colorful:
+            return None
         if label=="target":
             return "#000000"
         if label in self.label2id:
