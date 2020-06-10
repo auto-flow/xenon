@@ -2,6 +2,7 @@ import datetime
 import os
 from typing import Tuple, Optional, List
 
+import numpy as np
 import peewee as pw
 from ConfigSpace import ConfigurationSpace, Configuration
 from frozendict import frozendict
@@ -31,6 +32,7 @@ class RunHistoryDB():
         # -----------------------------------------------------
         self.Model: pw.Model = self.get_model()
         self.config_space: ConfigurationSpace = config_space
+        self.timestamp = datetime.datetime.now()
 
     def get_db_cls(self):
         return get_db_class_by_db_type(self.db_type)
@@ -103,13 +105,16 @@ class RunHistoryDB():
             instance_id = ""
         # pickle.dumps(config)
         self._insert_runhistory(run_id, config_id, config.get_dictionary(), config.origin, cost,
-                                time, status.value, instance_id, seed, additional_info, origin.value)
+                                time, status.value, instance_id, seed, additional_info, origin.value, os.getpid())
 
-    def _insert_runhistory(self, run_id, config_id, config, config_origin, cost: float, time: float,
-                           status: int, instance_id: str = "",
-                           seed: int = 0,
-                           additional_info: dict = frozendict(),
-                           origin: int = 1):
+    def _insert_runhistory(
+            self, run_id, config_id, config, config_origin, cost: float, time: float,
+            status: int, instance_id: str,
+            seed: int,
+            additional_info: dict,
+            origin: int,
+            pid: int
+    ):
         try:
             self.Model(
                 run_id=run_id,
@@ -124,13 +129,16 @@ class RunHistoryDB():
                 status=status,
                 additional_info=dict(additional_info),
                 origin=origin,
-                modify_time=datetime.datetime.now()
+                modify_time=datetime.datetime.now(),
+                pid=pid
             ).save()
         except Exception as e:
             pass
 
-    def fetch_new_runhistory(self, instance_id, is_init=False):
-        query = self._fetch_new_runhistory(instance_id, is_init)
+    def fetch_new_runhistory(self, instance_id, is_init=False) -> Tuple[float, Configuration]:
+        query = self._fetch_new_runhistory(instance_id, os.getpid(), self.timestamp, is_init)
+        final_cost = np.inf
+        final_config = None
         for model in query:
             run_id = model["run_id"]
             config_id = model["config_id"]
@@ -151,19 +159,21 @@ class RunHistoryDB():
             config = Configuration(self.config_space, values=config, origin=config_origin)
             self.runhistory.add(config, cost, time, StatusType(status), instance_id, seed, additional_info,
                                 DataOrigin(origin))
-        self.timestamp = datetime.datetime.now()
+            if cost < final_cost:
+                final_config = config
+        return final_cost, final_config
 
-    def _fetch_new_runhistory(self, instance_id, is_init=False):
+    def _fetch_new_runhistory(self, instance_id, pid, timestamp, is_init):
         if is_init:
             # n_del = self.Model.delete().where(self.Model.origin < 0).execute()
             # if n_del > 0:
             #     self.logger.info(f"Delete {n_del} invalid records in run_history database.")
             query = self.Model.select().where(
-                (self.Model.origin >= 0) & (self.Model.instance_id == instance_id)
+                (self.Model.instance_id == instance_id) & (self.Model.origin >= 0)
             ).dicts()
         else:
             query = self.Model.select().where(
-                (self.Model.origin >= 0) & (self.Model.instance_id == instance_id) &
-                (self.Model.pid != os.getpid())
+                (self.Model.instance_id == instance_id) & (self.Model.origin >= 0) &
+                (self.Model.create_time > timestamp) & (self.Model.pid != pid)
             ).dicts()
         return list(query)
