@@ -1,0 +1,9 @@
+# Created by .ignore support plugin (hsz.mobi)
+#run_*
+xenon*
+*.png
+*.html
+*.xls
+*.xlsx
+run*.py
+!run_estimator_http.py
