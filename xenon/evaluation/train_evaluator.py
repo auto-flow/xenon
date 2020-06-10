@@ -14,8 +14,8 @@ from xenon.data_container import DataFrameContainer
 from xenon.ensemble.utils import vote_predicts, mean_predicts
 from xenon.evaluation.base import BaseEvaluator
 from xenon.hdl.shp2dhp import SHP2DHP
-from xenon.manager.data_manager import DataManager
-from xenon.manager.resource_manager import ResourceManager
+from xenon.data_manager import DataManager
+from xenon.resource_manager.base import ResourceManager
 from xenon.metrics import Scorer, calculate_score
 from xenon.utils.dict_ import group_dict_items_before_first_token
 from xenon.utils.logging_ import get_logger

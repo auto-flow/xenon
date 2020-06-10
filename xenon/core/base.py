@@ -20,8 +20,8 @@ from xenon.ensemble.base import EnsembleEstimator
 from xenon.ensemble.trained_data_fetcher import TrainedDataFetcher
 from xenon.ensemble.trials_fetcher import TrialsFetcher
 from xenon.hdl.hdl_constructor import HDL_Constructor
-from xenon.manager.data_manager import DataManager
-from xenon.manager.resource_manager import ResourceManager
+from xenon.data_manager import DataManager
+from xenon.resource_manager.base import ResourceManager
 from xenon.metrics import r2, accuracy
 from xenon.tuner import Tuner
 from xenon.utils.concurrence import get_chunks
@@ -242,7 +242,7 @@ class XenonEstimator(BaseEstimator):
                 raise NotImplementedError()
         self.metric = metric
         # get task_id, and insert record into "tasks.tasks" database
-        self.resource_manager.insert_to_tasks_table(
+        self.resource_manager.insert_to_task_table(
             data_manager=self.data_manager, metric=metric, splitter=splitter,
             specific_task_token=specific_task_token, dataset_metadata=dataset_metadata, task_metadata=task_metadata,
             sub_sample_indexes=sub_sample_indexes, sub_feature_indexes=sub_feature_indexes)

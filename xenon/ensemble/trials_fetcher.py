@@ -1,4 +1,4 @@
-from xenon.manager.resource_manager import ResourceManager
+from xenon.resource_manager.base import ResourceManager
 from xenon.utils.klass import StrSignatureMixin
 
 

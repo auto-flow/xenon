@@ -13,8 +13,8 @@ from frozendict import frozendict
 from xenon.evaluation.ensemble_evaluator import EnsembleEvaluator
 from xenon.evaluation.train_evaluator import TrainEvaluator
 from xenon.hdl.hdl2shps import HDL2SHPS
-from xenon.manager.data_manager import DataManager
-from xenon.manager.resource_manager import ResourceManager
+from xenon.data_manager import DataManager
+from xenon.resource_manager.base import ResourceManager
 from xenon.utils.concurrence import parse_n_jobs
 from xenon.utils.config_space import get_random_initial_configs, get_grid_initial_configs, replace_phps
 from xenon.utils.klass import StrSignatureMixin

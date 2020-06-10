@@ -1,5 +1,4 @@
 import logging
-import pickle
 import time
 import typing
 from collections import Counter
@@ -186,12 +185,11 @@ class Intensifier(object):
             appoint_success, record = run_history.db.appointment_config(challenger, self.instance)
             if not appoint_success:
                 if record is not None:
-                    cost = record.cost
-                    config = record.config_bin
-                    if isinstance(config,bytes):
-                        config=pickle.loads(config)
-                    run_history.add(config, cost, record.time, record.status,
-                                    record.instance_id)
+                    cost = record["cost"]
+                    config = Configuration(run_history.db.config_space, values=record["config"],
+                                           origin=record["config_origin"])
+                    run_history.add(config, cost, record["time"], record["status"],
+                                    record["instance_id"])
                     if cost < run_history.get_cost(incumbent):
                         incumbent = config
                 continue
