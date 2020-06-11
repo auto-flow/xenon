@@ -41,5 +41,3 @@ jupyter
 graphviz
 gensim
 openpyxl
-fastapi
-uvicorn

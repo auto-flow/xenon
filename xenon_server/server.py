@@ -33,22 +33,24 @@ resource_manager.init_trial_table()
 ##################################################################
 ############################  dataset ############################
 ##################################################################
-@app.post("/dataset")
-async def insert_to_dataset_table(
+@app.post("/insert_dataset_record")
+async def insert_dataset_record(
         column_descriptions: Dict[str, Any],
         columns_mapper: Dict[str, str],
         columns: List[str],
         user_id: int = Body(...),
-        dataset_hash: str = Body(...),
+        dataset_id: str = Body(...),
         dataset_metadata: Dict[str, Any] = Body(...),
+        dataset_path: str = Body(...),
         upload_type: str = Body(...),
         dataset_source: str = Body(...),
 
 ):
-    return resource_manager._insert_to_dataset_table(
+    return resource_manager._insert_dataset_record(
         user_id,
-        dataset_hash,
+        dataset_id,
         dataset_metadata,
+        dataset_path,
         upload_type,
         dataset_source,
         column_descriptions,
@@ -66,13 +68,13 @@ async def get_dataset_records(dataset_id: str = Body(...), user_id: int = Body(.
 ##########################  experiment ###########################
 ##################################################################
 
-@app.post("/experiment")
-async def insert_to_experiment_table(
+@app.post("/insert_experiment_record")
+async def insert_experiment_record(
         experiment_config: Dict[str, Any], additional_info: Dict[str, Any],
         user_id: int = Body(...), hdl_id: str = Body(...), task_id: str = Body(...),
         experiment_type: str = Body(...),
 ):
-    experiment_id = resource_manager._insert_to_experiment_table(
+    experiment_id = resource_manager._insert_experiment_record(
         user_id, hdl_id, task_id, experiment_type, experiment_config, additional_info
     )
     return {
@@ -80,7 +82,7 @@ async def insert_to_experiment_table(
     }
 
 
-@app.post("/experiment_finish")
+@app.post("/finish_experiment_update_info")
 async def finish_experiment_update_info(
         end_time: str = Body(...),
         experiment_id: int = Body(...), final_model_path: str = Body(...), log_path: str = Body(...),
@@ -93,8 +95,8 @@ async def finish_experiment_update_info(
 ############################   task    ###########################
 ##################################################################
 
-@app.post("/task")
-async def insert_to_task_table(
+@app.post("/insert_task_record")
+async def insert_task_record(
         task_metadata: Dict[str, Any], sub_sample_indexes: List[str],
         sub_feature_indexes: List[str],
         task_id: str = Body(...), user_id: int = Body(...),
@@ -102,7 +104,7 @@ async def insert_to_task_table(
         train_set_id: str = Body(...), test_set_id: str = Body(...), train_label_id: str = Body(...),
         test_label_id: str = Body(...), specific_task_token: str = Body(...),
 ):
-    resource_manager._insert_to_task_table(
+    resource_manager._insert_task_record(
         task_id, user_id,
         metric_str, splitter_str, ml_task_str,
         train_set_id, test_set_id, train_label_id, test_label_id,
@@ -119,12 +121,12 @@ async def get_task_records(task_id: str = Body(...), user_id: int = Body(...)):
 ############################   hdl     ###########################
 ##################################################################
 
-@app.post("/hdl")
-async def insert_to_hdl_table(
+@app.post("/insert_hdl_record")
+async def insert_hdl_record(
         hdl_metadata: Dict[str, Any],
         task_id: str = Body(...), hdl_id: str = Body(...), user_id: int = Body(...), hdl: dict = Body(...),
 ):
-    resource_manager._insert_to_hdl_table(task_id, hdl_id, user_id, hdl, hdl_metadata)
+    resource_manager._insert_hdl_record(task_id, hdl_id, user_id, hdl, hdl_metadata)
     return {"hdl_id": hdl_id}
 
 
@@ -132,11 +134,11 @@ async def insert_to_hdl_table(
 ############################   trial   ###########################
 ##################################################################
 
-@app.post("/trial")
-async def insert_to_trial_table(
+@app.post("/insert_trial_record")
+async def insert_trial_record(
         info: Dict[str, Any], user_id: int = Body(...),
         task_id: str = Body(...), hdl_id: str = Body(...), experiment_id: int = Body(...)):
-    trial_id = resource_manager._insert_to_trial_table(user_id, task_id, hdl_id, experiment_id, info)
+    trial_id = resource_manager._insert_trial_record(user_id, task_id, hdl_id, experiment_id, info)
     return {"trial_id": trial_id}
 
 
@@ -172,8 +174,8 @@ async def _appointment_config(run_id: str = Body(...), instance_id: str = Body(.
     return response
 
 
-@app.post("/runhistory")
-async def insert_runhistory(
+@app.post("/insert_runhistory_record")
+async def insert_runhistory_record(
         run_id: str = Body(...), config_id: str = Body(...),
         config: Dict[str, Any] = Body(...),
         config_origin=Body(...), cost: float = Body(...), time: float = Body(...),
@@ -183,7 +185,7 @@ async def insert_runhistory(
         origin: int = Body(...),
         pid: int = Body(...),
 ):
-    runhistory_db._insert_runhistory(
+    runhistory_db._insert_runhistory_record(
         run_id, config_id, config, config_origin, cost, time,
         status, instance_id, seed,
         additional_info,

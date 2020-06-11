@@ -54,7 +54,7 @@ class RunHistoryDB():
             status = pw.IntegerField(default=0)
             additional_info = self.JSONField(default={})
             origin = pw.IntegerField(default=0)
-            weight = pw.FloatField(default=0.0)
+            # weight = pw.FloatField(default=0.0)
             pid = pw.IntegerField(default=os.getpid)  # todo: 改为 worker id
             create_time = pw.DateTimeField(default=datetime.datetime.now)
             modify_time = pw.DateTimeField(default=datetime.datetime.now)
@@ -94,7 +94,7 @@ class RunHistoryDB():
             return False, None
         return True, None
 
-    def insert_runhistory(self, config: Configuration, cost: float, time: float,
+    def insert_runhistory_record(self, config: Configuration, cost: float, time: float,
                           status: StatusType, instance_id: str = "",
                           seed: int = 0,
                           additional_info: dict = frozendict(),
@@ -104,10 +104,10 @@ class RunHistoryDB():
         if instance_id is None:
             instance_id = ""
         # pickle.dumps(config)
-        self._insert_runhistory(run_id, config_id, config.get_dictionary(), config.origin, cost,
+        self._insert_runhistory_record(run_id, config_id, config.get_dictionary(), config.origin, cost,
                                 time, status.value, instance_id, seed, additional_info, origin.value, os.getpid())
 
-    def _insert_runhistory(
+    def _insert_runhistory_record(
             self, run_id, config_id, config, config_origin, cost: float, time: float,
             status: int, instance_id: str,
             seed: int,
