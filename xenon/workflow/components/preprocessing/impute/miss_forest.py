@@ -5,4 +5,4 @@ __all__ = ["MissForest"]
 
 class MissForest(XenonFeatureEngineerAlgorithm):
     class__ = "MissForest"
-    module__ = "skimpute"
+    module__ = "xenon.feature_engineer.impute"

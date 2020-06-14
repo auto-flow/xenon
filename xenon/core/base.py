@@ -16,18 +16,18 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from xenon import constants
 from xenon.constants import ExperimentType
 from xenon.data_container import DataFrameContainer
+from xenon.data_manager import DataManager
 from xenon.ensemble.base import EnsembleEstimator
 from xenon.ensemble.trained_data_fetcher import TrainedDataFetcher
 from xenon.ensemble.trials_fetcher import TrialsFetcher
 from xenon.hdl.hdl_constructor import HDL_Constructor
-from xenon.data_manager import DataManager
-from xenon.resource_manager.base import ResourceManager
 from xenon.metrics import r2, accuracy
+from xenon.resource_manager.base import ResourceManager
 from xenon.tuner import Tuner
 from xenon.utils.concurrence import get_chunks
 from xenon.utils.config_space import estimate_config_space_numbers
 from xenon.utils.dict_ import update_mask_from_other_dict
-from xenon.utils.klass import instancing, sequencing
+from xenon.utils.klass import instancing, sequencing, get_valid_params_in_kwargs
 from xenon.utils.logging_ import get_logger, setup_logger
 from xenon.utils.packages import get_class_name_of_module
 
@@ -46,7 +46,6 @@ class XenonEstimator(BaseEstimator):
             log_config: Optional[dict] = None,
             highR_nan_threshold=0.5,
             highR_cat_threshold=0.5,
-            n_jobs_in_algorithm=1,
             consider_ordinal_as_cat=False,
             should_store_intermediate_result=False,
             should_finally_fit=False,
@@ -108,7 +107,6 @@ class XenonEstimator(BaseEstimator):
             included_classifiers=('adaboost', 'catboost', 'decision_tree', 'extra_trees', 'gaussian_nb', 'k_nearest_neighbors', 'liblinear_svc', 'lib...
         '''
         self.should_stack_X = should_stack_X
-        self.n_jobs_in_algorithm = n_jobs_in_algorithm
         self.consider_ordinal_as_cat = consider_ordinal_as_cat
         if model_registry is None:
             model_registry = {}
@@ -206,7 +204,7 @@ class XenonEstimator(BaseEstimator):
         task_metadata = dict(task_metadata)
         column_descriptions = dict(column_descriptions)
         # build data_manager
-        self.data_manager = DataManager(
+        self.data_manager: DataManager = DataManager(
             self.resource_manager,
             X_train, y_train, X_test, y_test, dataset_metadata, column_descriptions, self.highR_nan_threshold,
             self.highR_cat_threshold, self.consider_ordinal_as_cat, upload_type
@@ -280,7 +278,12 @@ class XenonEstimator(BaseEstimator):
                 "log_path": self.log_path,
                 "log_config": self.log_config,
             }
-            self.resource_manager.insert_experiment_record(ExperimentType.AUTO, experiment_config, additional_info)
+            is_manual = self.start_tuner(tuner, hdl)
+            if is_manual:
+                experiment_type = ExperimentType.MANUAL
+            else:
+                experiment_type = ExperimentType.AUTO
+            self.resource_manager.insert_experiment_record(experiment_type, experiment_config, additional_info)
             self.resource_manager.close_experiment_table()
             self.task_id = self.resource_manager.task_id
             self.hdl_id = self.resource_manager.hdl_id
@@ -288,13 +291,17 @@ class XenonEstimator(BaseEstimator):
             self.logger.info(f"task_id:\t{self.task_id}")
             self.logger.info(f"hdl_id:\t{self.hdl_id}")
             self.logger.info(f"experiment_id:\t{self.experiment_id}")
-            result = self.start_tuner(tuner, hdl)
-            if result["is_manual"] == True:
+            if is_manual:
+                tuner.evaluator.init_data(**self.get_evaluator_params())
+                # dhp, self.estimator = tuner.evaluator.shp2model(tuner.shps.sample_configuration())
+                tuner.evaluator(tuner.shps.sample_configuration())
+                self.start_final_step(False)
+                self.resource_manager.finish_experiment(self.log_path, self)
                 break
+            self.run_tuner(tuner)
             if step == n_step - 1:
                 self.start_final_step(fit_ensemble_params)
             self.resource_manager.finish_experiment(self.log_path, self)
-
         return self
 
     def get_sync_dict(self, n_jobs, tuner):
@@ -311,11 +318,13 @@ class XenonEstimator(BaseEstimator):
         tuner.set_data_manager(self.data_manager)
         tuner.set_random_state(self.random_state)
         tuner.set_hdl(hdl)  # just for get shps of tuner
+        is_manual = False
         if estimate_config_space_numbers(tuner.shps) == 1:
             self.logger.info("HDL(Hyperparams Descriptions Language) is a constant space, using manual modeling.")
-            dhp, self.estimator = tuner.evaluator.shp2model(tuner.shps.sample_configuration())
-            self.estimator.fit(self.data_manager.X_train, self.data_manager.y_train)
-            return {"is_manual": True}
+            is_manual = True
+        return is_manual
+
+    def run_tuner(self, tuner: Tuner):
         n_jobs = tuner.n_jobs
         run_limits = [math.ceil(tuner.run_limit / n_jobs)] * n_jobs
         is_master_list = [False] * n_jobs
@@ -346,19 +355,18 @@ class XenonEstimator(BaseEstimator):
                 p.start()
         for p in processes:
             p.join()
-        return {"is_manual": False}
 
     def start_final_step(self, fit_ensemble_params):
         if isinstance(fit_ensemble_params, str):
             if fit_ensemble_params == "auto":
                 self.logger.info(f"'fit_ensemble_params' is 'auto', use default params to fit_ensemble_params.")
-                self.estimator = self.fit_ensemble()
+                self.estimator = self.fit_ensemble(fit_ensemble_alone=False)
             else:
                 raise NotImplementedError
         elif isinstance(fit_ensemble_params, bool):
             if fit_ensemble_params:
                 self.logger.info(f"'fit_ensemble_params' is True, use default params to fit_ensemble_params.")
-                self.estimator = self.fit_ensemble()
+                self.estimator = self.fit_ensemble(fit_ensemble_alone=False)
             else:
                 self.logger.info(
                     f"'fit_ensemble_params' is False, don't fit_ensemble but use best trial as result.")
@@ -366,13 +374,36 @@ class XenonEstimator(BaseEstimator):
         elif isinstance(fit_ensemble_params, dict):
             self.logger.info(
                 f"'fit_ensemble_params' is specific: {fit_ensemble_params}.")
-            self.estimator = self.fit_ensemble(**fit_ensemble_params)
+            self.estimator = self.fit_ensemble(fit_ensemble_alone=False, **fit_ensemble_params)
         elif fit_ensemble_params is None:
             self.logger.info(
                 f"'fit_ensemble_params' is None, don't fit_ensemble but use best trial as result.")
             self.estimator = self.resource_manager.load_best_estimator(self.ml_task)
         else:
             raise NotImplementedError
+
+    def get_evaluator_params(self, random_state=None, resource_manager=None):
+        if resource_manager is None:
+            resource_manager = self.resource_manager
+        if random_state is None:
+            random_state = self.random_state
+        if not hasattr(self, "instance_id"):
+            self.instance_id = ""
+            self.logger.warning(f"{self.__class__.__name__} haven't 'instance_id'!")
+        return dict(
+            random_state=random_state,
+            data_manager=self.data_manager,
+            metric=self.metric,
+            groups=self.groups,
+            should_calc_all_metric=self.should_calc_all_metrics,
+            splitter=self.splitter,
+            should_store_intermediate_result=self.should_store_intermediate_result,
+            should_stack_X=self.should_stack_X,
+            resource_manager=resource_manager,
+            should_finally_fit=self.should_finally_fit,
+            model_registry=self.model_registry,
+            instance_id=self.instance_id
+        )
 
     def run(self, tuner, resource_manager, run_limit, initial_configs, is_master, random_state, sync_dict=None):
         if sync_dict:
@@ -391,19 +422,9 @@ class XenonEstimator(BaseEstimator):
                            str(resource_manager.user_id)
         tuner.run(
             initial_configs=initial_configs,
-            evaluator_params=dict(
+            evaluator_params=self.get_evaluator_params(
                 random_state=random_state,
-                data_manager=self.data_manager,
-                metric=self.metric,
-                groups=self.groups,
-                should_calc_all_metric=self.should_calc_all_metrics,
-                splitter=self.splitter,
-                should_store_intermediate_result=self.should_store_intermediate_result,
-                should_stack_X=self.should_stack_X,
-                resource_manager=resource_manager,
-                should_finally_fit=self.should_finally_fit,
-                model_registry=self.model_registry,
-                instance_id=self.instance_id
+                resource_manager=resource_manager
             ),
             instance_id=self.instance_id,
             rh_db_type=resource_manager.db_type,
@@ -421,20 +442,37 @@ class XenonEstimator(BaseEstimator):
             trials_fetcher_params=frozendict(k=10),
             ensemble_type="stack",
             ensemble_params=frozendict(),
+            fit_ensemble_alone=True
     ):
+        # fixme: ensemble_params可能会面临一个问题，就是传入无法序列化的内容
+        trials_fetcher_params = dict(trials_fetcher_params)
+        ensemble_params = dict(ensemble_params)
+        kwargs = get_valid_params_in_kwargs(self.fit_ensemble, locals())
         if task_id is None:
             assert hasattr(self.resource_manager, "task_id") and self.resource_manager.task_id is not None
             task_id = self.resource_manager.task_id
-        # if hdl_id is None:
-        #     assert hasattr(self.resource_manager, "hdl_id") and self.resource_manager.hdl_id is not None
-        #     hdl_id = self.resource_manager.hdl_id
+        self.task_id = task_id
+        self.hdl_id = hdl_id
+        self.resource_manager.task_id = task_id
+        self.resource_manager.hdl_id = hdl_id
+        if fit_ensemble_alone:
+            setup_logger(self.log_path, self.log_config)
+            if fit_ensemble_alone:
+                experiment_config = {
+                    "fit_ensemble_params": kwargs
+                }
+                self.resource_manager.insert_experiment_record(ExperimentType.ENSEMBLE, experiment_config, {})
+                self.experiment_id = self.resource_manager.experiment_id
         trials_fetcher_name = trials_fetcher
         from xenon.ensemble import trials_fetcher
         assert hasattr(trials_fetcher, trials_fetcher_name)
         trials_fetcher_cls = getattr(trials_fetcher, trials_fetcher_name)
-        trials_fetcher: TrialsFetcher = trials_fetcher_cls(resource_manager=self.resource_manager, task_id=task_id,
-                                                           hdl_id=hdl_id,
-                                                           **trials_fetcher_params)
+        trials_fetcher: TrialsFetcher = trials_fetcher_cls(
+            resource_manager=self.resource_manager,
+            task_id=task_id,
+            hdl_id=hdl_id,
+            **trials_fetcher_params
+        )
         trial_ids = trials_fetcher.fetch()
         estimator_list, y_true_indexes_list, y_preds_list = TrainedDataFetcher(
             task_id, hdl_id, trial_ids, self.resource_manager).fetch()
@@ -445,12 +483,10 @@ class XenonEstimator(BaseEstimator):
         ensemble_estimator_class_name = get_class_name_of_module(ensemble_estimator_package_name)
         ensemble_estimator_class = getattr(ensemble_estimator_package, ensemble_estimator_class_name)
         ensemble_estimator: EnsembleEstimator = ensemble_estimator_class(**ensemble_params)
-        # todo: 集成学习部分，存在无法处理K折验证以外问题的情况（不完整的y_pred）
         ensemble_estimator.fit_trained_data(estimator_list, y_true_indexes_list, y_preds_list, y_true)
         self.ensemble_estimator = ensemble_estimator
-        # if return_Xy_test:
-        #     return self.ensemble_estimator, Xy_test
-        # else:
+        if fit_ensemble_alone:
+            self.resource_manager.finish_experiment(self.log_path, self)
         return self.ensemble_estimator
 
     def auto_fit_ensemble(self):
@@ -465,20 +501,20 @@ class XenonEstimator(BaseEstimator):
 
     def copy(self):
         tmp_dm = self.data_manager
-        self.data_manager = self.data_manager.copy(keep_data=False)
+        self.data_manager: DataManager = self.data_manager.copy(keep_data=False)
         self.resource_manager.start_safe_close()
         res = deepcopy(self)
         self.resource_manager.end_safe_close()
-        self.data_manager = tmp_dm
+        self.data_manager: DataManager = tmp_dm
         return res
 
     def pickle(self):
         # todo: 怎么做保证不触发self.resource_manager的__reduce__
         from pickle import dumps
         tmp_dm = self.data_manager
-        self.data_manager = self.data_manager.copy(keep_data=False)
+        self.data_manager: DataManager = self.data_manager.copy(keep_data=False)
         self.resource_manager.start_safe_close()
         res = dumps(self)
         self.resource_manager.end_safe_close()
-        self.data_manager = tmp_dm
+        self.data_manager: DataManager = tmp_dm
         return res

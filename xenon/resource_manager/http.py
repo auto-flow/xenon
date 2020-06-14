@@ -9,7 +9,7 @@ from typing import Dict, Any, List
 import requests
 
 from xenon import ResourceManager
-from xenon.utils.json_ import CustomJsonEncoder
+from generic_fs.utils.utils import CustomJsonEncoder
 from xenon.utils.klass import get_valid_params_in_kwargs
 
 
@@ -103,10 +103,10 @@ class HttpResourceManager(ResourceManager):
     ##################################################################
 
     def _insert_task_record(self, task_id: str, user_id: int,
-                              metric_str: str, splitter_str: str, ml_task_str: str,
-                              train_set_id: str, test_set_id: str, train_label_id: str, test_label_id: str,
-                              specific_task_token: str, task_metadata: Dict[str, Any], sub_sample_indexes: List[str],
-                              sub_feature_indexes: List[str]):
+                            metric_str: str, splitter_dict: Dict[str, str], ml_task_dict: Dict[str, str],
+                            train_set_id: str, test_set_id: str, train_label_id: str, test_label_id: str,
+                            specific_task_token: str, task_metadata: Dict[str, Any], sub_sample_indexes: List[int],
+                            sub_feature_indexes: List[str]):
         local = get_valid_params_in_kwargs(self._insert_task_record, locals())
         target = "insert_task_record"
         response = self.post_requests(target, local)
@@ -144,13 +144,13 @@ class HttpResourceManager(ResourceManager):
         response = self.post_requests(target, local)
         return response.json()
 
-    def _get_trial_records_by_id(self, trial_id):
+    def _get_trial_records_by_id(self, trial_id, task_id, user_id):
         local = get_valid_params_in_kwargs(self._get_trial_records_by_id, locals())
         target = "get_trial_records_by_id"
         response = self.post_requests(target, local)
         return response.json()
 
-    def _get_trial_records_by_ids(self, trial_ids, k=0):
+    def _get_trial_records_by_ids(self, trial_ids, task_id, user_id):
         local = get_valid_params_in_kwargs(self._get_trial_records_by_ids, locals())
         target = "get_trial_records_by_ids"
         response = self.post_requests(target, local)

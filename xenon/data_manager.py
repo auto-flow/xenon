@@ -379,7 +379,10 @@ class DataManager(StrSignatureMixin):
         if isinstance(X_origin, np.ndarray):
             X.columns = self.columns
         elif isinstance(X_origin, pd.DataFrame):
-            assert np.all(X.columns == X_origin.columns)
+            assert set(X.columns) == set(self.columns)
+            if not np.all(X.columns == self.columns):
+                self.logger.warning(f"{X.dataset_source}'s columns do not match the TrainSet's columns by position!")
+                X.data = X.data[self.columns]
         else:
             raise NotImplementedError
         X.set_feature_groups(self.feature_groups)
@@ -406,10 +409,14 @@ class DataManager(StrSignatureMixin):
         self.resource_manager = None
         res = deepcopy(self)
         if keep_data:
-            self.X_train = X_train
-            self.X_test = X_test
-            self.y_train = y_train
-            self.y_test = y_test
+            res.X_train = X_train
+            res.X_test = X_test
+            res.y_train = y_train
+            res.y_test = y_test
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
         self.resource_manager = rm
         res.resource_manager = rm
         return res

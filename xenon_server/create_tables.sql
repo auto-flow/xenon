@@ -23,7 +23,7 @@ create table experiment
         constraint experiment_pkey
             primary key,
     user_id           integer      not null,
-    hdl_id            char(32)     not null,
+    hdl_id            char(32),
     task_id           char(32)     not null,
     experiment_type   varchar(128) not null,
     experiment_config json         not null,
@@ -50,7 +50,7 @@ create table run_history
     run_id          char(256)   not null
         constraint run_history_pkey
             primary key,
-    config_id       char(128)   not null,
+    config_id       char(32)   not null,
     config          json        not null,
     config_origin   varchar(64) not null,
     cost            real        not null,
@@ -72,8 +72,8 @@ create table task
     task_id             char(32)     not null,
     user_id             integer      not null,
     metric              varchar(256) not null,
-    splitter            text         not null,
-    ml_task             varchar(256) not null,
+    splitter            json         not null,
+    ml_task             json         not null,
     specific_task_token varchar(256) not null,
     train_set_id        char(32)     not null,
     test_set_id         char(32)     not null,

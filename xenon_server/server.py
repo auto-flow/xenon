@@ -12,14 +12,22 @@ from typing import Dict, Any, List
 
 from fastapi import FastAPI, Body
 from xenon.resource_manager.base import ResourceManager
+from xenon.utils.dict_ import remove_None_value
 from dsmac.runhistory.runhistory_db import RunHistoryDB
 
 # from pydantic import BaseModel
 
 app = FastAPI()
-db_type = "sqlite"
-db_params = {}
-resource_manager = ResourceManager(db_type=db_type, db_params=db_params)
+db_type = os.getenv("DB_TYPE", "sqlite")
+db_params = {
+    "user": os.getenv("DB_USER"),
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
+    "password": os.getenv("DB_PASSWORD"),
+}
+db_params = remove_None_value(db_params)
+resource_manager = ResourceManager(db_type=db_type, db_params=db_params,
+                                   store_path=os.getenv("STORE_PATH", "~/xenon"))
 runhistory_db = RunHistoryDB(None, None, db_type, resource_manager.runhistory_db_params,
                              resource_manager.runhistory_table_name, "")
 resource_manager.init_dataset_table()
@@ -97,16 +105,17 @@ async def finish_experiment_update_info(
 
 @app.post("/insert_task_record")
 async def insert_task_record(
-        task_metadata: Dict[str, Any], sub_sample_indexes: List[str],
+        task_metadata: Dict[str, Any], sub_sample_indexes: List[int],
         sub_feature_indexes: List[str],
         task_id: str = Body(...), user_id: int = Body(...),
-        metric_str: str = Body(...), splitter_str: str = Body(...), ml_task_str: str = Body(...),
+        metric_str: str = Body(...), splitter_dict: Dict[str, str] = Body(...),
+        ml_task_dict: Dict[str, str] = Body(...),
         train_set_id: str = Body(...), test_set_id: str = Body(...), train_label_id: str = Body(...),
         test_label_id: str = Body(...), specific_task_token: str = Body(...),
 ):
     resource_manager._insert_task_record(
         task_id, user_id,
-        metric_str, splitter_str, ml_task_str,
+        metric_str, splitter_dict, ml_task_dict,
         train_set_id, test_set_id, train_label_id, test_label_id,
         specific_task_token, task_metadata, sub_sample_indexes, sub_feature_indexes)
     return {"task_id": task_id}
@@ -148,13 +157,14 @@ async def get_sorted_trial_records(task_id: str = Body(...), user_id: int = Body
 
 
 @app.post("/get_trial_records_by_id")
-async def get_trial_records_by_id(trial_id: int = Body(...)):
-    return resource_manager._get_trial_records_by_id(trial_id)
+async def get_trial_records_by_id(trial_id: int = Body(...), task_id: str = Body(...), user_id: int = Body(...)):
+    return resource_manager._get_trial_records_by_id(trial_id, task_id, user_id)
 
 
 @app.post("/get_trial_records_by_ids")
-async def get_trial_records_by_ids(trial_ids=Body(...), k=Body(...)):
-    return resource_manager._get_trial_records_by_ids(trial_ids)
+async def get_trial_records_by_ids(trial_ids: List[int] = Body(...), task_id: str = Body(...),
+                                   user_id: int = Body(...)):
+    return resource_manager._get_trial_records_by_ids(trial_ids, task_id, user_id)
 
 
 @app.post("/get_best_k_trial_ids")
@@ -183,15 +193,15 @@ async def insert_runhistory_record(
         seed: int = Body(...),
         additional_info: Dict[str, Any] = Body(...),
         origin: int = Body(...),
+        modify_time: str = Body(...),
         pid: int = Body(...),
 ):
-    runhistory_db._insert_runhistory_record(
+    return runhistory_db._insert_runhistory_record(
         run_id, config_id, config, config_origin, cost, time,
         status, instance_id, seed,
         additional_info,
-        origin, pid
+        origin, modify_time, pid
     )
-    return {"msg": "ok"}
 
 
 @app.post("/fetch_new_runhistory")

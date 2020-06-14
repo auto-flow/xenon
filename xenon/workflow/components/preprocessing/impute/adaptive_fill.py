@@ -9,4 +9,4 @@ __all__ = ["AdaptiveSimpleImputer"]
 
 class AdaptiveSimpleImputer(XenonFeatureEngineerAlgorithm):
     class__ = "AdaptiveSimpleImputer"
-    module__ = "skimpute"
+    module__ = "xenon.feature_engineer.impute"

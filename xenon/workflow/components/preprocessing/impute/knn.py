@@ -5,4 +5,4 @@ __all__ = ["KNNImputer"]
 
 class KNNImputer(XenonFeatureEngineerAlgorithm):
     class__ = "KNNImputer"
-    module__ = "skimpute"
+    module__ = "xenon.feature_engineer.impute"
