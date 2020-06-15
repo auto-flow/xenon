@@ -1,7 +1,7 @@
 from xenon.workflow.components.feature_engineer_base import XenonFeatureEngineerAlgorithm
 
-__all__=["NormalizerComponent"]
+__all__=["Normalizer"]
 
-class NormalizerComponent(XenonFeatureEngineerAlgorithm):
+class Normalizer(XenonFeatureEngineerAlgorithm):
     class__ = "Normalizer"
     module__ = "sklearn.preprocessing"

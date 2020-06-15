@@ -430,7 +430,7 @@
       "hash": {
         "_n_components__card_ratio": {"_type": "quniform", "_value": [0.1,1,0.1],"_default": 0.8}
       },
-      "label": {},
+      "ordinal": {},
       "leave_one_out": {},
       "one_hot": {},
       "target": {},
@@ -501,7 +501,7 @@
         }
       },
       "pca": {
-        "n_components": {"_type": "quniform", "_value": [0.5, 1],"_default": 0.9},    //keep_variance
+        "_n_components__sp1_ratio": {"_type": "quniform", "_value": [0.5, 1],"_default": 0.8},    //keep_variance
         "whiten": {"_type": "choice", "_value": [true,false],"_default": true},
         "copy": true
       },
@@ -682,7 +682,10 @@
       }
     },
     "transform": {
-       "power": {}
+      //todo: power设置超参
+      //todo: quantile重复了
+       "power": {},
+       "quantile": {},
     }
   }
 }
