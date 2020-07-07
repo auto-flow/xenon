@@ -87,15 +87,14 @@ class DataFrameContainer(DataContainer):
             return
         dataset_path = self.resource_manager.get_dataset_path(self.dataset_id)
         dataset_path = self.resource_manager.upload_df_to_fs(self.data, dataset_path)
-        if dataset_path is None:
+        response = self.resource_manager.insert_dataset_record(
+            self.dataset_id, self.dataset_metadata, self.dataset_type, dataset_path,
+            upload_type, self.dataset_source, self.column_descriptions,
+            self.columns_mapper, list(self.columns)
+        )
+        if response["length"] == 0:
             self.logger.info(
                 f"Dataset ID: {self.dataset_id} is already exists, {self.dataset_source} will not upload. ")
-        else:
-            self.resource_manager.insert_dataset_record(
-                self.dataset_id, self.dataset_metadata, self.dataset_type, dataset_path,
-                upload_type, self.dataset_source, self.column_descriptions,
-                self.columns_mapper, list(self.columns)
-            )
         super(DataFrameContainer, self).upload(upload_type)
 
     def download(self, dataset_id):

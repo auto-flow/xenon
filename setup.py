@@ -78,7 +78,7 @@ setup(
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
-    packages=find_packages("./", exclude=['test', 'examples', 'xenon_server', 'xenon_client']),
+    packages=find_packages("./", exclude=['test', 'examples', 'xenon_server', 'xenon_client', 'scripts']),
     package_dir={
         'xenon': './xenon',
         'dsmac': './dsmac',

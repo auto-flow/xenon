@@ -70,13 +70,14 @@ class EnvUtils:
 
     def print(self):
         print(self)
-        print("--------------------")
-        print("| Complex variable |")
-        print("--------------------")
+        if len(self.long_data)>0:
+            print("--------------------")
+            print("| Complex variable |")
+            print("--------------------")
 
-        for k, v in self.long_data:
-            print(k + " : " + type(v).__name__)
-            pprint(v)
-            print("-" * 50)
+            for k, v in self.long_data:
+                print(k + " : " + type(v).__name__)
+                pprint(v)
+                print("-" * 50)
 
     __repr__ = __str__

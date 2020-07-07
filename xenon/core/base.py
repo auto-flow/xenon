@@ -487,7 +487,8 @@ class XenonEstimator(BaseEstimator):
 
     def copy(self):
         tmp_dm = self.data_manager
-        self.data_manager: DataManager = self.data_manager.copy(keep_data=False)
+        self.data_manager: DataManager = self.data_manager.copy(
+            keep_data=False) if self.data_manager is not None else None
         self.resource_manager.start_safe_close()
         res = deepcopy(self)
         self.resource_manager.end_safe_close()
@@ -498,7 +499,8 @@ class XenonEstimator(BaseEstimator):
         # todo: 怎么做保证不触发self.resource_manager的__reduce__
         from pickle import dumps
         tmp_dm = self.data_manager
-        self.data_manager: DataManager = self.data_manager.copy(keep_data=False)
+        self.data_manager: DataManager = self.data_manager.copy(
+            keep_data=False) if self.data_manager is not None else None
         self.resource_manager.start_safe_close()
         res = dumps(self)
         self.resource_manager.end_safe_close()

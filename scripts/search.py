@@ -7,6 +7,7 @@ import multiprocessing as mp
 import os
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
 
@@ -14,7 +15,7 @@ from xenon import XenonClassifier, XenonRegressor
 from xenon.hdl.hdl_constructor import HDL_Constructor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.tuner import Tuner
-from xqsar.utils import EnvUtils
+from scripts.utils import EnvUtils
 
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/search.json")
@@ -217,3 +218,15 @@ xenon.fit(
     task_metadata=task_metadata,
     fit_ensemble_params=fit_ensemble_params
 )
+######################################
+# 实验完成，保存最好的模型到SAVEDPATH  #
+######################################
+experiment_id = xenon.experiment_id
+final_model_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
+logger.info(
+    f"Experiment(experiment_id={experiment_id}) is finished, the best model will be saved in {final_model_path}.")
+final_model = xenon.copy()
+joblib.dump(final_model,final_model_path)
+###########################
+# 调用display.py进行可视化 #
+###########################
