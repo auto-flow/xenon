@@ -49,6 +49,7 @@ async def insert_dataset_record(
         user_id: int = Body(...),
         dataset_id: str = Body(...),
         dataset_metadata: Dict[str, Any] = Body(...),
+        dataset_type: str = Body(...),
         dataset_path: str = Body(...),
         upload_type: str = Body(...),
         dataset_source: str = Body(...),
@@ -58,6 +59,7 @@ async def insert_dataset_record(
         user_id,
         dataset_id,
         dataset_metadata,
+        dataset_type,
         dataset_path,
         upload_type,
         dataset_source,
@@ -108,14 +110,14 @@ async def insert_task_record(
         task_metadata: Dict[str, Any], sub_sample_indexes: List[int],
         sub_feature_indexes: List[str],
         task_id: str = Body(...), user_id: int = Body(...),
-        metric_str: str = Body(...), splitter_dict: Dict[str, str] = Body(...),
-        ml_task_dict: Dict[str, str] = Body(...),
+        metric_str: str = Body(...), splitter: Dict[str, str] = Body(...),
+        ml_task: Dict[str, str] = Body(...),
         train_set_id: str = Body(...), test_set_id: str = Body(...), train_label_id: str = Body(...),
         test_label_id: str = Body(...), specific_task_token: str = Body(...),
 ):
     resource_manager._insert_task_record(
         task_id, user_id,
-        metric_str, splitter_dict, ml_task_dict,
+        metric_str, splitter, ml_task,
         train_set_id, test_set_id, train_label_id, test_label_id,
         specific_task_token, task_metadata, sub_sample_indexes, sub_feature_indexes)
     return {"task_id": task_id}

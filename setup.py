@@ -11,6 +11,7 @@ from setuptools import setup, find_packages
 with open("xenon/__version__.py") as fh:
     version = fh.readlines()[-1].split()[-1].strip("\"'")
 
+# todo: 自动判断并安装 xenon_cli
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname), encoding='utf-8').read()
@@ -77,7 +78,7 @@ setup(
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
-    packages=find_packages("./", exclude=['test', 'examples', 'xenon_server']),
+    packages=find_packages("./", exclude=['test', 'examples', 'xenon_server', 'xenon_client']),
     package_dir={
         'xenon': './xenon',
         'dsmac': './dsmac',

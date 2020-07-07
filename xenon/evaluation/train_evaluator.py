@@ -259,7 +259,7 @@ class TrainEvaluator(BaseEvaluator):
         # info["program_hyper_param"] = shp
         info["dict_hyper_param"] = dhp
         estimator = list(dhp.get(PHASE2, {"unk": ""}).keys())[0]
-        info["component"] = estimator
+        info["estimator"] = estimator
         info["cost_time"] = cost_time
         info["additional_info"].update({
             "config_origin": getattr(shp, "origin", "unk")

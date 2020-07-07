@@ -53,6 +53,6 @@ command line:
 
 .. code-block:: bash
 
-    git clone git@bitbucket.org:xtalpi/xenon.git
+    git clone https://github.com/xenon/xenon.git
     cd xenon
     python setup.py install

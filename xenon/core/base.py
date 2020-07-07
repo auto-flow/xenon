@@ -1,10 +1,8 @@
 import inspect
-import math
 import multiprocessing
 import os
 from copy import deepcopy
 from importlib import import_module
-from multiprocessing import Manager
 from typing import Union, Optional, Dict, List, Any
 
 import numpy as np
@@ -304,14 +302,6 @@ class XenonEstimator(BaseEstimator):
             self.resource_manager.finish_experiment(self.log_path, self)
         return self
 
-    def get_sync_dict(self, n_jobs, tuner):
-        if n_jobs > 1 and tuner.search_method != "grid":
-            sync_dict = Manager().dict()
-            sync_dict["exit_processes"] = tuner.exit_processes
-        else:
-            sync_dict = None
-        return sync_dict
-
     def start_tuner(self, tuner: Tuner, hdl: dict):
         self.logger.debug(f"Start fine tune task, \nwhich HDL(Hyperparams Descriptions Language) is:\n{hdl}")
         self.logger.debug(f"which Tuner is:\n{tuner}")
@@ -326,14 +316,15 @@ class XenonEstimator(BaseEstimator):
 
     def run_tuner(self, tuner: Tuner):
         n_jobs = tuner.n_jobs
-        run_limits = [math.ceil(tuner.run_limit / n_jobs)] * n_jobs
+        # run_limits = [math.ceil(tuner.run_limit / n_jobs)] * n_jobs
+        run_limits = [len(chunk) for chunk in get_chunks([0] * tuner.run_limit, n_jobs)]
         is_master_list = [False] * n_jobs
         is_master_list[0] = True
         initial_configs_list = get_chunks(
             tuner.design_initial_configs(n_jobs),
             n_jobs)
-        random_states = np.arange(n_jobs) + self.random_state
-        sync_dict = self.get_sync_dict(n_jobs, tuner)
+        # random_states = np.arange(n_jobs) + self.random_state
+        random_states = [self.random_state] * n_jobs
         # self.resource_manager.clear_pid_list()
         self.resource_manager.start_safe_close()
         self.resource_manager.close_all()
@@ -343,7 +334,7 @@ class XenonEstimator(BaseEstimator):
         processes = []
         for tuner, resource_manager, run_limit, initial_configs, is_master, random_state in \
                 zip(tuners, resource_managers, run_limits, initial_configs_list, is_master_list, random_states):
-            args = (tuner, resource_manager, run_limit, initial_configs, is_master, random_state, sync_dict)
+            args = (tuner, resource_manager, run_limit, initial_configs, is_master, random_state)
             if n_jobs == 1:
                 self.run(*args)
             else:
@@ -405,10 +396,7 @@ class XenonEstimator(BaseEstimator):
             instance_id=self.instance_id
         )
 
-    def run(self, tuner, resource_manager, run_limit, initial_configs, is_master, random_state, sync_dict=None):
-        if sync_dict:
-            sync_dict[os.getpid()] = 0
-            resource_manager.sync_dict = sync_dict
+    def run(self, tuner, resource_manager, run_limit, initial_configs, is_master, random_state):
         resource_manager.set_is_master(is_master)
         # resource_manager.push_pid_list()
         # random_state: 1. set_hdl中传给phps 2. 传给所有配置
@@ -431,8 +419,6 @@ class XenonEstimator(BaseEstimator):
             rh_db_params=resource_manager.runhistory_db_params,
             rh_db_table_name=resource_manager.runhistory_table_name
         )
-        if sync_dict:
-            sync_dict[os.getpid()] = 1
 
     def fit_ensemble(
             self,

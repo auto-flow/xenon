@@ -31,6 +31,11 @@ loggers:
     handlers: [file_handler]
     propagate: false
 
+  urllib3.connectionpool:
+    level: WARNING
+    handlers: [file_handler]
+    propagate: false
+
   hdfs.client:
     level: INFO
     handlers: [file_handler]

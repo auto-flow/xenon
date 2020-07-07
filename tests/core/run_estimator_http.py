@@ -12,29 +12,23 @@ from xenon.resource_manager.http import HttpResourceManager
 from xenon.tuner import Tuner
 
 X, y = load_iris(return_X_y=True)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-http_resource_manager = HttpResourceManager(db_params={
-    "http_client": True,
-    "url": "http://127.0.0.1:8000",
-    "headers": {
-        'Content-Type': 'application/json',
-        'accept': 'application/json',
-    }
-})
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=30)
+http_resource_manager = HttpResourceManager()
+# http_resource_manager.login()
 hdl_constructors = [
     HDL_Constructor(
         DAG_workflow={
             "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
         },
     )
-]*2
+]
 tuners = [
-    Tuner(
-        search_method="random",
-        run_limit=3,
-        n_jobs=3,
-        debug=True
-    ),
+    # Tuner(
+    #     search_method="random",
+    #     run_limit=3,
+    #     n_jobs=3,
+    #     debug=True
+    # ),
     Tuner(
         search_method="smac",
         initial_runs=3,
@@ -50,10 +44,10 @@ pipe = XenonClassifier(
 )
 pipe.fit(
     X_train, y_train,
-    # fit_ensemble_params="auto",
-    fit_ensemble_params=False,
+    fit_ensemble_params={"trials_fetcher_params":{"k":20}},
+
 )
-assert isinstance(pipe.estimator, VoteClassifier)
+# assert isinstance(pipe.estimator, VoteClassifier)
 # score = accuracy_score(y_test, y_pred)
 score = pipe.score(X_test, y_test)
-assert score > 0.8
+print(score)

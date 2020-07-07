@@ -85,17 +85,17 @@ class DataFrameContainer(DataContainer):
         self.dataset_id = self.get_hash()
         if self.dataset_id == self.uploaded_hash:
             return
-        respond = self.resource_manager.insert_dataset_record(
-            self.dataset_id, self.dataset_metadata, upload_type, self.dataset_source, self.column_descriptions,
-            self.columns_mapper, list(self.columns))
-        L, dataset_id, dataset_path = respond["length"], respond["dataset_id"], respond["dataset_path"]
-        if L != 0:
-            self.logger.info(f"Dataset ID: {dataset_id} is already exists, {self.dataset_source} will not upload. ")
+        dataset_path = self.resource_manager.get_dataset_path(self.dataset_id)
+        dataset_path = self.resource_manager.upload_df_to_fs(self.data, dataset_path)
+        if dataset_path is None:
+            self.logger.info(
+                f"Dataset ID: {self.dataset_id} is already exists, {self.dataset_source} will not upload. ")
         else:
-            if upload_type == "table":
-                self.resource_manager.upload_df_to_table(self.data, self.dataset_id, self.columns_mapper)
-            else:
-                self.resource_manager.upload_df_to_fs(self.data, dataset_path)
+            self.resource_manager.insert_dataset_record(
+                self.dataset_id, self.dataset_metadata, self.dataset_type, dataset_path,
+                upload_type, self.dataset_source, self.column_descriptions,
+                self.columns_mapper, list(self.columns)
+            )
         super(DataFrameContainer, self).upload(upload_type)
 
     def download(self, dataset_id):
@@ -247,7 +247,7 @@ class DataFrameContainer(DataContainer):
                                     resource_manager=self.resource_manager,
                                     dataset_metadata=self.dataset_metadata)
         new_df.set_feature_groups(new_feature_group)
-        new_df.index = deleted_df.index # 非常重要的一步
+        new_df.index = deleted_df.index  # 非常重要的一步
         return deleted_df.concat_to(new_df)
 
     def sub_sample(self, index):

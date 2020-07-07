@@ -140,8 +140,6 @@ class ResourceManager(StrSignatureMixin):
         assert db_type in ("sqlite", "postgresql", "mysql")
         self.db_type = db_type
         self.db_params = dict(db_params)
-        if db_type == "sqlite":
-            assert self.file_system_type == "local"
         # ---redis----------------
         self.redis_params = dict(redis_params)
         # ---max_persistent_model---
@@ -246,10 +244,10 @@ class ResourceManager(StrSignatureMixin):
         else:
             finally_fit_model_path = ""
         # ----do dump---------------
-        self.file_system.dump_pickle(info.pop("models"), models_path)
-        self.file_system.dump_pickle(y_info, y_info_path)
+        models_path = self.file_system.dump_pickle(info.pop("models"), models_path)
+        y_info_path = self.file_system.dump_pickle(y_info, y_info_path)
         if finally_fit_model_path:
-            self.file_system.dump_pickle(info.pop("finally_fit_model"), finally_fit_model_path)
+            finally_fit_model_path = self.file_system.dump_pickle(info.pop("finally_fit_model"), finally_fit_model_path)
         # ----return----------------
         return models_path, finally_fit_model_path, y_info_path
 
@@ -449,10 +447,18 @@ class ResourceManager(StrSignatureMixin):
         self.record_db.create_tables([Dataset])
         return Dataset
 
+    def get_dataset_path(self, dataset_id):
+        dataset_dir = self.file_system.join(self.datasets_dir, str(self.user_id))
+        self.file_system.mkdir(dataset_dir)
+        dataset_path = self.file_system.join(dataset_dir, f"{dataset_id}.h5")
+        return dataset_path
+
     def insert_dataset_record(
             self,
             dataset_id,
             dataset_metadata,
+            dataset_type,
+            dataset_path,
             upload_type,
             dataset_source,
             column_descriptions,
@@ -460,15 +466,11 @@ class ResourceManager(StrSignatureMixin):
             columns
     ):
         self.init_dataset_table()
-        dataset_path = ""
-        if upload_type == "fs":
-            dataset_dir = self.file_system.join(self.datasets_dir, str(self.user_id))
-            self.file_system.mkdir(dataset_dir)
-            dataset_path = self.file_system.join(dataset_dir, f"{dataset_id}.h5")
         return self._insert_dataset_record(
             self.user_id,
             dataset_id,
             dataset_metadata,
+            dataset_type,
             dataset_path,
             upload_type,
             dataset_source,
@@ -482,6 +484,7 @@ class ResourceManager(StrSignatureMixin):
             user_id: int,
             dataset_id: str,
             dataset_metadata: Dict[str, Any],
+            dataset_type: str,
             dataset_path: str,
             upload_type: str,
             dataset_source: str,
@@ -504,7 +507,7 @@ class ResourceManager(StrSignatureMixin):
                 user_id=self.user_id,
                 dataset_metadata=dataset_metadata,
                 dataset_path=dataset_path,
-                dataset_type="dataframe",
+                dataset_type=dataset_type,
                 upload_type=upload_type,
                 dataset_source=dataset_source,
                 column_descriptions=column_descriptions,
@@ -559,7 +562,7 @@ class ResourceManager(StrSignatureMixin):
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
         df.to_hdf(tmp_path, "dataset")
-        self.file_system.upload(dataset_path, tmp_path)
+        return self.file_system.upload(dataset_path, tmp_path)
 
     def upload_ndarray_to_fs(self, arr: np.ndarray, dataset_path):
         tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
@@ -567,7 +570,7 @@ class ResourceManager(StrSignatureMixin):
             os.remove(tmp_path)
         with h5py.File(tmp_path, 'w') as hf:
             hf.create_dataset("dataset", data=arr)
-        self.file_system.upload(dataset_path, tmp_path)
+        return self.file_system.upload(dataset_path, tmp_path)
 
     def get_dataset_records(self, dataset_id) -> List[Dict[str, Any]]:
         self.init_dataset_table()
@@ -653,7 +656,7 @@ class ResourceManager(StrSignatureMixin):
     ):
         self.init_experiment_table()
         assert isinstance(experiment_type, ExperimentType)
-        self.experiment_id = self._insert_experiment_record(self.user_id, getattr(self, "hdl_id",None), self.task_id,
+        self.experiment_id = self._insert_experiment_record(self.user_id, getattr(self, "hdl_id", None), self.task_id,
                                                             experiment_type.value,
                                                             experiment_config, additional_info)
 
@@ -686,7 +689,7 @@ class ResourceManager(StrSignatureMixin):
         final_model = final_model.copy()
         assert final_model.data_manager.is_empty()
         self.start_safe_close()
-        self.file_system.dump_pickle(final_model, experiment_model_path)
+        experiment_model_path = self.file_system.dump_pickle(final_model, experiment_model_path)
         self.end_safe_close()
         # 日志上传
         if os.path.exists(local_log_path):
@@ -696,7 +699,7 @@ class ResourceManager(StrSignatureMixin):
             shutil.copy(local_log_path, tmp_log_path)
             if del_local_log_path:
                 os.remove(local_log_path)
-            self.file_system.upload(experiment_log_path, tmp_log_path)
+            experiment_log_path = self.file_system.upload(experiment_log_path, tmp_log_path)
             if os.path.exists(local_log_path):
                 os.remove(local_log_path)
         else:
@@ -1054,14 +1057,14 @@ class ResourceManager(StrSignatureMixin):
         return trial_record.trial_id
 
     def delete_models(self):
-        if hasattr(self, "sync_dict"):
-            exit_processes = self.sync_dict.get("exit_processes", 3)
-            records = 0
-            for key, value in self.sync_dict.items():
-                if isinstance(key, int):
-                    records += value
-            if records >= exit_processes:
-                return False
+        # if hasattr(self, "sync_dict"):
+        #     exit_processes = self.sync_dict.get("exit_processes", 3)
+        #     records = 0
+        #     for key, value in self.sync_dict.items():
+        #         if isinstance(key, int):
+        #             records += value
+        #     if records >= exit_processes:
+        #         return False
         # master segment
         if not self.is_master:
             return True

@@ -1,0 +1,164 @@
+[
+  {
+    "name": "USER_ID",
+    "default": null,
+    "description": ""
+  },
+  {
+    "name": "USER_TOKEN",
+    "default": null,
+    "description": ""
+  },
+  {
+    "name": "EMAIL",
+    "default": null,
+    "description": ""
+  },
+  {
+    "name": "PASSWORD",
+    "default": null,
+    "description": ""
+  },
+  {
+    "name": "DATASET_NAME",
+    "default": null,
+    "description": "数据集名称"
+  },
+  {
+    "name": "DATASET_DESCRIPTION",
+    "default": null,
+    "description": "数据集描述"
+  },
+  {
+    "name": "TASK_NAME",
+    "default": null,
+    "description": "任务名称"
+  },
+  {
+    "name": "TASK_DESCRIPTION",
+    "default": null,
+    "description": "任务描述"
+  },
+  {
+    "name": "MODEL_TYPE",
+    "default": "clf",
+    "description": "分类问题:clf，回归问题：reg"
+  },
+  {
+    "name": "COLUMN_DESCRIPTIONS",
+    "default": {},
+    "description": "列描述"
+  },
+  {
+    "name": "CLF_WORKFLOW",
+    "default": {
+        "num->selected": {
+            "_name": "select.from_model_clf",
+            "_vanilla": true,
+            "estimator": {"_type": "choice", "_value":
+                ["sklearn.ensemble.ExtraTreesClassifier", "sklearn.ensemble.RandomForestClassifier"],
+                          "_default": "sklearn.ensemble.ExtraTreesClassifier"},
+            "n_estimators": 10,
+            "max_depth": 7,
+            "min_samples_split": 10,
+            "min_samples_leaf": 10,
+            "random_state": 0,
+            "n_jobs": 1,
+            "_select_percent": {"_type": "quniform", "_value": [1, 80, 0.1], "_default": 40}
+        },
+        "selected->target": [
+          "adaboost",
+          "extra_trees",
+          "random_forest",
+          "liblinear_svc",
+          "libsvm_svc",
+          "lightgbm",
+          "logistic_regression"
+        ]
+    },
+    "description": "分类任务的工作流"
+  },
+  {
+    "name": "REG_WORKFLOW",
+    "default": {
+        "num->selected": {
+            "_name": "select.from_model_reg",
+            "_vanilla": true,
+            "estimator": {"_type": "choice", "_value":
+                ["sklearn.ensemble.ExtraTreesRegressor", "sklearn.ensemble.RandomForestRegressor"],
+                          "_default": "sklearn.ensemble.ExtraTreesRegressor"},
+            "n_estimators": 10,
+            "max_depth": 7,
+            "min_samples_split": 10,
+            "min_samples_leaf": 10,
+            "random_state": 0,
+            "n_jobs": 1,
+            "_select_percent": {"_type": "quniform", "_value": [1, 80, 0.1], "_default": 40}
+        },
+        "selected->target": [
+          "adaboost",
+          "bayesian_ridge",
+          "elasticnet",
+          "extra_trees",
+          "random_forest",
+          "lightgbm"
+        ]
+    },
+    "description": "回归任务的工作流"
+  },
+  {
+    "name": "TRAIN_TARGET_COLUMN_NAME",
+    "default": "active",
+    "description": "训练集的列名"
+  },
+  {
+    "name": "METRIC",
+    "default": null,
+    "description": "用于排序的模型评测标准。"
+  },
+  {
+    "name": "KFOLD",
+    "default": 5,
+    "description": "搜索时使用的交叉验证的折数，2~10为交叉验证"
+  },
+  {
+    "name": "SPECIFIC_TASK_TOKEN",
+    "default": null,
+    "description": "不想让相同的任务关联到一个task_id时，设置这个参数"
+  },
+  {
+    "name": "SEARCH_THREAD_NUM",
+    "default": 3,
+    "description": "搜索时启动的线程数"
+  },
+  {
+    "name": "N_JOBS_IN_ALGORITHM",
+    "default": null,
+    "description": "单个算法的进程数"
+  },
+  {
+    "name": "RANDOM_RUNS",
+    "default": 40,
+    "description": "随机搜索次数"
+  },
+  {
+    "name": "BAYES_RUNS",
+    "default": 60,
+    "description": "SMAC(一种贝叶斯搜索算法)搜索次数"
+  },
+  {
+    "name": "RANDOM_STATE",
+    "default": null,
+    "description": "搜索和投票时使用的random_state"
+  },
+  {
+    "name": "FEATURE_NAME_LIST",
+    "default": null,
+    "description": "非空时为指定使用某几种特征，如['SubFP']"
+  },
+  {
+    "name": "ENSEMBLE_SIZE",
+    "default": 10,
+    "description": "做stacking集成学习集成的模型数，<=1表示不做集成学习"
+  }
+]

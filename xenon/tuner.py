@@ -156,8 +156,6 @@ class Tuner(StrSignatureMixin):
     def set_random_state(self, random_state):
         self.random_state = random_state
 
-    # def set_addition_info(self, addition_info):
-    #     self.addition_info = addition_info
 
     def hdl2shps(self, hdl: Dict):
         hdl2shps = HDL2SHPS()

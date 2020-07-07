@@ -165,6 +165,7 @@ class RunHistoryDB():
                                 DataOrigin(origin))
             if cost < final_cost:
                 final_config = config
+                final_cost=cost
         return final_cost, final_config
 
     def _fetch_new_runhistory(self, instance_id, pid, timestamp, is_init):

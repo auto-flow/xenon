@@ -7,7 +7,7 @@ import peewee as pw
 import requests
 
 from dsmac.runhistory.runhistory_db import RunHistoryDB
-from generic_fs.utils.utils import CustomJsonEncoder
+from generic_fs.utils.http import CustomJsonEncoder, send_requests, extend_to_list
 
 
 def get_valid_params_in_kwargs(func, kwargs: Dict[str, Any]):
@@ -29,18 +29,6 @@ class HttpRunHistoryDB(RunHistoryDB):
     def get_model(self) -> Optional[pw.Model]:
         return None
 
-    ##################################################################
-    ############################  utils code #########################
-    ##################################################################
-
-    def judge_state_code(self, response: requests.Response):
-        assert response.status_code == 200
-
-    def post_requests(self, target, data) -> requests.Response:
-        response = requests.post(self.db_params["url"] + "/" + target, headers=self.db_params["headers"],
-                                 data=json.dumps(data, cls=CustomJsonEncoder))
-        self.judge_state_code(response)
-        return response
 
     ##################################################################
     #########################   run_history   ########################
@@ -48,10 +36,14 @@ class HttpRunHistoryDB(RunHistoryDB):
 
     def _appointment_config(self, run_id, instance_id) -> Tuple[bool, Optional[pw.Model]]:
         local = get_valid_params_in_kwargs(self._appointment_config, locals())
-        target = "appointment_config"
-        response = self.post_requests(target, local)
-        json_response = response.json()
-        return json_response["ok"], json_response["record"]
+        target = "history"
+        response = send_requests(self.db_params,target, local)
+        json_response = response.json()["data"]
+        if "run_id" in json_response:  # 创建成功
+            return True, None
+        else:
+            return False, None
+        # return json_response["ok"], json_response["record"]
 
     def _insert_runhistory_record(
             self, run_id, config_id, config, config_origin, cost: float, time: float,
@@ -59,17 +51,27 @@ class HttpRunHistoryDB(RunHistoryDB):
             seed: int,
             additional_info: dict,
             origin: int,
-            modify_time:str,
+            modify_time: str,
             pid: int,
     ):
         additional_info = dict(additional_info)
         modify_time = datetime.datetime.now()
         local = get_valid_params_in_kwargs(self._insert_runhistory_record, locals())
-        target = "insert_runhistory_record"
-        response = self.post_requests(target, local)
+        target = f"history/{run_id}"
+        response = send_requests(self.db_params,target, local, method="patch")
+        return
 
     def _fetch_new_runhistory(self, instance_id, pid, timestamp, is_init):
         local = get_valid_params_in_kwargs(self._fetch_new_runhistory, locals())
-        target = "fetch_new_runhistory"
-        response = self.post_requests(target, local)
-        return response.json()
+        result = []
+        page_num = 1
+        page_size = 20
+        while True:
+            target = f"history?page_num={page_num}&page_size={page_size}"
+            response = send_requests(self.db_params,target, params=local, method="get")
+            data = extend_to_list(response.json()["data"])
+            result.extend(data)
+            if len(data) < page_size:
+                break
+            page_num += 1
+        return result
