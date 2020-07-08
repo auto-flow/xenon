@@ -12,10 +12,26 @@ Subpackages
 Submodules
 ----------
 
+xenon.hdl.hdl2shps module
+----------------------------
+
+.. automodule:: xenon.hdl.hdl2shps
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 xenon.hdl.hdl\_constructor module
 ------------------------------------
 
 .. automodule:: xenon.hdl.hdl_constructor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+xenon.hdl.shp2dhp module
+---------------------------
+
+.. automodule:: xenon.hdl.shp2dhp
    :members:
    :undoc-members:
    :show-inheritance:

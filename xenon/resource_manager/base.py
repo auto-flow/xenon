@@ -252,7 +252,7 @@ class ResourceManager(StrSignatureMixin):
         return models_path, finally_fit_model_path, y_info_path
 
     def get_ensemble_needed_info(self, task_id) -> Tuple[MLTask, Any]:
-        from xenon import NdArrayContainer
+        from xenon.data_container import NdArrayContainer
 
         self.task_id = task_id
         # 操作task而不是trial
@@ -616,8 +616,8 @@ class ResourceManager(StrSignatureMixin):
         tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
         self.file_system.download(dataset_path, tmp_path)
         df: pd.DataFrame = pd.read_hdf(tmp_path, "dataset")
-        if columns is not None:
-            df = df[columns]
+        # if columns is not None:
+        #     df = df[columns]
         return df
 
     def download_arr_from_fs(self, dataset_path):

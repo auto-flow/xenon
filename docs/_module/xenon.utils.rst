@@ -44,10 +44,10 @@ xenon.utils.dataframe module
    :undoc-members:
    :show-inheritance:
 
-xenon.utils.dict module
---------------------------
+xenon.utils.dict\_ module
+----------------------------
 
-.. automodule:: xenon.utils.dict
+.. automodule:: xenon.utils.dict_
    :members:
    :undoc-members:
    :show-inheritance:
@@ -68,6 +68,14 @@ xenon.utils.hash module
    :undoc-members:
    :show-inheritance:
 
+xenon.utils.json\_ module
+----------------------------
+
+.. automodule:: xenon.utils.json_
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 xenon.utils.klass module
 ---------------------------
 
@@ -76,10 +84,10 @@ xenon.utils.klass module
    :undoc-members:
    :show-inheritance:
 
-xenon.utils.list module
---------------------------
+xenon.utils.list\_ module
+----------------------------
 
-.. automodule:: xenon.utils.list
+.. automodule:: xenon.utils.list_
    :members:
    :undoc-members:
    :show-inheritance:
@@ -124,10 +132,10 @@ xenon.utils.pipeline module
    :undoc-members:
    :show-inheritance:
 
-xenon.utils.sys module
--------------------------
+xenon.utils.sys\_ module
+---------------------------
 
-.. automodule:: xenon.utils.sys
+.. automodule:: xenon.utils.sys_
    :members:
    :undoc-members:
    :show-inheritance:

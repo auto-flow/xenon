@@ -5,29 +5,20 @@
 
 Xenon documentation!
 =====================================
-Xenon : XARC AutoML Platform.
+Xenon : Automatic machine learning platform for XARC.
 
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
-
-   introduction
-   installation
-   examples
 
 .. toctree::
    :maxdepth: 3
-   :caption: API Document
+   :caption: Usage for QSAR
 
-   api
+   qsar
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contribution
+   :maxdepth: 3
+   :caption: Usage for Algorithm Developer
 
-   contact
-   license
+   algo
 
 
 

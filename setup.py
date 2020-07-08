@@ -4,6 +4,7 @@
 # @Contact    : tqichun@gmail.com
 import os
 import re
+import subprocess
 import sys
 
 from setuptools import setup, find_packages
@@ -11,7 +12,6 @@ from setuptools import setup, find_packages
 with open("xenon/__version__.py") as fh:
     version = fh.readlines()[-1].split()[-1].strip("\"'")
 
-# todo: 自动判断并安装 xenon_cli
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname), encoding='utf-8').read()
@@ -27,6 +27,9 @@ if sys.version_info < (3, 5):
         'Unsupported Python version %d.%d.%d found. Xenon requires Python '
         '3.6 or higher.' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
+
+# install xenon_cli
+subprocess.check_call([sys.executable, 'setup.py', 'install'], cwd="./xenon_client")
 
 with open('README.rst') as fh:
     long_description = fh.read()
@@ -78,7 +81,8 @@ setup(
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
-    packages=find_packages("./", exclude=['test', 'examples', 'xenon_server', 'xenon_client', 'scripts']),
+    packages=find_packages("./", exclude=['test', 'examples',
+                                          'xenon_server', 'xenon_client', 'scripts']),
     package_dir={
         'xenon': './xenon',
         'dsmac': './dsmac',

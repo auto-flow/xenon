@@ -9,8 +9,9 @@ Subpackages
 
    xenon.feature_engineer.compress
    xenon.feature_engineer.encode
+   xenon.feature_engineer.impute
    xenon.feature_engineer.operate
-   xenon.feature_engineer.transform
+   xenon.feature_engineer.text
 
 Module contents
 ---------------

@@ -113,8 +113,8 @@ class DataFrameContainer(DataContainer):
             df = self.resource_manager.download_df_from_table(dataset_id, columns, self.columns_mapper)
         else:
             df = self.resource_manager.download_df_from_fs(dataset_path, columns)
-        inverse_columns_mapper = inverse_dict(self.columns_mapper)
-        df.columns.map(inverse_columns_mapper)
+        # inverse_columns_mapper = inverse_dict(self.columns_mapper)
+        # df.columns.map(inverse_columns_mapper)
         # todo: 建立本地缓存，防止二次下载
         self.data = df
         self.set_column_descriptions(column_descriptions)
