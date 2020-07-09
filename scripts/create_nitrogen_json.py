@@ -36,7 +36,7 @@ for key, include_list in relations.items():
         "git_branch": "v3.0",
         "git_commit": "",
         "datasets": "",
-        "command": f"python scripts/{key}.json",
+        "command": f"python scripts/{key}.py",
         "use_gpu": 0,
     }
     data["env"]=variables

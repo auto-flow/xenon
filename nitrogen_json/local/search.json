@@ -5,7 +5,7 @@
     "git_branch": "v3.0",
     "git_commit": "",
     "datasets": "",
-    "command": "python scripts/search.json",
+    "command": "python scripts/search.py",
     "use_gpu": 0,
     "env": {
         "DISPLAY_SIZE": "50",

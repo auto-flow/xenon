@@ -5,7 +5,7 @@
     "git_branch": "v3.0",
     "git_commit": "",
     "datasets": "",
-    "command": "python scripts/predict.json",
+    "command": "python scripts/predict.py",
     "use_gpu": 0,
     "env": {
         "USER_ID": "None",

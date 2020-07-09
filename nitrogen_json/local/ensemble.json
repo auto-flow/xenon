@@ -5,7 +5,7 @@
     "git_branch": "v3.0",
     "git_commit": "",
     "datasets": "",
-    "command": "python scripts/ensemble.json",
+    "command": "python scripts/ensemble.py",
     "use_gpu": 0,
     "env": {
         "USER_ID": "None",
