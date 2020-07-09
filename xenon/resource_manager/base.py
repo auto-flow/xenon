@@ -720,6 +720,10 @@ class ResourceManager(StrSignatureMixin):
         experiment.end_time = end_time
         experiment.save()
 
+    def _get_experiment_record(self,experiment_id):
+        experiment_records=self.ExperimentModel.select().where(self.ExperimentModel.experiment_id==experiment_id).dicts()
+        return list(experiment_records)
+
     def init_experiment_table(self):
         if self.is_init_experiment:
             return

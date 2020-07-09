@@ -1,0 +1,19 @@
+{
+    "name": "xenon_ensemble_script",
+    "description": "xenon ensemble script",
+    "git_url": "git@bitbucket.org:xtalpi/xenon.git",
+    "git_branch": "v3.0",
+    "git_commit": "",
+    "datasets": "",
+    "command": "python scripts/ensemble.json",
+    "use_gpu": 0,
+    "env": {
+        "USER_ID": "None",
+        "USER_TOKEN": "None",
+        "EMAIL": "None",
+        "PASSWORD": "None",
+        "REG_WORKFLOW": "None",
+        "CLF_WORKFLOW": "None"
+    },
+    "docker_image": "harbor.atompai.com/nitrogen/xenon:v3.0"
+}

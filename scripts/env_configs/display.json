@@ -1,25 +1,5 @@
 [
   {
-    "name": "USER_ID",
-    "default": null,
-    "description": ""
-  },
-  {
-    "name": "USER_TOKEN",
-    "default": null,
-    "description": ""
-  },
-  {
-    "name": "EMAIL",
-    "default": null,
-    "description": ""
-  },
-  {
-    "name": "PASSWORD",
-    "default": null,
-    "description": ""
-  },
-  {
     "name": "DISPLAY_SIZE",
     "default": 50,
     "description": "默认只展示最好的50次试验"

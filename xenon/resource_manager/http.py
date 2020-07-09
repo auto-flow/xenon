@@ -178,6 +178,13 @@ class HttpResourceManager(ResourceManager):
         target = f"experiment/{experiment_id}"
         response = send_requests(self.db_params, target, local, method="patch")
 
+    def _get_experiment_record(self,experiment_id):
+        target = f"experiment/{experiment_id}"
+        response = send_requests(self.db_params,target,  method="get")
+        data = response.json()["data"]
+        return extend_to_list(data)
+
+
     ##################################################################
     ############################   task    ###########################
     ##################################################################

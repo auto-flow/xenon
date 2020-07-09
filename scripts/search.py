@@ -2,23 +2,29 @@
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
+###################################
+# Insert current path to sys path #
+###################################
+import os
+import sys
+
+sys.path.insert(0, os.getcwd())
+###################################
 import logging
 import multiprocessing as mp
-import os
-from pathlib import Path
 
-import joblib
 import numpy as np
-import pandas as pd
 
 from xenon import XenonClassifier, XenonRegressor
 from xenon.hdl.hdl_constructor import HDL_Constructor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.tuner import Tuner
-from scripts.utils import EnvUtils
+from scripts.utils import EnvUtils, save_current_expriment_model, load_data_from_datapath, display
 
 env_utils = EnvUtils()
+env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/search.json")
+env_utils.from_json("env_configs/display.json")
 env_utils.update()
 env_utils.print()
 logger = logging.getLogger("search.py")
@@ -95,35 +101,19 @@ else:
 ######################
 # 从DATAPATH中加载数据 #
 ######################
+feature_name_list = env_utils.FEATURE_NAME_LIST
+column_descriptions = env_utils.COLUMN_DESCRIPTIONS
 train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
-if traditional_qsar_mode:
-    logger.info(f"MODEL_TYPE = {model_type}")
-    logger.info(f"TRAIN_TARGET_COLUMN_NAME = {train_target_column_name}")
-    data = pd.read_csv(f"{datapath}/data/data.csv")
-    assert train_target_column_name in data.columns, ValueError(
-        f"TRAIN_TARGET_COLUMN_NAME {train_target_column_name} do not exist in data.csv")
-    data = data[["NAME", train_target_column_name]]
-    feature_combination_table = pd.read_csv(f"{datapath}/data/feature_combination_table.csv")
-    feature_dir = f"{datapath}/data/feature"
-    feature_name_list = env_utils.FEATURE_NAME_LIST
-    for feature_file in Path(feature_dir).iterdir():
-        FP_name = feature_file.name.split(".")[0]
-        if feature_name_list is not None and FP_name not in feature_name_list:
-            logger.info(f"{FP_name} is ignored.")
-            continue
-        df = pd.read_csv(feature_file)
-        data = data.merge(df, on="NAME")
-    column_descriptions = {
-        "target": train_target_column_name,
-        "id": "NAME"
-    }
-else:
-    column_descriptions = env_utils.COLUMN_DESCRIPTIONS
-    if "target" not in column_descriptions:
-        column_descriptions["target"] = train_target_column_name
-    data = pd.read_csv(datapath)
-    assert train_target_column_name in data.columns, ValueError(
-        f"TRAIN_TARGET_COLUMN_NAME {train_target_column_name} do not exist in data.csv")
+# 公用的数据加载部分
+data, column_descriptions = load_data_from_datapath(
+    datapath,
+    train_target_column_name,
+    logger,
+    traditional_qsar_mode,
+    model_type,
+    feature_name_list,
+    column_descriptions
+)
 #######################################
 # 调用Xenon对象的fit函数启动搜索过程  #
 #######################################
@@ -175,7 +165,7 @@ if metric is not None:
         metric = None  # use default metric
     metric = metrics[metric]
 # ------------------#
-# splitter 数据切分 #
+# splitter 数据切分  #
 # ------------------#
 from sklearn.model_selection import KFold, StratifiedKFold, LeaveOneOut, ShuffleSplit
 
@@ -222,11 +212,9 @@ xenon.fit(
 # 实验完成，保存最好的模型到SAVEDPATH  #
 ######################################
 experiment_id = xenon.experiment_id
-final_model_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
-logger.info(
-    f"Experiment(experiment_id={experiment_id}) is finished, the best model will be saved in {final_model_path}.")
-final_model = xenon.copy()
-joblib.dump(final_model,final_model_path)
+save_current_expriment_model(savedpath, experiment_id, logger, xenon)
 ###########################
 # 调用display.py进行可视化 #
 ###########################
+display(resource_manager, xenon.task_id,
+        env_utils.DISPLAY_SIZE, savedpath)

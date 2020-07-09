@@ -472,6 +472,7 @@ class XenonEstimator(BaseEstimator):
         ensemble_estimator.fit_trained_data(estimator_list, y_true_indexes_list, y_preds_list, y_true)
         self.ensemble_estimator = ensemble_estimator
         if fit_ensemble_alone:
+            self.estimator = self.ensemble_estimator
             self.resource_manager.finish_experiment(self.log_path, self)
         return self.ensemble_estimator
 

@@ -1,25 +1,5 @@
 [
   {
-    "name": "USER_ID",
-    "default": null,
-    "description": ""
-  },
-  {
-    "name": "USER_TOKEN",
-    "default": null,
-    "description": ""
-  },
-  {
-    "name": "EMAIL",
-    "default": null,
-    "description": ""
-  },
-  {
-    "name": "PASSWORD",
-    "default": null,
-    "description": ""
-  },
-  {
     "name": "DATASET_NAME",
     "default": null,
     "description": "数据集名称"

@@ -1,0 +1,7 @@
+[
+  {
+    "name": "FEATURE_NAME_LIST",
+    "default": null,
+    "description": "非空时为指定使用某几种特征，如['SubFP']"
+  }
+]
