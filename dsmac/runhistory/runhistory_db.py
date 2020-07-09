@@ -143,6 +143,11 @@ class RunHistoryDB():
         self.timestamp = datetime.datetime.now()
         final_cost = np.inf
         final_config = None
+        if len(query) > 0:
+            for hp in self.config_space.get_hyperparameters():
+                if hp.__class__.__name__ == "Constant" and hp.name.endswith("n_jobs"):
+                    new_n_jobs = hp.value
+                    break
         for model in query:
             run_id = model["run_id"]
             config_id = model["config_id"]
@@ -160,13 +165,20 @@ class RunHistoryDB():
             #     config = pickle.loads(config_bin)
             # except Exception as e:
             # self.logger.error(f"{e}\nUsing config json instead to build Configuration.")
+            config = self.replace_configuration(config, new_n_jobs)
             config = Configuration(self.config_space, values=config, origin=config_origin)
             self.runhistory.add(config, cost, time, StatusType(status), instance_id, seed, additional_info,
                                 DataOrigin(origin))
             if cost < final_cost:
                 final_config = config
-                final_cost=cost
+                final_cost = cost
         return final_cost, final_config
+
+    def replace_configuration(self,config: dict, new_n_jobs):
+        for k, v in config.items():
+            if k.endswith("n_jobs"):
+                config[k] = new_n_jobs
+        return config
 
     def _fetch_new_runhistory(self, instance_id, pid, timestamp, is_init):
         if is_init:

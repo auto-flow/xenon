@@ -92,7 +92,7 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         response = session.delete(**kwargs)
     elif method == "patch":
         response = session.patch(**kwargs)
-    elif method =="put":
+    elif method == "put":
         response = session.put(**kwargs)
     else:
         raise NotImplementedError
@@ -100,8 +100,12 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
     ok = judge_state_code(response)
     json_data: dict = response.json()
     if json_data["code"] != "1" or (not ok):
-        if json_data["code"] != "1":
-            logger.warning(f"request url {url} code != 1 .")
+        if not ok:
+            err_info = f"request url {url} status_code = {response.status_code} ."
+        else:
+            err_info = f"request url {url} response code != 1 ."
+        log_file_name = f"{datetime.datetime.now()}.json"
+        logger.warning(f"{err_info} log_file_name = {log_file_name}")
         savedpath = os.getenv("SAVEDPATH")
         if savedpath is not None:
             root_path = savedpath
@@ -109,11 +113,14 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
             root_path = f"{os.getenv('HOME')}/xenon"
         log_path = f"{root_path}/requests_err"
         Path(log_path).mkdir(parents=True, exist_ok=True)
-        log_file = f"{log_path}/{datetime.datetime.now()}.json"
+        log_file = f"{log_path}/{log_file_name}"
         json_data.update({
             "status_code": response.status_code,
-            "url": url,
-            "headers": headers
+            "db_params": db_params,
+            "target": target,
+            "json_data": json_data,
+            "params": params,
+            "method": method,
         })
         Path(log_file).write_text(json.dumps(json_data))
     return response
