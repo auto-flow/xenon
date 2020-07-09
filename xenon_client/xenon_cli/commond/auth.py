@@ -69,3 +69,13 @@ def login(email, password):
     })
     Path(token_file).write_text(json.dumps(config))
     print("Login Success.")
+
+@auth.command()
+def token():
+    config=json.loads(Path(token_file).read_text())
+    print("USER_ID:")
+    print(config["user_id"])
+    print("USER_TOKEN:")
+    print(config["user_token"])
+
+

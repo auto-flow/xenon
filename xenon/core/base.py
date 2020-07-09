@@ -7,6 +7,9 @@ from typing import Union, Optional, Dict, List, Any
 
 import numpy as np
 import pandas as pd
+from xenon.ensemble.mean.regressor import MeanRegressor
+
+from xenon.ensemble.vote.classifier import VoteClassifier
 from frozendict import frozendict
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -464,12 +467,22 @@ class XenonEstimator(BaseEstimator):
             task_id, hdl_id, trial_ids, self.resource_manager).fetch()
         # todo: 在这里，只取了验证集的数据，没有取测试集的数据。待拓展
         ml_task, y_true = self.resource_manager.get_ensemble_needed_info(task_id)
-        ensemble_estimator_package_name = f"xenon.ensemble.{ensemble_type}.{ml_task.role}"
-        ensemble_estimator_package = import_module(ensemble_estimator_package_name)
-        ensemble_estimator_class_name = get_class_name_of_module(ensemble_estimator_package_name)
-        ensemble_estimator_class = getattr(ensemble_estimator_package, ensemble_estimator_class_name)
-        ensemble_estimator: EnsembleEstimator = ensemble_estimator_class(**ensemble_params)
-        ensemble_estimator.fit_trained_data(estimator_list, y_true_indexes_list, y_preds_list, y_true)
+        if len(estimator_list)==0:
+            raise ValueError("Length of estimator_list must >=1. ")
+        elif len(estimator_list)==1:
+            self.logger.info("Length of estimator_list == 1, don't do ensemble.")
+            if ml_task.mainTask == "classification":
+                ensemble_estimator = VoteClassifier(estimator_list[0])
+            else:
+                ensemble_estimator = MeanRegressor(estimator_list[0])
+        else:
+            ensemble_estimator_package_name = f"xenon.ensemble.{ensemble_type}.{ml_task.role}"
+            ensemble_estimator_package = import_module(ensemble_estimator_package_name)
+            ensemble_estimator_class_name = get_class_name_of_module(ensemble_estimator_package_name)
+            ensemble_estimator_class = getattr(ensemble_estimator_package, ensemble_estimator_class_name)
+            # ensemble_estimator : EnsembleEstimator
+            ensemble_estimator = ensemble_estimator_class(**ensemble_params)
+            ensemble_estimator.fit_trained_data(estimator_list, y_true_indexes_list, y_preds_list, y_true)
         self.ensemble_estimator = ensemble_estimator
         if fit_ensemble_alone:
             self.estimator = self.ensemble_estimator

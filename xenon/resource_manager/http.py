@@ -136,6 +136,7 @@ class HttpResourceManager(ResourceManager):
     ):
         local = get_valid_params_in_kwargs(self._insert_dataset_record, locals())
         local.pop("user_id")
+        local["columns"] = json.dumps(local["columns"])
         target = "dataset"
         response = send_requests(self.db_params, target, local)
         data = response.json()["data"]
@@ -178,12 +179,11 @@ class HttpResourceManager(ResourceManager):
         target = f"experiment/{experiment_id}"
         response = send_requests(self.db_params, target, local, method="patch")
 
-    def _get_experiment_record(self,experiment_id):
+    def _get_experiment_record(self, experiment_id):
         target = f"experiment/{experiment_id}"
-        response = send_requests(self.db_params,target,  method="get")
+        response = send_requests(self.db_params, target, method="get")
         data = response.json()["data"]
         return extend_to_list(data)
-
 
     ##################################################################
     ############################   task    ###########################
@@ -195,6 +195,8 @@ class HttpResourceManager(ResourceManager):
                             specific_task_token: str, task_metadata: Dict[str, Any], sub_sample_indexes: List[int],
                             sub_feature_indexes: List[str]):
         local = get_valid_params_in_kwargs(self._insert_task_record, locals())
+        local["sub_sample_indexes"] = json.dumps(local["sub_sample_indexes"])
+        local["sub_feature_indexes"] = json.dumps(local["sub_feature_indexes"])
         local.pop("user_id")
         target = "task"
         data = send_requests(self.db_params, target, local).json()["data"]
