@@ -114,15 +114,15 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         log_path = f"{root_path}/requests_err"
         Path(log_path).mkdir(parents=True, exist_ok=True)
         log_file = f"{log_path}/{log_file_name}"
-        json_data.update({
+        err_data = {
             "status_code": response.status_code,
             "db_params": db_params,
             "target": target,
             "json_data": json_data,
             "params": params,
             "method": method,
-        })
-        Path(log_file).write_text(json.dumps(json_data))
+        }
+        Path(log_file).write_text(json.dumps(err_data))
     return response
 
 
