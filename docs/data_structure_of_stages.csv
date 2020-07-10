@@ -1,0 +1,6 @@
+Stage,Description,Dataset,Options,Arguments,ENV
+Vectorization,矢量化,data.csv,-,-,
+Search,模型选择与超参搜索,Vectorization的结果,-,-,:ref:`Search ENV Table`
+Display,可视化,-,task_id,-,:ref:`Display ENV Table`
+Ensemble,集成学习,-,task_id,trial_id list,:ref:`Ensemble ENV Table`
+Predict,预测,Vectorization的结果,experiment_id,-,:ref:`Predict ENV Table`

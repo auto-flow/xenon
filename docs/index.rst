@@ -13,6 +13,8 @@ Xenon : Automatic machine learning platform for XARC.
    :caption: Usage for QSAR
 
    qsar
+   nitrogen_job_temp
+   env_table
 
 .. toctree::
    :maxdepth: 3

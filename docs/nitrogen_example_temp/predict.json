@@ -1,0 +1,18 @@
+{
+    "name": "xenon_predict_script",
+    "description": "xenon predict script",
+    "git_url": "git@bitbucket.org:xtalpi/xenon.git",
+    "git_branch": "v3.0",
+    "git_commit": "",
+    "datasets": "25345",
+    "command": "python scripts/predict.py --experiment_id=54 ",
+    "use_gpu": 0,
+    "env": {
+        "USER_ID": "60",
+        "USER_TOKEN": "Your Token",
+        "EMAIL": "None",
+        "PASSWORD": "None",
+        "FEATURE_NAME_LIST": "None"
+    },
+    "docker_image": "harbor.atompai.com/nitrogen/xenon:v3.0"
+}

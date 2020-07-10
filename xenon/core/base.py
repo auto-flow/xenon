@@ -22,7 +22,7 @@ from xenon.ensemble.base import EnsembleEstimator
 from xenon.ensemble.trained_data_fetcher import TrainedDataFetcher
 from xenon.ensemble.trials_fetcher import TrialsFetcher
 from xenon.hdl.hdl_constructor import HDL_Constructor
-from xenon.metrics import r2, accuracy
+from xenon.metrics import r2, mcc
 from xenon.resource_manager.base import ResourceManager
 from xenon.tuner import Tuner
 from xenon.utils.concurrence import get_chunks
@@ -236,7 +236,7 @@ class XenonEstimator(BaseEstimator):
             if self.ml_task.mainTask == "regression":
                 metric = r2
             elif self.ml_task.mainTask == "classification":
-                metric = accuracy
+                metric = mcc  # qsar需求
             else:
                 raise NotImplementedError()
         self.metric = metric

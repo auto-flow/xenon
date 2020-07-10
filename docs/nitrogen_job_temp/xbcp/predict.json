@@ -1,0 +1,18 @@
+{
+    "name": "xenon_predict_script",
+    "description": "xenon predict script",
+    "git_url": "git@bitbucket.org:xtalpi/xenon.git",
+    "git_branch": "v3.0",
+    "git_commit": "",
+    "datasets": "",
+    "command": "python scripts/predict.py",
+    "use_gpu": 0,
+    "env": {
+        "USER_ID": "None",
+        "USER_TOKEN": "None",
+        "EMAIL": "None",
+        "PASSWORD": "None",
+        "FEATURE_NAME_LIST": "None"
+    },
+    "docker_image": "477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0"
+}

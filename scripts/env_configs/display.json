@@ -2,6 +2,6 @@
   {
     "name": "DISPLAY_SIZE",
     "default": 50,
-    "description": "默认只展示最好的50次试验"
+    "description": "默认只展示最好的 ``50`` 次试验"
   }
 ]

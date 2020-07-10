@@ -2,32 +2,32 @@
   {
     "name": "DATASET_NAME",
     "default": null,
-    "description": "数据集名称"
+    "description": "数据集名称，如 ``C204`` "
   },
   {
     "name": "DATASET_DESCRIPTION",
     "default": null,
-    "description": "数据集描述"
+    "description": "数据集描述，如 ``C204是来自xx数据库的数据集`` "
   },
   {
     "name": "TASK_NAME",
     "default": null,
-    "description": "任务名称"
+    "description": "任务名称，如 ``C204-5Fold-mcc`` "
   },
   {
     "name": "TASK_DESCRIPTION",
     "default": null,
-    "description": "任务描述"
+    "description": "任务描述，如 ``建模数据是C204，验证方法是5折交叉，评价指标是mcc`` "
   },
   {
     "name": "MODEL_TYPE",
     "default": "clf",
-    "description": "分类问题:clf，回归问题：reg"
+    "description": "分类问题: ``clf`` ，回归问题： ``reg`` "
   },
   {
     "name": "COLUMN_DESCRIPTIONS",
     "default": {},
-    "description": "列描述"
+    "description": "列描述，为一字典。 ``id`` 为主键， ``target`` 为拟合目标， ``ignore`` 为无关列。\n\n如： ``{'id' : 'NAME' ,'target' : 'pIC50','ignore' : ['SMILES']}`` "
   },
   {
     "name": "CLF_WORKFLOW",
@@ -89,56 +89,56 @@
   {
     "name": "TRAIN_TARGET_COLUMN_NAME",
     "default": "active",
-    "description": "训练集的列名"
+    "description": "训练集的列名，如回归任务的 ``pIC50`` ， 分类任务的 ``active`` "
   },
   {
     "name": "METRIC",
     "default": null,
-    "description": "用于排序的模型评测标准。"
+    "description": "模型评价指标，若为空，分类为 ``mcc`` ，回归为 ``r2`` "
   },
   {
     "name": "KFOLD",
     "default": 5,
-    "description": "搜索时使用的交叉验证的折数，2~10为交叉验证"
+    "description": "搜索时使用的交叉验证的折数， ``2~10`` 为交叉验证，\n\n``0.1~0.99`` 为 ``Holdout`` ， ``1`` 为留1验证 "
   },
   {
     "name": "SPECIFIC_TASK_TOKEN",
     "default": null,
-    "description": "不想让相同的任务关联到一个task_id时，设置这个参数"
+    "description": "不想让相同的任务关联到一个 ``task_id`` 时，设置这个参数"
   },
   {
     "name": "SEARCH_THREAD_NUM",
     "default": 3,
-    "description": "搜索时启动的线程数"
+    "description": "搜索时启动的进程数。届时，将有 ``SEARCH_THREAD_NUM`` 个进程同时执行 训练->预测 的验证过程"
   },
   {
     "name": "N_JOBS_IN_ALGORITHM",
     "default": null,
-    "description": "单个算法的进程数"
+    "description": "单个算法的进程数，如果为空，程序会自动帮你计算一个能利用该计算机所有资源的值"
   },
   {
     "name": "RANDOM_RUNS",
     "default": 40,
-    "description": "随机搜索次数"
+    "description": "随机搜索次数。总搜索次数为 ``RANDOM_RUNS`` + ``BAYES_RUNS`` ，随机搜索是贝叶斯搜索的启动过程，\n\n建议设置为总搜索次数的30%-50%"
   },
   {
     "name": "BAYES_RUNS",
     "default": 60,
-    "description": "SMAC(一种贝叶斯搜索算法)搜索次数"
+    "description": "SMAC(一种贝叶斯搜索算法)搜索次数 。 届时搜索算法只会在随机搜索中产生的 ``优势样本`` 的附近采样，\n\n算法结束全局 **探索** 开始进入局部 **开发** 。"
   },
   {
     "name": "RANDOM_STATE",
     "default": null,
-    "description": "搜索和投票时使用的random_state"
+    "description": "搜索时使用的random_state。对样本的随机采样的随机种子就是 ``RANDOM_STATE`` ，\n\n为空会随机产生一个随机种子。"
   },
   {
     "name": "FEATURE_NAME_LIST",
     "default": null,
-    "description": "非空时为指定使用某几种特征，如['SubFP']"
+    "description": "非空时为指定使用某几种特征，如 ``['SubFP']`` "
   },
   {
     "name": "ENSEMBLE_SIZE",
     "default": 10,
-    "description": "做stacking集成学习集成的模型数，<=1表示不做集成学习"
+    "description": "做 ``stacking`` 集成学习集成的模型数，``<=1`` 表示不做集成学习，加载表现最好的模型。"
   }
 ]

@@ -1,0 +1,5 @@
+name,default,description
+USER_ID,None, ``xenon_cli login`` 后，用 ``xenon_cli token`` 查看 ``USER_ID`` 
+USER_TOKEN,None, 如上步骤，查看 ``USER_TOEKN`` 
+EMAIL,None,登录邮箱。你可以采取 ``USER_ID`` + ``USER_TOEKN`` 的方式登录，
+PASSWORD,None,也可以采取 ``EMAIL`` + ``PASSWORD`` 的方式登录

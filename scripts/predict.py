@@ -43,7 +43,7 @@ else:
     print("DATAPATH 为用户自定义模式，传入的是用户自定义的特征文件。")
     print("""需要注意的是，该模式下用户需要指定'COLUMN_DESCRIPTIONS'环境变量
 如：
-COLUMN_DESCRIPTIONS = {'target' : 'pIC50','ignore' : ['SMILES', 'NAME']}
+COLUMN_DESCRIPTIONS = {'id' : "NAME" ,'target' : 'pIC50','ignore' : ['SMILES']}
 """)
 
 

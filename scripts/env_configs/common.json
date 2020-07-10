@@ -2,21 +2,21 @@
   {
     "name": "USER_ID",
     "default": null,
-    "description": ""
+    "description": " ``xenon_cli login`` 后，用 ``xenon_cli token`` 查看 ``USER_ID`` "
   },
   {
     "name": "USER_TOKEN",
     "default": null,
-    "description": ""
+    "description": " 如上步骤，查看 ``USER_TOEKN`` "
   },
   {
     "name": "EMAIL",
     "default": null,
-    "description": ""
+    "description": "登录邮箱。你可以采取 ``USER_ID`` + ``USER_TOEKN`` 的方式登录，"
   },
   {
     "name": "PASSWORD",
     "default": null,
-    "description": ""
+    "description": "也可以采取 ``EMAIL`` + ``PASSWORD`` 的方式登录"
   }
 ]
