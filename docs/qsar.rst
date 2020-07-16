@@ -48,7 +48,7 @@ Register and Login
 
 .. code-block:: bash
 
-   $ git clone git@bitbucket.org:xtalpi/xenon.git v3.0
+   $ git clone -b v3.0 git@bitbucket.org:xtalpi/xenon.git
    $ cd xenon_client
    $ python setup.py install
 
@@ -177,7 +177,7 @@ Predict Stage
     在整个 `Usage of QSAR` 中，只有 **search步骤** 和 **predict步骤** 需要指定数据集 `DATAPATH` ，其他的步骤只需要在  `command` 中传入各种ID。
 
 
-**search步骤**  需要在 `command` 中指定 ``experiment_id`` 。你可以理解，一次实验完成后会产生一个最好的模型（这个模型可以是 ``trials`` 中表现最好的模型，也可以是表现最好的 `K` 个模型集成学习后的模型），并且 **ensemble步骤** 也是被视为一次实验的。只要传入 ``experiment_id`` ，就能加载与之关联的最好模型，然后拿这个模型与预测 `DATAPATH` 中提供的数据
+**predict步骤**  需要在 `command` 中指定 ``experiment_id`` 。你可以理解，一次实验完成后会产生一个最好的模型（这个模型可以是 ``trials`` 中表现最好的模型，也可以是表现最好的 `K` 个模型集成学习后的模型），并且 **ensemble步骤** 也是被视为一次实验的。只要传入 ``experiment_id`` ，就能加载与之关联的最好模型，然后拿这个模型与预测 `DATAPATH` 中提供的数据
 
 
 
