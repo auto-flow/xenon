@@ -131,6 +131,7 @@ def load_data_from_datapath(
             needed_columns.append(train_target_column_name)
         data = data[needed_columns]
         feature_dir = f"{datapath}/feature"
+        # todo: 排序
         for feature_file in Path(feature_dir).iterdir():
             FP_name = feature_file.name.split(".")[0]
             if feature_name_list is not None and FP_name not in feature_name_list:

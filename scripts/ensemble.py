@@ -8,8 +8,6 @@
 import os
 import sys
 
-from xenon.utils.logging_ import setup_logger
-
 sys.path.insert(0, os.getcwd())
 ###################################
 import logging
@@ -17,6 +15,7 @@ import os
 
 import click
 
+from xenon.utils.logging_ import setup_logger
 from xenon import XenonClassifier, XenonRegressor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.ml_task import MLTask
@@ -32,6 +31,7 @@ setup_logger(
     f"{savedpath}/xenon.log"
 )
 env_utils.print(logger)
+
 
 @click.command()
 @click.argument("trial_ids", nargs=-1)
