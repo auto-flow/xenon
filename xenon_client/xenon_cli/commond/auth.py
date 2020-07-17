@@ -11,7 +11,8 @@ import requests
 
 token_dir = f"{os.getenv('HOME')}/xenon/auth"
 token_file = f"{token_dir}/config.json"
-url = "http://192.168.1.182:9901"
+# url = "http://192.168.1.182:9901"
+url = os.getenv("XENON_URL", "https://xacs.nitrogen.fun:9090")
 
 
 @click.group()
@@ -51,7 +52,7 @@ def login(email, password):
                              json={"user": email, "password": password})
     if response.status_code != 200:
         raise ConnectionError(f"response.status_code = {response.status_code}")
-    json_data=response.json()
+    json_data = response.json()
     data = json_data["data"]
     # print(json_data)
     # print(data)
@@ -61,7 +62,7 @@ def login(email, password):
     if Path(token_file).exists():
         config: dict = json.loads(Path(token_file).read_text())
     else:
-        config={}
+        config = {}
     config.update({
         "user_token": user_token,
         "user_id": user_id,
@@ -70,12 +71,11 @@ def login(email, password):
     Path(token_file).write_text(json.dumps(config))
     print("Login Success.")
 
+
 @auth.command()
 def token():
-    config=json.loads(Path(token_file).read_text())
+    config = json.loads(Path(token_file).read_text())
     print("USER_ID:")
     print(config["user_id"])
     print("USER_TOKEN:")
     print(config["user_token"])
-
-

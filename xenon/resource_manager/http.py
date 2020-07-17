@@ -27,7 +27,8 @@ class HttpResourceManager(ResourceManager):
     ):
 
         if url is None:
-            url = "http://192.168.1.182:9901"
+            # url = "http://192.168.1.182:9901"
+            url = os.getenv("XENON_URL", "https://xacs.nitrogen.fun:9090")
         # todo: 增加encrypt字段
         self.url = url
         self.user_token = user_token

@@ -700,8 +700,6 @@ class ResourceManager(StrSignatureMixin):
             if del_local_log_path:
                 os.remove(local_log_path)
             experiment_log_path = self.file_system.upload(experiment_log_path, tmp_log_path)
-            if os.path.exists(local_log_path):
-                os.remove(local_log_path)
         else:
             experiment_log_path = ""
             self.logger.warning(f"Local log path : '{local_log_path}' didn't exist!")

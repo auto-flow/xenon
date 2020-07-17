@@ -55,7 +55,10 @@ class EnvUtils:
         try:
             return ast.literal_eval(value)
         except:
-            return value
+            try:
+                return json.loads(value)
+            except:
+                return value
 
     def get_data(self):
         data = []

@@ -27,7 +27,6 @@ env_utils.print()
 logger = logging.getLogger("display.py")
 savedpath = os.getenv("SAVEDPATH", ".")
 
-
 @click.command()
 @click.option("--task_id")
 def main(task_id):
