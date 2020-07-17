@@ -66,7 +66,7 @@ class NitrogenFS(FileSystem):
         data = response.json()["data"]
         url = data.get("url")
         if url is None: # path already exists
-            return response.json()["message"][0]
+            return str(response.json()["message"][0])
         s3_header = {'Content-Type': 'multipart/form-data'}
         with open(local_path, 'rb') as f:
             requests.put(url, data=f, headers=s3_header)

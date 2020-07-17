@@ -8,6 +8,7 @@ run_qsar_clf.py
 run_qsar_reg.py
 run_classifier.py
 run_ova_clf.py
+delete_datasets.py
 
 move.py
 *.db

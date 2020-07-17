@@ -25,7 +25,6 @@ env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/predict.json")
 env_utils.update()
-env_utils.print()
 logger = logging.getLogger("predict.py")
 
 # DATAPATH 有两种形式，
@@ -34,7 +33,10 @@ logger = logging.getLogger("predict.py")
 datapath = os.getenv("DATAPATH")
 savedpath = os.getenv("SAVEDPATH", ".")
 assert datapath is not None
-print(f"DATAPATH: {datapath}")
+setup_logger(
+    f"{savedpath}/xenon.log"
+)
+logger.info(f"DATAPATH: {datapath}")
 traditional_qsar_mode = True
 if os.path.isdir(datapath):
     print("DATAPATH 为传统QSAR模式，传入的是分子指纹矢量化后的结果。")
@@ -45,7 +47,8 @@ else:
 如：
 COLUMN_DESCRIPTIONS = {'id' : "NAME" ,'target' : 'pIC50','ignore' : ['SMILES']}
 """)
-
+logger.info(f"traditional_qsar_mode = {traditional_qsar_mode}")
+env_utils.print(logger)
 
 @click.command()
 @click.option("--experiment_id")
@@ -55,9 +58,7 @@ def main(experiment_id):
     # 加载数据
     # 调用predict方法对数据进行预测
     # 保存结果到savedpath
-    setup_logger(
-        f"{savedpath}/xenon.log"
-    )
+
     ######################################
     # 实例化resource_manager（资源管理器） #
     ######################################

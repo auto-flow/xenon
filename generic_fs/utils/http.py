@@ -98,8 +98,8 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         raise NotImplementedError
     # todo: 如果token过期，自动登录并重新请求
     ok = judge_state_code(response)
-    json_data: dict = response.json()
-    if json_data["code"] != "1" or (not ok):
+    json_response: dict = response.json()
+    if json_response["code"] != "1" or (not ok):
         if not ok:
             err_info = f"request url {url} status_code = {response.status_code} ."
         else:
@@ -116,9 +116,11 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         log_file = f"{log_path}/{log_file_name}"
         err_data = {
             "status_code": response.status_code,
+            "url": url,
             "db_params": db_params,
             "target": target,
             "json_data": json_data,
+            "json_response": json_response,
             "params": params,
             "method": method,
         }

@@ -8,6 +8,8 @@
 import os
 import sys
 
+from xenon.utils.logging_ import setup_logger
+
 sys.path.insert(0, os.getcwd())
 ###################################
 import logging
@@ -24,10 +26,12 @@ env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/ensemble.json")
 env_utils.update()
-env_utils.print()
 logger = logging.getLogger("ensemble.py")
 savedpath = os.getenv("SAVEDPATH", ".")
-
+setup_logger(
+    f"{savedpath}/xenon.log"
+)
+env_utils.print(logger)
 
 @click.command()
 @click.argument("trial_ids", nargs=-1)

@@ -14,7 +14,7 @@ import logging
 import multiprocessing as mp
 
 import numpy as np
-
+from xenon.utils.logging_ import setup_logger
 from xenon import XenonClassifier, XenonRegressor
 from xenon.hdl.hdl_constructor import HDL_Constructor
 from xenon.resource_manager.http import HttpResourceManager
@@ -26,7 +26,6 @@ env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/search.json")
 env_utils.from_json("env_configs/display.json")
 env_utils.update()
-env_utils.print()
 logger = logging.getLogger("search.py")
 
 # DATAPATH 有两种形式，
@@ -35,7 +34,10 @@ logger = logging.getLogger("search.py")
 datapath = os.getenv("DATAPATH")
 savedpath = os.getenv("SAVEDPATH", ".")
 assert datapath is not None
-print(f"DATAPATH: {datapath}")
+setup_logger(
+    f"{savedpath}/xenon.log"
+)
+logger.info(f"DATAPATH: {datapath}")
 traditional_qsar_mode = True
 if os.path.isdir(datapath):
     print("DATAPATH 为传统QSAR模式，传入的是分子指纹矢量化后的结果。")
@@ -46,6 +48,9 @@ else:
 如：
 COLUMN_DESCRIPTIONS = {'id' : "NAME" ,'target' : 'pIC50','ignore' : ['SMILES']}
 """)
+logger.info(f"traditional_qsar_mode = {traditional_qsar_mode}")
+env_utils.print(logger)
+
 ######################################
 # 实例化resource_manager（资源管理器） #
 ######################################
@@ -66,7 +71,7 @@ tuner = Tuner(
     initial_runs=env_utils.RANDOM_RUNS,
     run_limit=env_utils.BAYES_RUNS,
     n_jobs=search_thread_num,
-    per_run_time_limit=60 * 30,  # 单个算法的最大运行时间为30分钟
+    per_run_time_limit=60 * 30,  # 单个算法的最大运行时间为30分钟 # TODO: 添加option
     per_run_memory_limit=30 * 1024,  # 单个算法的最大内存使用为30G
     n_jobs_in_algorithm=n_jobs_in_algorithm
 )

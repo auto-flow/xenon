@@ -54,6 +54,7 @@ extensions = [
     # 'sphinx_gallery.gen_gallery',
 ]
 
+html_favicon = 'favicon.png'
 autoclass_content = 'both'
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

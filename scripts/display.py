@@ -23,16 +23,16 @@ env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/display.json")
 env_utils.update()
-env_utils.print()
 logger = logging.getLogger("display.py")
 savedpath = os.getenv("SAVEDPATH", ".")
+setup_logger(
+    f"{savedpath}/xenon.log"
+)
+env_utils.print(logger)
 
 @click.command()
 @click.option("--task_id")
 def main(task_id):
-    setup_logger(
-        f"{savedpath}/xenon.log"
-    )
     assert task_id is not None, ValueError("task_id is None")
     ######################################
     # 实例化resource_manager（资源管理器） #

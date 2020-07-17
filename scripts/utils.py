@@ -7,7 +7,6 @@ import json
 import os
 from copy import deepcopy
 from pathlib import Path
-from pprint import pprint
 from typing import Tuple
 
 import joblib
@@ -75,17 +74,21 @@ class EnvUtils:
         data, self.long_data = self.get_data()
         return tabulate(data, headers=["name", "value"])
 
-    def print(self):
-        print(self)
+    def print(self, logger=None):
+        if logger is None:
+            func = print
+        else:
+            func = logger.info
+        func(str(self))
         if len(self.long_data) > 0:
-            print("--------------------")
-            print("| Complex variable |")
-            print("--------------------")
+            func("--------------------")
+            func("| Complex variable |")
+            func("--------------------")
 
             for k, v in self.long_data:
-                print(k + " : " + type(v).__name__)
-                pprint(v)
-                print("-" * 50)
+                func(k + " : " + type(v).__name__)
+                func(v)
+                func("-" * 50)
 
     __repr__ = __str__
 
@@ -156,14 +159,15 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
     final_model = xenon.copy()
     joblib.dump(final_model, final_model_path)
 
-def display(resource_manager,task_id, display_size,savedpath):
+
+def display(resource_manager, task_id, display_size, savedpath):
     user_id = resource_manager.user_id
     records = resource_manager._get_sorted_trial_records(task_id, user_id, display_size)
     ml_task, y_train = resource_manager.get_ensemble_needed_info(task_id)
     y_train = y_train.data
     # 处理records, 加载y_info_path
     processed_records = []
-    records_=deepcopy(records)
+    records_ = deepcopy(records)
     for record in records_:
         y_info_path = record["y_info_path"]
         # keys: ['y_true_indexes', 'y_preds', 'y_test_pred']
