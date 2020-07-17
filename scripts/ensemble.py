@@ -20,7 +20,7 @@ import click
 from xenon import XenonClassifier, XenonRegressor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.ml_task import MLTask
-from scripts.utils import EnvUtils, save_current_expriment_model
+from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json
 
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
@@ -82,6 +82,12 @@ def main(task_id, trial_ids):
     logger.info(f"task_id:\t{task_id}")
     logger.info(f"experiment_id:\t{experiment_id}")
     # 保存当前实验的模型
+    save_info_json(
+        xenon.experiment_id,
+        xenon.task_id,
+        xenon.hdl_id,
+        savedpath
+    )
     save_current_expriment_model(savedpath, experiment_id, logger, xenon)
 
 

@@ -184,3 +184,14 @@ def display(resource_manager, task_id, display_size, savedpath):
     search_records_df = pd.DataFrame(output_records)
     search_records_path = f"{savedpath}/search_records.csv"
     search_records_df.to_csv(search_records_path, index=False)
+
+
+def save_info_json(experiment_id, task_id, hdl_id, savedpath):
+    info = {}
+    if experiment_id is not None:
+        info["experiment_id"] = experiment_id
+    if task_id is not None:
+        info["task_id"] = task_id
+    if hdl_id is not None:
+        info["hdl_id"] = hdl_id
+    Path(f"{savedpath}/info.json").write_text(json.dumps(info))

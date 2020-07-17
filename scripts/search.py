@@ -19,7 +19,7 @@ from xenon import XenonClassifier, XenonRegressor
 from xenon.hdl.hdl_constructor import HDL_Constructor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.tuner import Tuner
-from scripts.utils import EnvUtils, save_current_expriment_model, load_data_from_datapath, display
+from scripts.utils import EnvUtils, save_current_expriment_model, load_data_from_datapath, display, save_info_json
 
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
@@ -218,6 +218,12 @@ xenon.fit(
 ######################################
 experiment_id = xenon.experiment_id
 save_current_expriment_model(savedpath, experiment_id, logger, xenon)
+save_info_json(
+    xenon.experiment_id,
+    xenon.task_id,
+    xenon.hdl_id,
+    savedpath
+)
 ###########################
 # 调用display.py进行可视化 #
 ###########################
