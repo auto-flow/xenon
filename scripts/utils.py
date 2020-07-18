@@ -122,7 +122,11 @@ def load_data_from_datapath(
             datapath = f"{datapath}/data"
         # 情况二不满足判断条件
         data = pd.read_csv(f"{datapath}/data.csv")
-        needed_columns = ["NAME"]
+        for name_col_name in ("Name", "NAME", "ID", None):
+            assert name_col_name is not None, ValueError("Name col name no found!")
+            if name_col_name in data.columns:
+                break
+        needed_columns = [name_col_name]
         if train_target_column_name is not None:
             logger.info(f"MODEL_TYPE = {model_type}")
             logger.info(f"TRAIN_TARGET_COLUMN_NAME = {train_target_column_name}")
@@ -131,17 +135,19 @@ def load_data_from_datapath(
             needed_columns.append(train_target_column_name)
         data = data[needed_columns]
         feature_dir = f"{datapath}/feature"
-        # todo: 排序
+        feature_file_list = []
         for feature_file in Path(feature_dir).iterdir():
             FP_name = feature_file.name.split(".")[0]
             if feature_name_list is not None and FP_name not in feature_name_list:
                 logger.info(f"{FP_name} is ignored.")
                 continue
+            feature_file_list.append(feature_file.as_posix())
+        for feature_file in sorted(feature_file_list):
             df = pd.read_csv(feature_file)
-            data = data.merge(df, on="NAME")
+            data = data.merge(df, on=name_col_name)
         column_descriptions = {
             "target": train_target_column_name,
-            "id": "NAME"
+            "id": name_col_name
         }
     else:
         if "target" not in column_descriptions:
