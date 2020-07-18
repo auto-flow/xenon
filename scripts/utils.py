@@ -96,6 +96,7 @@ class EnvUtils:
 def load_data_from_datapath(
         datapath,
         train_target_column_name,
+        id_column_name,
         logger,
         traditional_qsar_mode,
         model_type,
@@ -152,6 +153,8 @@ def load_data_from_datapath(
     else:
         if "target" not in column_descriptions:
             column_descriptions["target"] = train_target_column_name
+        if "id" not in column_descriptions and id_column_name is not None:
+            column_descriptions["id"] = id_column_name
         data = pd.read_csv(datapath)
         if train_target_column_name is not None:
             assert train_target_column_name in data.columns, ValueError(

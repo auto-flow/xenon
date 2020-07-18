@@ -130,6 +130,7 @@ for process in relations:
 
 """)
     # 如果你想了解 **{process}步骤** 的使用实例，可以跳转 :ref:`{Process}`
+# 开始构造复杂环境变量的描述
 f.write("""
 
 Complex ENV

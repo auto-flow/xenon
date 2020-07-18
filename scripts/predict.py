@@ -43,10 +43,10 @@ if os.path.isdir(datapath):
 else:
     traditional_qsar_mode = False
     print("DATAPATH 为用户自定义模式，传入的是用户自定义的特征文件。")
-    print("""需要注意的是，该模式下用户需要指定'COLUMN_DESCRIPTIONS'环境变量
-如：
-COLUMN_DESCRIPTIONS = {'id' : "NAME" ,'target' : 'pIC50','ignore' : ['SMILES']}
-""")
+#     print("""需要注意的是，该模式下用户需要指定'COLUMN_DESCRIPTIONS'环境变量
+# 如：
+# COLUMN_DESCRIPTIONS = {'id' : "NAME" ,'target' : 'pIC50','ignore' : ['SMILES']}
+# """)
 logger.info(f"traditional_qsar_mode = {traditional_qsar_mode}")
 env_utils.print(logger)
 
@@ -83,7 +83,7 @@ def main(experiment_id):
     ##########################
     local_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
     # 判断非空
-    assert bool(local_path), ValueError(f"experiment {experiment_id}  was not completed normally, is invalid.")
+    assert bool(final_model_path), ValueError(f"experiment {experiment_id}  was not completed normally, is invalid.")
     resource_manager.file_system.download(final_model_path, local_path)
     xenon = load(local_path)
     ###########
@@ -92,10 +92,12 @@ def main(experiment_id):
     feature_name_list = env_utils.FEATURE_NAME_LIST
     column_descriptions = {}
     train_target_column_name = None
+    id_column_name = None
     model_type = None
     data, _ = load_data_from_datapath(
         datapath,
         train_target_column_name,
+        id_column_name,
         logger,
         traditional_qsar_mode,
         model_type,

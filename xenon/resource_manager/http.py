@@ -50,7 +50,7 @@ class HttpResourceManager(ResourceManager):
             self.login_logger.info("'email' or 'password' is None, try to "
                                    "verify User Authentication by 'user_id' and 'user_token'.")
             if user_id is None or user_token is None:
-                self.login_logger.info("HttpResourceManager's parameters 'user_id' and 'user_token' is None, "
+                self.login_logger.info("'user_id' and 'user_token' is None, "
                                        f"try to load token file '{token_file}'")
                 if not Path(token_file).exists():
                     self.login_logger.error(f"user_token file '{token_file} do not exists! Xenon-SDK will exit...")

@@ -8,6 +8,8 @@
 import os
 import sys
 
+import psutil
+
 sys.path.insert(0, os.getcwd())
 ###################################
 import logging
@@ -44,10 +46,10 @@ if os.path.isdir(datapath):
 else:
     traditional_qsar_mode = False
     print("DATAPATH 为用户自定义模式，传入的是用户自定义的特征文件。")
-    print("""需要注意的是，该模式下用户需要指定'COLUMN_DESCRIPTIONS'环境变量
-如：
-COLUMN_DESCRIPTIONS = {'id' : "NAME" ,'target' : 'pIC50','ignore' : ['SMILES']}
-""")
+#     print("""需要注意的是，该模式下用户需要指定'COLUMN_DESCRIPTIONS'环境变量
+# 如：
+# COLUMN_DESCRIPTIONS = {'id' : "NAME" ,'target' : 'pIC50','ignore' : ['SMILES']}
+# """)
 logger.info(f"traditional_qsar_mode = {traditional_qsar_mode}")
 env_utils.print(logger)
 
@@ -65,14 +67,29 @@ resource_manager = HttpResourceManager(
 #######################
 search_thread_num = env_utils.SEARCH_THREAD_NUM
 n_jobs_in_algorithm = env_utils.N_JOBS_IN_ALGORITHM
+logger.info(f"Target Computer's CPU count = {mp.cpu_count()}")
 if n_jobs_in_algorithm is None:
+    logger.info("N_JOBS_IN_ALGORITHM is None, will calc n_jobs_in_algorithm by 'mp.cpu_count() // search_thread_num'")
     n_jobs_in_algorithm = mp.cpu_count() // search_thread_num
+logger.info(f"n_jobs_in_algorithm = {n_jobs_in_algorithm}")
+per_run_time_limit = env_utils.PER_RUN_TIME_LIMIT
+logger.info(f"per_run_time_limit = {per_run_time_limit // 60} minutes")
+per_run_memory_limit = env_utils.PER_RUN_MEMORY_LIMIT
+m = psutil.virtual_memory()
+total = m.total / 1024 / 1024
+free = m.free / 1024 / 1024
+used = m.used / 1024 / 1024
+logger.info(f"Target Computer's Memory Info: total = {total:.2f}M, free = {free:.2f}M, used = {used:.2f}M")
+if per_run_memory_limit is None:
+    logger.info("PER_RUN_MEMORY_LIMIT is None, will calc per_run_memory_limit by 'total / search_thread_num'")
+    per_run_memory_limit = total / search_thread_num
+logger.info(f"per_run_memory_limit = {per_run_memory_limit}M")
 tuner = Tuner(
     initial_runs=env_utils.RANDOM_RUNS,
     run_limit=env_utils.BAYES_RUNS,
     n_jobs=search_thread_num,
-    per_run_time_limit=60 * 30,  # 单个算法的最大运行时间为30分钟 # TODO: 添加option
-    per_run_memory_limit=30 * 1024,  # 单个算法的最大内存使用为30G
+    per_run_time_limit=per_run_time_limit,
+    per_run_memory_limit=per_run_memory_limit,
     n_jobs_in_algorithm=n_jobs_in_algorithm
 )
 ############################################
@@ -91,7 +108,9 @@ hdl_constructor = HDL_Constructor(
 #####################
 random_state = env_utils.RANDOM_STATE
 if random_state is None:
+    logger.info("RANDOM_STATE is None, will choose a random_state between 0 and 10000.")
     random_state = np.random.randint(0, 10000)
+logger.info(f"random_state = {random_state}")
 kwargs = {
     "tuner": tuner,
     "hdl_constructor": hdl_constructor,
@@ -109,10 +128,12 @@ else:
 feature_name_list = env_utils.FEATURE_NAME_LIST
 column_descriptions = env_utils.COLUMN_DESCRIPTIONS
 train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
+id_column_name = env_utils.ID_COLUMN_NAME
 # 公用的数据加载部分
 data, column_descriptions = load_data_from_datapath(
     datapath,
     train_target_column_name,
+    id_column_name,
     logger,
     traditional_qsar_mode,
     model_type,
@@ -213,17 +234,18 @@ xenon.fit(
     task_metadata=task_metadata,
     fit_ensemble_params=fit_ensemble_params
 )
-######################################
-# 实验完成，保存最好的模型到SAVEDPATH  #
-######################################
-experiment_id = xenon.experiment_id
-save_current_expriment_model(savedpath, experiment_id, logger, xenon)
+# 保存各种ID
 save_info_json(
     xenon.experiment_id,
     xenon.task_id,
     xenon.hdl_id,
     savedpath
 )
+######################################
+# 实验完成，保存最好的模型到SAVEDPATH  #
+######################################
+experiment_id = xenon.experiment_id
+save_current_expriment_model(savedpath, experiment_id, logger, xenon)
 ###########################
 # 调用display.py进行可视化 #
 ###########################

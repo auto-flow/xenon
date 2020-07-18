@@ -71,6 +71,13 @@ def main(task_id, trial_ids):
         y_train=task_record["train_label_id"],
         is_not_realy_run=True
     )
+    # 保存各种ID
+    save_info_json(
+        xenon.experiment_id,
+        xenon.task_id,
+        xenon.hdl_id,
+        savedpath
+    )
     # 开始做集成学习
     xenon.estimator = xenon.fit_ensemble(
         task_id=task_id,
@@ -81,13 +88,6 @@ def main(task_id, trial_ids):
     experiment_id = xenon.experiment_id
     logger.info(f"task_id:\t{task_id}")
     logger.info(f"experiment_id:\t{experiment_id}")
-    # 保存当前实验的模型
-    save_info_json(
-        xenon.experiment_id,
-        xenon.task_id,
-        xenon.hdl_id,
-        savedpath
-    )
     save_current_expriment_model(savedpath, experiment_id, logger, xenon)
 
 

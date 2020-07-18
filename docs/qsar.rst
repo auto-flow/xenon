@@ -2,6 +2,9 @@
 QSAR Usage Overview
 ==================================
 
+Problem Definition
+----------------------------------
+
 `QSAR(Quantitative structure–activity relationship)` 是指定量的构效关系，是使用数学模型来描述分子结构和分子的某种生物活性之间的关系。其基本假设是化合物的分子结构包含了决定其物理，化学及生物等方面的性质信息，而这些理化性质则进一步决定了该化合物的生物活性。进而，化合物的分子结构性质数据与其生物活性也应该存在某种程度上的相关。
 
 
@@ -13,12 +16,15 @@ QSAR Usage Overview
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/13.png
     :width: 600px
 
+Input and Output
+----------------------------------
+
 在Nitrogen上使用 ``Xenon`` 各阶段输入的数据类型如下表所示：
 
 
 
-.. csv-table:: Data Structure of Stages
-   :file: data_structure_of_stages.csv
+.. csv-table:: Input Data Structure of Stages
+   :file: misc_table/nitrogen_input.csv
 
 名词解释:
     1. ``Dataset`` 指的是Nitrogen Job的数据集
@@ -26,7 +32,20 @@ QSAR Usage Overview
     3. ``Argument`` 指的是参数，填在 `Command` 中，填写格式为 ``arg1 arg2 ...`` 。如 **ensemble步骤** 的 ``213 214``
     4. ``ENV`` 指的是环境变量。所有的环境变量都在 :ref:`ENV Description Table` 中有详细说明
 
------------------------------------------------------------------------------------
+
+在Nitrogen上使用 ``Xenon`` 各阶段在 `SAVEDPATH` 的输出如下表所示：
+
+.. csv-table:: Output Data Structure of Stages
+   :file: misc_table/nitrogen_output.csv
+
+:download:`Download example info.json <misc_table/info.json>`.
+
+.. literalinclude:: misc_table/info.json
+   :language: json
+
+
+Data Flow Diagram
+----------------------------------
 
 在Nitrogen上使用 ``Xenon`` 的整体流程如图所示：
 
@@ -81,10 +100,15 @@ Vectorization Stage
 Search Stage
 ----------------------------------
 
+Basic Usage of Search Stage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 :download:`Download example script for Search-Stage <nitrogen_example_temp/search.json>`.
 
 .. literalinclude:: nitrogen_example_temp/search.json
    :language: json
+
+.. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
 如下图所示，你需要在 ``xenon_cli login`` 后，执行 ``xenon_cli token`` 指令，并复制 ``USER_ID`` 与 ``USER_TOKEN`` 填写到 `Nitrogen` 任务相应的环境变量中。
 
@@ -122,6 +146,95 @@ Search Stage
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/4.png
     :width: 600px
 
+Advanced Usage of Search Stage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+下面进入 **Search步骤** 的高级用法。
+
+如果你是药化同事，只想使用QSAR流程最基本的功能，请跳过这部分，进入 :ref:`Display Stage`
+
+如果你是算法开发同事:
+    1. 需要 **自定义机器学习工作流**
+    2. 需要 **自定义特征文件** （即不使用前文 `QSAR` 的矢量化方法，而是使用自己准备的特征文件）
+
+你可以阅读这部分内容。
+
+User Defined Workflow
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+搜索过程的每次 **尝试** (`trial`) ， 都会调用 ``Xenon`` 的 **机器学习工作流** (`Machine Learning Workflow`) ，机器学习工作流是一种json格式的数据结构。
+对于分类任务，他由 ``CLF_WORKFLOW`` 环境变量所决定，对于回归任务，他由 ``REG_WORKFLOW`` 环境变量所决定，（关于环境变量，参考 :ref:`Search ENV Table` ）。
+
+关于默认的 **机器学习工作流** :
+    1. 关于 ``CLF_WORKFLOW`` ，详见 :ref:`reg_workflow`
+    2. 关于 ``REG_WORKFLOW`` ，详见 :ref:`clf_workflow`
+
+为了具体说明这个用json描述的 ``WORKFLOW`` ，我们以  ``CLF_WORKFLOW`` 为例，说明问题。
+
+- `json` description:
+
+:download:`Download Complex ENV reg_workflow <complex_env/reg_workflow.json>`.
+
+.. literalinclude:: complex_env/reg_workflow.json
+   :language: json
+
+- `graph` view:
+
+.. graphviz:: misc_table/demo_workflow.gv
+
+见上文的 ``json description`` 和 ``graph view`` ，你应该能理解 **机器学习工作流** 的 `json` 定义方法了。
+
+假如你想修改默认的分类器( ``["adaboost", "extra_trees", ... ]`` )，或者你想修改默认的特征筛选百分比范围( ``"_value": [1, 80, 0.1]`` , 即特征保留率范围从 ``1`` %到 ``80`` %，步长为 ``0.1`` %)，
+
+你可以将默认的工作流描述文件下载下来，然后用 `vscode <https://code.visualstudio.com/>`_ 打开，然后按你想要的需求进行修改。当你完成修改后，你需要在 `vscode <https://code.visualstudio.com/>`_ 中
+将 **机器学习工作流** 的 `json` 内容 **合并为一行** （这样才能复制进 ``CLF_WORKFLOW`` 环境变量中）。
+
+`vscode <https://code.visualstudio.com/>`_ **合并代码为一行** 的2种方法:
+    1. 全选代码，按 ``Ctrl+Shift+P`` 打开命令面板，在面板中输入 ``Join Lines`` ，如图。
+    2. 全选代码，直接按 ``Ctrl+Shift+J`` 快捷键。
+
+
+.. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/14.png
+
+你可以在 :ref:`Demo of Advanced Usage` 中通过一个实际案例学习具体的操作。
+
+**附录 ： 机器学习工作流 的 表格视图 (更详细的定义)**
+
+- `csv` view:
+
+.. raw:: html
+   :file: misc_table/demo_workflow.html
+
+
+
+-----------------------------------------------------------------------
+
+User Defined Feature File
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+在 :ref:`Vectorization Stage` 中，我们知道了如何使用小分子矢量化脚本(原 ``xqsar`` 的 ``feature_extract`` )来提取特征，但在实际的业务流中，
+可能用户并不需要对小分子进行矢量化，而是用特定业务的特征。 ``Xenon`` 支持用户使用 **自定义特征文件** 。
+
+首先，在 **Search步骤** 用户的 **自定义特征文件** :
+    1. **必须** 是一个 `csv` 文件:
+    2. **必须** 有  :math:`K` 列为 **特征列** ， **必须** 保证全部为 `numerical` 类型(即不能出现 `str` )，也不允许出现缺失值。
+    3. **必须** 有  `1` 列为  ``TRAIN_TARGET_COLUMN_NAME`` 列，这一列是训练的标签。
+    4. *可以* 有  `1` 列为  ``ID_COLUMN_NAME`` 列，这一列是训练的主键。
+
+在 **Search步骤** 前，用户需要将这个 `csv` 上传到 `Nitrogen` 为一个 `DataSet` ，这个 `DataSet` 是一个 **单独的文件** 。
+
+在 **Predict步骤** 用户的 **自定义特征文件** :
+     1. **必须** 有  :math:`K` 列为 **特征列** ，列名与训练时的 **特征列** 列名相同。
+     2. *可以* 有  `1` 列为  ``ID_COLUMN_NAME`` 列 ，如果有，必须与 相同。
+
+.. note:: **Predict步骤** 不需要指定 ``ID_COLUMN_NAME`` 等描述特定功能列名的环境变量了，因为下载的模型自带数据解析器 `DataManager` ，自带对csv的解析。但是你需要注意，除了标签列外其他列名都要与训练数据保持一致。
+
+
+Demo of Advanced Usage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
 Display Stage
 ----------------------------------
 
@@ -131,6 +244,8 @@ Display Stage
 .. literalinclude:: nitrogen_example_temp/display.json
    :language: json
 
+.. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
+
 Ensemble Stage
 ----------------------------------
 
@@ -139,6 +254,8 @@ Ensemble Stage
 
 .. literalinclude:: nitrogen_example_temp/ensemble.json
    :language: json
+
+.. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
 如果要执行 **ensemble步骤** ，需要传入两类参数:
     1. ``task_id``, 任务ID，option，传入方式为 ``--task_id={task_id}``
@@ -169,6 +286,8 @@ Predict Stage
 
 .. literalinclude:: nitrogen_example_temp/predict.json
    :language: json
+
+.. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
 
 与 **search步骤** 一样， **predict步骤** 也是需要指定数据集的，这个数据集就是对SMILES矢量化后的结果数据集，在这里是 `25345` 数据集。

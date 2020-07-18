@@ -92,6 +92,11 @@
     "description": "训练集的列名，如回归任务的 ``pIC50`` ， 分类任务的 ``active`` "
   },
   {
+    "name": "ID_COLUMN_NAME",
+    "default": "None",
+    "description": "主键列， 如 ``NAME`` 。仅在用户自定义特征文件时使用，QSAR流程不用管这个参数。"
+  },
+  {
     "name": "METRIC",
     "default": null,
     "description": "模型评价指标，若为空，分类为 ``mcc`` ，回归为 ``r2`` "
@@ -110,6 +115,16 @@
     "name": "SEARCH_THREAD_NUM",
     "default": 3,
     "description": "搜索时启动的进程数。届时，将有 ``SEARCH_THREAD_NUM`` 个进程同时执行 训练->预测 的验证过程"
+  },
+  {
+    "name": "PER_RUN_TIME_LIMIT",
+    "default": 1800,
+    "description": "限制每次尝试(trial)的运行时间，单位为秒(second)，默认为1800秒，即30分钟。"
+  },
+  {
+    "name": "PER_RUN_MEMORY_LIMIT",
+    "default": null,
+    "description": "限制每次尝试(trial)的内存，单位为兆(M)，默认为None，\n\n会根据目标计算机计算一个恰能用完所有内存的值。"
   },
   {
     "name": "N_JOBS_IN_ALGORITHM",

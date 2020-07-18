@@ -15,12 +15,17 @@ COLUMN_DESCRIPTIONS,{},"列描述，为一字典。 ``id`` 为主键， ``target
 CLF_WORKFLOW,:ref:`clf_workflow`,分类任务的工作流
 REG_WORKFLOW,:ref:`reg_workflow`,回归任务的工作流
 TRAIN_TARGET_COLUMN_NAME,active,训练集的列名，如回归任务的 ``pIC50`` ， 分类任务的 ``active`` 
+ID_COLUMN_NAME,None,主键列， 如 ``NAME`` 。仅在用户自定义特征文件时使用，QSAR流程不用管这个参数。
 METRIC,None,模型评价指标，若为空，分类为 ``mcc`` ，回归为 ``r2`` 
 KFOLD,5,"搜索时使用的交叉验证的折数， ``2~10`` 为交叉验证，
 
 ``0.1~0.99`` 为 ``Holdout`` ， ``1`` 为留1验证 "
 SPECIFIC_TASK_TOKEN,None,不想让相同的任务关联到一个 ``task_id`` 时，设置这个参数
 SEARCH_THREAD_NUM,3,搜索时启动的进程数。届时，将有 ``SEARCH_THREAD_NUM`` 个进程同时执行 训练->预测 的验证过程
+PER_RUN_TIME_LIMIT,1800,限制每次尝试(trial)的运行时间，单位为秒(second)，默认为1800秒，即30分钟。
+PER_RUN_MEMORY_LIMIT,None,"限制每次尝试(trial)的内存，单位为兆(M)，默认为None，
+
+会根据目标计算机计算一个恰能用完所有内存的值。"
 N_JOBS_IN_ALGORITHM,None,单个算法的进程数，如果为空，程序会自动帮你计算一个能利用该计算机所有资源的值
 RANDOM_RUNS,40,"随机搜索次数。总搜索次数为 ``RANDOM_RUNS`` + ``BAYES_RUNS`` ，随机搜索是贝叶斯搜索的启动过程，
 

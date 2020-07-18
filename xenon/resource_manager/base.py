@@ -718,8 +718,9 @@ class ResourceManager(StrSignatureMixin):
         experiment.end_time = end_time
         experiment.save()
 
-    def _get_experiment_record(self,experiment_id):
-        experiment_records=self.ExperimentModel.select().where(self.ExperimentModel.experiment_id==experiment_id).dicts()
+    def _get_experiment_record(self, experiment_id):
+        experiment_records = self.ExperimentModel.select().where(
+            self.ExperimentModel.experiment_id == experiment_id).dicts()
         return list(experiment_records)
 
     def init_experiment_table(self):
@@ -801,7 +802,8 @@ class ResourceManager(StrSignatureMixin):
         task_metadata = dict(
             dataset_metadata=dataset_metadata, **task_metadata
         )
-        self.task_id = self._insert_task_record(
+        self.task_id = task_id
+        self._insert_task_record(
             task_id, self.user_id, metric_str, splitter_dict, ml_task_dict, train_set_id,
             test_set_id, train_label_id, test_label_id, specific_task_token, task_metadata,
             sub_sample_indexes, sub_feature_indexes
@@ -879,7 +881,8 @@ class ResourceManager(StrSignatureMixin):
         self.init_hdl_table()
         hdl_hash = get_hash_of_dict(hdl)
         hdl_id = hdl_hash
-        self.hdl_id = self._insert_hdl_record(self.task_id, hdl_id, self.user_id, hdl, hdl_metadata)
+        self._insert_hdl_record(self.task_id, hdl_id, self.user_id, hdl, hdl_metadata)
+        self.hdl_id = hdl_id
 
     def _insert_hdl_record(self, task_id: str, hdl_id: str, user_id: int, hdl: dict, hdl_metadata: Dict[str, Any]):
         records = self.HdlModel.select().where(
