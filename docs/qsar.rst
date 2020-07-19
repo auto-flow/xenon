@@ -194,6 +194,7 @@ User Defined Workflow
     2. 全选代码，直接按 ``Ctrl+Shift+J`` 快捷键。
 
 
+
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/14.png
 
 你可以在 :ref:`Demo of Advanced Usage` 中通过一个实际案例学习具体的操作。
@@ -233,6 +234,48 @@ User Defined Feature File
 Demo of Advanced Usage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+纸上得来终觉浅，绝知此事要躬行。虽然前两个小节已经很详细地说明了 **Search步骤** 的 *高级用法* ，但是可能还有同事感到疑惑。所以现在我们通过一个具体的案例来阐述。
+
+这个案例我们为了模拟 **用户自定义特征文件** ，采用的是 ``sklearn.datasets.load_digits`` 的手写数字数据集， 有 `64` 个特征， `1796` 列。
+
+为了适配 :ref:`User Defined Feature File` 描述的 ``TRAIN_TARGET_COLUMN_NAME`` 和   ``ID_COLUMN_NAME`` 列，我们对数据集做了改造，改造后的数据集作为一个单独的csv文件上传到了 `Nitrogen` 的 `26508` 数据集，
+这里展示数据集的一部分：（做了行列采样）
+
+.. csv-table:: digits.csv(demo)
+   :file: misc_table/digits_demo.csv
+
+为了演示，我不再采用默认的 :ref:`clf_workflow` 的机器学习工作流，而是自己设计一个机器学习工作流。这个工作流直接用所有的数值特征来训练，不做特征筛选。候选的分类器有：
+``"extra_trees"`` ,  ``"random_forest"`` , ``"decision_tree"``
+
+- 自定义机器学习工作流
+
+.. code-block:: json
+
+    {
+        "num->target": [
+            "extra_trees",
+            "random_forest",
+            "decision_tree"
+        ]
+    }
+
+按照 :ref:`User Defined Workflow` 的描述，在  `vscode <https://code.visualstudio.com/>`_  中将这个工作流按 ``Ctrl+Shift+J`` 合并为一行
+
+.. code-block:: json
+
+    { "num->target": [ "extra_trees", "random_forest", "decision_tree" ] }
+
+然后将工作流的 `json` 内容复制到环境变量中，并设置特定功能列名 ``TRAIN_TARGET_COLUMN_NAME`` 和   ``ID_COLUMN_NAME`` ，如图所示：
+
+.. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/15.png
+
+整个 `demo` 的 `Nitrogen job script` 如下：
+
+
+:download:`Download example script for Search Advance Usage <misc_table/search_advance_usage.json>`.
+
+.. literalinclude:: misc_table/search_advance_usage.json
+   :language: json
 
 
 Display Stage
