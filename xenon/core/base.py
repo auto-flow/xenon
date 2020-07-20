@@ -441,9 +441,10 @@ class XenonEstimator(BaseEstimator):
             assert hasattr(self.resource_manager, "task_id") and self.resource_manager.task_id is not None
             task_id = self.resource_manager.task_id
         self.task_id = task_id
-        self.hdl_id = hdl_id
         self.resource_manager.task_id = task_id
-        self.resource_manager.hdl_id = hdl_id
+        if hdl_id is not None:
+            self.hdl_id = hdl_id
+            self.resource_manager.hdl_id = hdl_id
         if fit_ensemble_alone:
             setup_logger(self.log_path, self.log_config)
             if fit_ensemble_alone:

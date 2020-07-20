@@ -93,8 +93,8 @@ class DataFrameContainer(DataContainer):
             self.columns_mapper, list(self.columns)
         )
         if response["length"] == 0:
-            self.logger.info(
-                f"Dataset ID: {self.dataset_id} is already exists, {self.dataset_source} will not upload. ")
+            self.logger.info(f"Dataset ID: {self.dataset_id} is already exists, "
+                             f"{self.dataset_source} will not upload. ")
         super(DataFrameContainer, self).upload(upload_type)
 
     def download(self, dataset_id):

@@ -881,8 +881,8 @@ class ResourceManager(StrSignatureMixin):
         self.init_hdl_table()
         hdl_hash = get_hash_of_dict(hdl)
         hdl_id = hdl_hash
-        self._insert_hdl_record(self.task_id, hdl_id, self.user_id, hdl, hdl_metadata)
         self.hdl_id = hdl_id
+        self._insert_hdl_record(self.task_id, hdl_id, self.user_id, hdl, hdl_metadata)
 
     def _insert_hdl_record(self, task_id: str, hdl_id: str, user_id: int, hdl: dict, hdl_metadata: Dict[str, Any]):
         records = self.HdlModel.select().where(

@@ -99,7 +99,7 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
     # todo: 如果token过期，自动登录并重新请求
     ok = judge_state_code(response)
     json_response: dict = response.json()
-    if json_response["code"] != "1" or (not ok):
+    if json_response.get("code") != "1" or (not ok):
         if not ok:
             err_info = f"request url {url} status_code = {response.status_code} ."
         else:
