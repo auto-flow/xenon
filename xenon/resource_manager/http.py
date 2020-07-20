@@ -6,14 +6,57 @@ import datetime
 import json
 import os
 import sys
+from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
+
+import requests
 
 from xenon import ResourceManager
 from xenon.utils import list_
 from xenon.utils.klass import get_valid_params_in_kwargs
 from xenon.utils.logging_ import get_logger
 from generic_fs.utils.http import send_requests, extend_to_list
+
+
+def utc2local(utc_dtm):
+    # UTC 时间转本地时间（ +8:00 ）
+    local_tm = datetime.datetime.fromtimestamp(0)
+    utc_tm = datetime.datetime.utcfromtimestamp(0)
+    offset = local_tm - utc_tm
+    return utc_dtm + offset
+
+
+def check_login_status(url, user_id, user_token, common_headers, logger=None):
+    headers = deepcopy(common_headers)
+    if logger is None:
+        func = print
+    else:
+        func = logger.info
+    headers.update({
+        "user_id": str(user_id),
+        "user_token": user_token
+    })
+    response = requests.get(f"{url}/api/v1/user", headers=headers)
+    json_response = response.json()
+    if "data" in json_response and bool(json_response["data"]):
+        data = json_response["data"]
+        issued_on = data["issued_on"]
+        issued_on = datetime.datetime.strptime(issued_on, '%Y-%m-%d %H:%M:%S')
+        expires_on = data["expires_on"]
+        expires_on = datetime.datetime.strptime(expires_on, '%Y-%m-%d %H:%M:%S')
+        func("Your Login status is OK !")
+        func(f"Login Time :\t{utc2local(issued_on)}")
+        func(f"Expire Time :\t{utc2local(expires_on)}")
+    else:
+        func("Your Login status is Error !")
+        func(f"status_code :\t{response.status_code}")
+        func(f"code :\t{json_response.get('code')}")
+        func(f"message :\t{json_response.get('message')}")
+        if os.getenv("AUTH_ERR") == "ignore":
+            pass
+        else:
+            sys.exit(-1)
 
 
 class HttpResourceManager(ResourceManager):
@@ -69,6 +112,7 @@ class HttpResourceManager(ResourceManager):
             self.user_id, self.user_token = self.login()
             Path(token_dir).mkdir(parents=True, exist_ok=True)
             Path(token_file).write_text(json.dumps({"user_id": self.user_id, "user_token": self.user_token}))
+        check_login_status(self.url, self.user_id, self.user_token, self.db_params["headers"], self.login_logger)
         super(HttpResourceManager, self).__init__(
             store_path="xenon",
             db_params=self.db_params,

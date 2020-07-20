@@ -4,6 +4,8 @@
 # @Contact    : tqichun@gmail.com
 import json
 import os
+from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -12,7 +14,12 @@ import requests
 token_dir = f"{os.getenv('HOME')}/xenon/auth"
 token_file = f"{token_dir}/config.json"
 # url = "http://192.168.1.182:9901"
+# export XENON_URL=http://192.168.1.182:9901
 url = os.getenv("XENON_URL", "https://xacs.nitrogen.fun:9090")
+common_headers = {
+    'Content-Type': 'application/json',
+    'accept': 'application/json',
+}
 
 
 @click.group()
@@ -44,11 +51,8 @@ def login(email, password):
             email = default_email
     if not password:
         password = click.prompt('password', hide_input=True)
-    headers = {
-        'Content-Type': 'application/json',
-        'accept': 'application/json',
-    }
-    response = requests.post(f"{url}/api/v1/login", headers=headers,
+
+    response = requests.post(f"{url}/api/v1/login", headers=common_headers,
                              json={"user": email, "password": password})
     if response.status_code != 200:
         raise ConnectionError(f"response.status_code = {response.status_code}")
@@ -74,8 +78,58 @@ def login(email, password):
 
 @auth.command()
 def token():
-    config = json.loads(Path(token_file).read_text())
-    print("USER_ID:")
-    print(config["user_id"])
-    print("USER_TOKEN:")
-    print(config["user_token"])
+    """
+    Get USER_ID USER_TOKEN
+    """
+    _token()
+
+
+def _token():
+    try:
+        config = json.loads(Path(token_file).read_text())
+    except Exception:
+        raise Exception("You should login first")
+    user_id = config["user_id"]
+    user_token = config["user_token"]
+    check_login_status(url, user_id, user_token, common_headers)
+
+
+def utc2local(utc_dtm):
+    # UTC 时间转本地时间（ +8:00 ）
+    local_tm = datetime.fromtimestamp(0)
+    utc_tm = datetime.utcfromtimestamp(0)
+    offset = local_tm - utc_tm
+    return utc_dtm + offset
+
+
+def check_login_status(url, user_id, user_token, common_headers):
+    headers = deepcopy(common_headers)
+    headers.update({
+        "user_id": str(user_id),
+        "user_token": user_token
+    })
+    response = requests.get(f"{url}/api/v1/user", headers=headers)
+    json_response = response.json()
+    if "data" in json_response and bool(json_response["data"]):
+        data = json_response["data"]
+        issued_on = data["issued_on"]
+        issued_on = datetime.strptime(issued_on, '%Y-%m-%d %H:%M:%S')
+        expires_on = data["expires_on"]
+        expires_on = datetime.strptime(expires_on, '%Y-%m-%d %H:%M:%S')
+        print("Your Login status is OK !")
+        print("Login Time :\t", utc2local(issued_on))
+        print("Expire Time :\t", utc2local(expires_on))
+        print("-" * 50)
+        print("USER_ID:")
+        print(user_id)
+        print("USER_TOKEN:")
+        print(user_token)
+    else:
+        print("Your Login status is error !")
+        print("status_code :\t", response.status_code)
+        print("code :\t", json_response.get("code"))
+        print("message :\t", json_response.get("message"))
+
+
+if __name__ == '__main__':
+    _token()
