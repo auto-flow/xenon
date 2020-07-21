@@ -102,7 +102,7 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         json_response: Optional[dict] = response.json()
         text = None
     except Exception:
-        json_response = None
+        json_response = {}
         text = response.text
     if json_response.get("code") != "1" or (not ok):
         if not ok:
