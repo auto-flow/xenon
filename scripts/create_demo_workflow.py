@@ -47,11 +47,11 @@ hdl_constructor.run(data_manager)
 # table view
 df=hdl_constructor.get_hdl_dataframe()
 html=df.to_html()
-(docs_dir/"misc_table"/"demo_workflow.html").write_text(html)
+(docs_dir/"misc"/"demo_workflow.html").write_text(html)
 graph = hdl_constructor.draw_workflow_space()
 # graph view
-gv_path=(docs_dir/"misc_table"/"demo_workflow.gv").as_posix()
-png_path=(docs_dir/"misc_table"/"demo_workflow.png").as_posix()
+gv_path=(docs_dir/"misc"/"demo_workflow.gv").as_posix()
+png_path=(docs_dir/"misc"/"demo_workflow.png").as_posix()
 open(gv_path, "w+").write(graph.source)
 cmd = f'''dot -Tpng -Gsize=9,15\! -Gdpi=300 -o{png_path} {gv_path}'''
 os.system(cmd)

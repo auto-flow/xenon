@@ -73,10 +73,47 @@ Register and Login
 
 2. **下载安装包后用pip安装**
 
-.. note:: ``xenon_cli`` 需要 `Python3.6` 以上的Python环境。
+:download:`Download xenon_cli wheel package <misc/xenon_cli-0.1.0-py3-none-any.whl>`.
+
+.. code-block:: bash
+
+   $ pip install xenon_cli-0.1.0-py3-none-any.whl
+
+------------------------------------------------------------------------------------
+
+.. note:: ``xenon_cli`` 需要 `Python3.6` 以上的Python环境。操作系统为 `Linux & MacOS` 系统，如果你用的是 `Windows` 系统，我推荐你使用 `WSL <https://docs.microsoft.com/zh-cn/windows/wsl/install-win10>`_  。
+
+
+如图，每次在 `Nitrogen` 上运行 `Xenon` 前，你需要先用 ``xenon_cli token`` 命令获取 ``USER_ID`` 和 ``USER_TOKEN`` ，如果获取失败了，
+说明你登录失效，则需要用  ``xenon_cli login`` 命令登录，再用 ``xenon_cli token`` 获取 `token` 。
+
+目前（2020年7月20日） `Xenon token` 的有效时间为24小时，请你的启动  :ref:`Search Stage` 任务前注意调整 ``RANDOM_RUNS`` 和 ``BAYES_RUNS`` 两个参数，
+避免过大的参数造成任务超过24小时。我认为 ``RANDOM_RUNS + BAYES_RUNS <= 150`` 比较合理。
 
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/9.png
-    :width: 600px
+
+.. warning:: `token` 其实就是客户端请求服务器的一个权限凭证，服务端和客户端都会保存一个 `token` 。当用户登录时（例如在终端执行 ``xenon_cli login`` ），服务端会重新生成一个 `token` ，不管原来的 `token` 有没有过期。  **所以你要注意，如果你在 Nitrogen 上已经运行了一些 Xenon 任务，但你却重新登录了，你在 Nitrogen 上正在运行的所有任务都会失败！**  所以我推荐你按照如下流程获取 `token` :
+
+.. graphviz::
+
+    digraph {
+        label="Query Token Process"
+
+        start[shape="box", style=rounded];
+        end[shape="box", style=rounded];
+        Token[label="Execute 'xenon_cli token'", shape="box", style=""]
+        LoginOK[label="Login Status is OK?" ,shape="diamond", style=""];
+        Login[label="Execute 'xenon_cli login'",shape="box", style=""]
+        Paste[label="Paste 'USER_ID' and 'USER_TOKEN' to Nitrogen ENV",shape="box", style=""]
+
+        start -> Token;
+        Token -> LoginOK;
+        LoginOK -> Login[label="no"];
+        LoginOK -> Paste[label="yes"];
+        Login -> Token;
+        Paste -> end;
+    }
+
 
 Vectorization Stage
 ----------------------------------
