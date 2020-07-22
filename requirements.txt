@@ -42,3 +42,4 @@ graphviz
 openpyxl==3.0.3
 requests>=2.21.0
 tabulate
+liquidpy==0.5.0

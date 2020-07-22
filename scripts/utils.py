@@ -13,6 +13,8 @@ import joblib
 import pandas as pd
 from tabulate import tabulate
 
+from scripts import lib_display
+
 
 class EnvUtils:
     def __init__(self):
@@ -79,7 +81,7 @@ class EnvUtils:
             func = print
         else:
             func = logger.info
-        func(str(self))
+        func("\n" + str(self))
         if len(self.long_data) > 0:
             func("--------------------")
             func("| Complex variable |")
@@ -177,13 +179,18 @@ def display(resource_manager, task_id, display_size, savedpath):
     y_train = y_train.data
     # 处理records, 加载y_info_path
     processed_records = []
-    records_ = deepcopy(records)
-    for record in records_:
+    records_copy = deepcopy(records)
+    for record in records_copy:
         y_info_path = record["y_info_path"]
         # keys: ['y_true_indexes', 'y_preds', 'y_test_pred']
         y_info = resource_manager.file_system.load_pickle(y_info_path)
         record["y_info"] = y_info
         processed_records.append(record)
+    data = {
+        "mainTask": ml_task.mainTask,
+        "records": processed_records,
+        "y_train": y_train
+    }
     output_records = deepcopy(records)
     for output_record in output_records:
         output_record.pop("all_scores")
@@ -192,8 +199,10 @@ def display(resource_manager, task_id, display_size, savedpath):
         output_record.pop("losses")
         output_record.update(output_record.pop("all_score"))
     search_records_df = pd.DataFrame(output_records)
-    search_records_path = f"{savedpath}/search_records.csv"
-    search_records_df.to_csv(search_records_path, index=False)
+    search_records_csv_path = f"{savedpath}/search_records.csv"
+    search_records_html_path = f"{savedpath}/search_records.html"
+    search_records_df.to_csv(search_records_csv_path, index=False)
+    Path(search_records_html_path).write_text(lib_display.display(data))
 
 
 def save_info_json(experiment_id, task_id, hdl_id, savedpath):

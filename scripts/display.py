@@ -45,14 +45,6 @@ def main(task_id):
     )
     display_size = env_utils.DISPLAY_SIZE
     display(resource_manager, task_id, display_size, savedpath)
-    # todo: 对接 mock_display.py
-    # import pickle
-    # mock_data = {
-    #     "mainTask": ml_task.mainTask,
-    #     "records": processed_records,
-    #     "y_train": y_train
-    # }
-    # Path("mock_data.pkl").write_bytes(pickle.dumps(mock_data))
 
 
 if __name__ == '__main__':

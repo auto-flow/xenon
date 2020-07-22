@@ -27,7 +27,6 @@ install_apt_deps:
 	apt install libpq-dev -y
 	apt install graphviz -y
 
-
 install_pip_deps:
 	pip install Cython==0.29.14
 	pip install numpy==1.18.1
@@ -73,3 +72,4 @@ install_pip_deps:
 	pip install openpyxl==3.0.3
 	pip install requests>=2.21.0
 	pip install tabulate
+	pip install liquidpy==0.5.0

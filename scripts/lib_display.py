@@ -3,15 +3,17 @@
 import base64
 import io
 import pickle
-
+import os
 import numpy as np
 import pandas as pd
-
-from liquid import Liquid
+try:
+    from liquid import Liquid
+except:
+    os.system("pip install liquidpy==0.5.0")
+    from liquid import Liquid
 import matplotlib.pyplot as plt
 from pylab import figure
 from scipy import stats
-
 
 html = '''
 <html>
@@ -141,7 +143,7 @@ html = '''
                 png_base64_list = png_base64_list.concat(`</tr>`)
             }
             table = table.replace('{png_base64_list}', png_base64_list)
-            
+
             table = table.replace('{estimator}', list[i]['estimator'])
             table = table.replace('{cost_time}', list[i]['cost_time'])
             table = table.replace('{preprocessing}', list[i]['preprocessing'])
@@ -174,7 +176,7 @@ html = '''
 </body>
 </html>
 '''
-    # a - b ASC
+# a - b ASC
 
 replace_clf = '''
             table = table.replace('{tn}', list[i]['tn'])
@@ -197,7 +199,6 @@ replace_reg = '''
             table = table.replace('{spearmanr}', list[i]['spearmanr'])
             table = table.replace('{kendalltau}', list[i]['kendalltau'])
 '''
-
 
 # colspan=5
 
@@ -329,7 +330,6 @@ box = '''
 '''
 
 
-
 def clf_plot(y_true, y_score, threshold=0.5, title=None):
     colors = ['#E69F00', '#56B4E9']
     names = ['positive', 'negative']
@@ -357,7 +357,8 @@ def reg_plot(y_true, y_pred, xmin, xmax, title=None):
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
 
-    def score(i): return ("+" if i > 0 else "") + str(i)
+    def score(i):
+        return ("+" if i > 0 else "") + str(i)
 
     line = slope * y_true + intercept
     y_true_above_line = y_true[y_pred > line]
@@ -391,8 +392,23 @@ def reg_plot(y_true, y_pred, xmin, xmax, title=None):
 
 
 # main
-def display(pkl_path):
-    data = pickle.load(open(pkl_path, 'rb'))
+def display(data:dict)->str:
+    """
+
+    Parameters
+    ----------
+    data:dict
+    have 3 fields:
+    mainTask: classification or regression
+    records: List[dict], trial records
+    y_train: train target label
+
+    Returns
+    -------
+    html:str
+    Generated html content
+
+    """
     mainTask = data["mainTask"]
     records = data["records"]
     y_train = data["y_train"]
@@ -420,7 +436,7 @@ def display(pkl_path):
             info["acc"] = str("{:.2f}").format(record["all_score"]["accuracy"])
             info["auc"] = str("{:.2f}").format(record["all_score"]["roc_auc"])
             info["f1"] = str("{:.2f}").format(record["all_score"]["f1"])
-        else: # regression
+        else:  # regression
             info["r2"] = str("{:.2f}").format(record["all_score"]["r2"])
             info["mse"] = str("{:.2f}").format(record["all_score"]["mean_squared_error"])
             info["mae"] = str("{:.2f}").format(record["all_score"]["mean_absolute_error"])
@@ -438,7 +454,7 @@ def display(pkl_path):
             index_list = record["y_info"]["y_true_indexes"][i]
             y_true = y_train[index_list]
             y_true_all.extend(list(y_true))
-            title = "valid "+str(i+1)
+            title = "valid " + str(i + 1)
             if mainTask == "classification":
                 y_score = record["y_info"]['y_preds'][i][:, 0]
                 y_score_all.extend(list(y_score))
@@ -447,9 +463,9 @@ def display(pkl_path):
                         y_true,
                         y_score,
                         title=title
-                        )
                     )
-            else: # regression
+                )
+            else:  # regression
                 y_pred = record["y_info"]['y_preds'][i]
                 y_pred_all.extend(list(y_pred))
                 info["img"].append(
@@ -459,8 +475,8 @@ def display(pkl_path):
                         min(y_train),
                         max(y_train),
                         title=title
-                        )
                     )
+                )
         # cvmix
         if mainTask == "classification":
             info["img"].append(
@@ -468,9 +484,9 @@ def display(pkl_path):
                     y_true_all,
                     y_score_all,
                     title="all validation"
-                    )
                 )
-        else: # regression
+            )
+        else:  # regression
             info["img"].append(
                 reg_plot(
                     y_true_all,
@@ -478,23 +494,23 @@ def display(pkl_path):
                     min(y_train),
                     max(y_train),
                     title="all validation"
-                    )
                 )
+            )
 
         info_list.append(info)
 
     if mainTask == "classification":
         temp_dict = {
-            "list":info_list,
+            "list": info_list,
             "select": clf,
             "replace": replace_clf,
             "metatable": td_clf,
             "box": box,
         }
 
-    else: # regression
+    else:  # regression
         temp_dict = {
-            "list":info_list,
+            "list": info_list,
             "select": reg,
             "replace": replace_reg,
             "metatable": td_reg,
@@ -503,11 +519,5 @@ def display(pkl_path):
 
     res_html = Liquid(html).render(**temp_dict)
 
-    with open(pkl_path.split('.')[0]+".html", 'w') as f:
-        f.write(res_html)
+    return res_html
 
-
-if __name__ == '__main__':
-    display('clf_mock_data.pkl')
-    display('reg_mock_data.pkl')
-    print('Done.')

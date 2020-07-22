@@ -37,7 +37,7 @@ class NitrogenFS(FileSystem):
     def dump_pickle(self, data, path):
         tmp_path = self.join("/tmp", uuid4().hex + ".bz2")
         dump(data, tmp_path)
-        dataset_id=self.upload(path, tmp_path)
+        dataset_id = self.upload(path, tmp_path)
         os.remove(tmp_path)
         return dataset_id
 
@@ -65,9 +65,12 @@ class NitrogenFS(FileSystem):
         )
         data = response.json()["data"]
         url = data.get("url")
-        if url is None: # path already exists
-            return str(response.json()["message"][0]) # fixme: 如果返回Bad Request直接给了B
-        # todo: 判断message是否为列表
+        if url is None:  # path already exists
+            json_response = response.json()
+            assert "message" in json_response, ValueError("Bad Request")
+            message = json_response["message"]
+            assert isinstance(message, list) and len(message) >= 2, ValueError("Bad Request")
+            return str(message[0])
         s3_header = {'Content-Type': 'multipart/form-data'}
         with open(local_path, 'rb') as f:
             requests.put(url, data=f, headers=s3_header)
@@ -92,7 +95,7 @@ class NitrogenFS(FileSystem):
                     f.write(chunk)
         # self.get_small_file(url,local_path)
 
-    def get_small_file(self,url, localfile):
+    def get_small_file(self, url, localfile):
         with open(localfile, 'wb') as f:
             r = requests.get(url, allow_redirects=True)
             f.write(r.content)
