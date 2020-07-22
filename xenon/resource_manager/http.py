@@ -16,7 +16,7 @@ from xenon import ResourceManager
 from xenon.utils import list_
 from xenon.utils.klass import get_valid_params_in_kwargs
 from xenon.utils.logging_ import get_logger
-from generic_fs.utils.http import send_requests, extend_to_list
+from generic_fs.utils.http import send_requests, extend_to_list, get_data_of_response
 
 
 def utc2local(utc_dtm):
@@ -184,7 +184,7 @@ class HttpResourceManager(ResourceManager):
         local["columns"] = json.dumps(local["columns"])
         target = "dataset"
         response = send_requests(self.db_params, target, local)
-        data = response.json()["data"]
+        data = get_data_of_response(response)
         if "dataset_id" not in data:
             data["dataset_id"] = dataset_id
             data["dataset_path"] = dataset_path
@@ -196,7 +196,7 @@ class HttpResourceManager(ResourceManager):
     def _get_dataset_records(self, dataset_id, user_id) -> List[Dict[str, Any]]:
         target = f"dataset/{dataset_id}"
         response = send_requests(self.db_params, target, method="get")
-        data = response.json()["data"]
+        data = get_data_of_response(response)
         return extend_to_list(data)
 
     ##################################################################
@@ -212,7 +212,7 @@ class HttpResourceManager(ResourceManager):
         local.pop("user_id")
         target = "experiment"
         response = send_requests(self.db_params, target, local)
-        data = response.json()["data"]
+        data = get_data_of_response(response)
         if "experiment_id" not in data:
             raise ValueError("insert experiment failed.")
         return data["experiment_id"]
@@ -227,7 +227,7 @@ class HttpResourceManager(ResourceManager):
     def _get_experiment_record(self, experiment_id):
         target = f"experiment/{experiment_id}"
         response = send_requests(self.db_params, target, method="get")
-        data = response.json()["data"]
+        data = get_data_of_response(response)
         return extend_to_list(data)
 
     ##################################################################
@@ -244,13 +244,14 @@ class HttpResourceManager(ResourceManager):
         local["sub_feature_indexes"] = json.dumps(local["sub_feature_indexes"])
         local.pop("user_id")
         target = "task"
-        data = send_requests(self.db_params, target, local).json()["data"]
+        send_requests(self.db_params, target, local)
         return task_id
 
     def _get_task_records(self, task_id: str, user_id: int):
         target = f"task/{task_id}"
         response = send_requests(self.db_params, target, method="get")
-        return extend_to_list(response.json()["data"])
+        data = get_data_of_response(response)
+        return extend_to_list(data)
 
     ##################################################################
     ############################   hdl     ###########################
@@ -285,7 +286,7 @@ class HttpResourceManager(ResourceManager):
         # local["test_loss"]={}
         # local["test_all_score"]={}
         response = send_requests(self.db_params, target, local)
-        data = response.json()["data"]
+        data = get_data_of_response(response)
         if "trial_id" not in data:
             self.logger.warning("insert trial failed.")
         return data.get("trial_id", -1)
@@ -293,20 +294,26 @@ class HttpResourceManager(ResourceManager):
     def _get_sorted_trial_records(self, task_id, user_id, limit):
         target = f"task/{task_id}/trial?page_num={1}&page_size={limit}"
         response = send_requests(self.db_params, target, method="get")
-        return extend_to_list(response.json()["data"])
+        data = get_data_of_response(response)
+        return extend_to_list(data)
 
     def _get_trial_records_by_id(self, trial_id, task_id, user_id):
         target = f"trial/{trial_id}"
         response = send_requests(self.db_params, target, method="get")
         # 返回值是一个字典
-        return response.json()["data"]
+        data = get_data_of_response(response)
+        return data
 
     def _get_trial_records_by_ids(self, trial_ids, task_id, user_id):
         result = []
         for sub_trial_ids in list_.chunk(trial_ids, 10):
             target = f"trial?" + "&".join([f"trial_id={trial_id}" for trial_id in sub_trial_ids])
             response = send_requests(self.db_params, target, method="get")
-            result.extend(extend_to_list(response.json()["data"]))
+            data = get_data_of_response(response)
+            if data:
+                result.extend(data)
+            else:
+                break
         return result
 
     def _get_best_k_trial_ids(self, task_id, user_id, k):

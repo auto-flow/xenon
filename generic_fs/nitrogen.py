@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import requests
 
-from generic_fs.utils.http import send_requests
+from generic_fs.utils.http import send_requests, get_data_of_response
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class NitrogenFS(FileSystem):
     def get_url_of_dataset_id(self, dataset_id):
         response = send_requests(self.db_params, "signature/download",
                                  params={"object": str(dataset_id)}, method="get")
-        data = response.json()["data"]
+        data = get_data_of_response(response)
         if len(data) > 0 and "url" in data[0]:
             return data[0]["url"]
         return None
@@ -63,7 +63,7 @@ class NitrogenFS(FileSystem):
             params={"object": path},
             method="get"
         )
-        data = response.json()["data"]
+        data = get_data_of_response(response)
         url = data.get("url")
         if url is None:  # path already exists
             json_response = response.json()
@@ -79,7 +79,7 @@ class NitrogenFS(FileSystem):
             params={"file_name": path, "file_size": str(os.path.getsize(local_path))},
             method="put"
         )
-        data = response.json()["data"]
+        data  = get_data_of_response(response)
         dataset_id = data["id"]
         return str(dataset_id)
 

@@ -68,6 +68,13 @@ def judge_state_code(response: requests.Response):
         return False
     return True
 
+def get_data_of_response(response:requests.Response):
+    try:
+        json_response = response.json()
+    except:
+        return {}
+    return json_response.get("data", {})
+
 
 def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None, params: Optional[dict] = None,
                   method: str = "post") -> requests.Response:
