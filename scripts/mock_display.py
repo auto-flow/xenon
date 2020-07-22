@@ -400,12 +400,12 @@ def display(pkl_path):
     info_list = list()
     for record in records:
         info = dict()
-        info["trial_id"] = str(record["trial_id"])
-        info["estimator"] = str(record["estimator"])
-        info["cost_time"] = str(record["cost_time"])
+        info["trial_id"] = record["trial_id"]
+        info["estimator"] = record["estimator"]
+        info["cost_time"] = str("{:.2f}").format(record["cost_time"])
         info["preprocessing"] = str(record["dict_hyper_param"]["preprocessing"])
         info["estimating"] = str(record["dict_hyper_param"]["estimating"][info["estimator"]])
-        info["loss"] = str(record["loss"])
+        info["loss"] = str("{:.2f}").format(record["loss"])
 
         if mainTask == "classification":
             cms = record["additional_info"]["confusion_matrices"]
@@ -414,19 +414,19 @@ def display(pkl_path):
             info["fp"] = str(cm[1])
             info["fn"] = str(cm[2])
             info["tp"] = str(cm[3])
-            info["mcc"] = str(record["all_score"]["mcc"])
-            info["se"] = str(record["all_score"]["sensitivity"])
-            info["sp"] = str(record["all_score"]["specificity"])
-            info["acc"] = str(record["all_score"]["accuracy"])
-            info["auc"] = str(record["all_score"]["roc_auc"])
-            info["f1"] = str(record["all_score"]["f1"])
+            info["mcc"] = str("{:.2f}").format(record["all_score"]["mcc"])
+            info["se"] = str("{:.2f}").format(record["all_score"]["sensitivity"])
+            info["sp"] = str("{:.2f}").format(record["all_score"]["specificity"])
+            info["acc"] = str("{:.2f}").format(record["all_score"]["accuracy"])
+            info["auc"] = str("{:.2f}").format(record["all_score"]["roc_auc"])
+            info["f1"] = str("{:.2f}").format(record["all_score"]["f1"])
         else: # regression
-            info["r2"] = str(record["all_score"]["r2"])
-            info["mse"] = str(record["all_score"]["mean_squared_error"])
-            info["mae"] = str(record["all_score"]["mean_absolute_error"])
-            info["pearsonr"] = str(record["all_score"]["pearsonr"])
-            info["spearmanr"] = str(record["all_score"]["spearmanr"])
-            info["kendalltau"] = str(record["all_score"]["kendalltau"])
+            info["r2"] = str("{:.2f}").format(record["all_score"]["r2"])
+            info["mse"] = str("{:.2f}").format(record["all_score"]["mean_squared_error"])
+            info["mae"] = str("{:.2f}").format(record["all_score"]["mean_absolute_error"])
+            info["pearsonr"] = str("{:.2f}").format(record["all_score"]["pearsonr"])
+            info["spearmanr"] = str("{:.2f}").format(record["all_score"]["spearmanr"])
+            info["kendalltau"] = str("{:.2f}").format(record["all_score"]["kendalltau"])
 
         info["img"] = list()
         cv = len(record["y_info"]["y_true_indexes"])
