@@ -22,7 +22,7 @@ KFOLD,5,"搜索时使用的交叉验证的折数， ``2~10`` 为交叉验证，
 ``0.1~0.99`` 为 ``Holdout`` ， ``1`` 为留1验证 "
 SPECIFIC_TASK_TOKEN,None,不想让相同的任务关联到一个 ``task_id`` 时，设置这个参数
 SEARCH_THREAD_NUM,3,搜索时启动的进程数。届时，将有 ``SEARCH_THREAD_NUM`` 个进程同时执行 训练->预测 的验证过程
-PER_RUN_TIME_LIMIT,108000,限制每次尝试(trial)的运行时间，单位为秒(second)，默认为108000秒，即30分钟。
+PER_RUN_TIME_LIMIT,1800,限制每次尝试(trial)的运行时间，单位为秒(second)，默认为1800秒，即30分钟。
 PER_RUN_MEMORY_LIMIT,None,"限制每次尝试(trial)的内存，单位为兆(M)，默认为None，
 
 会根据目标计算机计算一个恰能用完所有内存的值。"

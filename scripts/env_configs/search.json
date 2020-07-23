@@ -118,8 +118,8 @@
   },
   {
     "name": "PER_RUN_TIME_LIMIT",
-    "default": 108000,
-    "description": "限制每次尝试(trial)的运行时间，单位为秒(second)，默认为108000秒，即30分钟。"
+    "default": 1800,
+    "description": "限制每次尝试(trial)的运行时间，单位为秒(second)，默认为1800秒，即30分钟。"
   },
   {
     "name": "PER_RUN_MEMORY_LIMIT",
