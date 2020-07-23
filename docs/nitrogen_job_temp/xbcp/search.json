@@ -27,7 +27,7 @@
         "KFOLD": "5",
         "SPECIFIC_TASK_TOKEN": "None",
         "SEARCH_THREAD_NUM": "3",
-        "PER_RUN_TIME_LIMIT": "1800",
+        "PER_RUN_TIME_LIMIT": "108000",
         "PER_RUN_MEMORY_LIMIT": "None",
         "N_JOBS_IN_ALGORITHM": "None",
         "RANDOM_RUNS": "40",

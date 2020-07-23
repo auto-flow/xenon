@@ -67,6 +67,7 @@ class NitrogenFS(FileSystem):
         url = data.get("url")
         if url is None:  # path already exists
             json_response = response.json()
+            logger.warning(str(json_response))
             assert "message" in json_response, ValueError("Bad Request")
             message = json_response["message"]
             assert isinstance(message, list) and len(message) >= 2, ValueError("Bad Request")

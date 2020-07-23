@@ -8,6 +8,7 @@ import logging
 # from requests.packages.urllib3.util.retry import Retry
 import os
 import sys
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
@@ -68,7 +69,8 @@ def judge_state_code(response: requests.Response):
         return False
     return True
 
-def get_data_of_response(response:requests.Response):
+
+def get_data_of_response(response: requests.Response):
     try:
         json_response = response.json()
     except:
@@ -76,8 +78,10 @@ def get_data_of_response(response:requests.Response):
     return json_response.get("data", {})
 
 
-def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None, params: Optional[dict] = None,
+def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None,
+                  params: Optional[dict] = None,
                   method: str = "post") -> requests.Response:
+    params = deepcopy(params)
     url = db_params["url"] + "/api/v1/" + target
     headers = db_params["headers"]
     kwargs = {
@@ -86,7 +90,15 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
     }
     if params is not None:
         for k, v in params.items():
-            params[k] = str(v)
+            if not isinstance(v, str):
+                try:
+                    sv = json.dumps(v)
+                except Exception:
+                    logger.debug(f"Cannot json.dump , key = {k}, value = {v}")
+                    sv = str(v)
+            else:
+                sv = v
+            params[k] = sv
         kwargs["params"] = params
     if json_data is not None:
         json_data = json.dumps(json_data, cls=CustomJsonEncoder)
