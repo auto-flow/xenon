@@ -21,6 +21,8 @@ import sphinx_rtd_theme
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+from recommonmark.parser import CommonMarkParser
+
 sys.path.insert(0, os.path.abspath('../'))
 
 # -- General configuration ------------------------------------------------
@@ -51,6 +53,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx_markdown_tables',
     'sphinxcontrib.exceltable',
+    'recommonmark'
+    # 'm2r',
     # 'numpydoc',
     # 'sphinx_gallery.gen_gallery',
 ]
@@ -63,9 +67,11 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
+
 source_parsers = {
-    '.md': 'recommonmark.parser.CommonMarkParser',
+    '.md': CommonMarkParser,
 }
+
 
 source_suffix = ['.rst', '.md']
 # The encoding of source files.

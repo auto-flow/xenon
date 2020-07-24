@@ -5,7 +5,9 @@ Search,26283,experiment_xx_best_model.bz2,"``xx`` 为 ``experiment_id``, 这个�
 ,,search_records.html,`search` 结束后调用 `display` 输出的可视化结果
 ,,xenon.log,Xenon产生的日志，供开发人员DEBUG分析
 ,,requests_err/,Xenon SDK请求错误的记录，供开发人员DEBUG分析
-Display,,,
+Display,,search_records.csv,`search` 结束后调用 `display` 输出的trials汇总表
+,,search_records.html,`search` 结束后调用 `display` 输出的可视化结果
+,,xenon.log,Xenon产生的日志，供开发人员DEBUG分析
 Ensemble,26298,experiment_xx_best_model.bz2,"``xx`` 为 ``experiment_id``, 这个文件是本次Ensemble实验对多模型集成后的集成模型的序列化结果"
 ,,info.json,"保存有本次实验的 ``task_id`` ,  ``experiment_id`` ,  ``hdl_id``"
 ,,xenon.log,Xenon产生的日志，供开发人员DEBUG分析

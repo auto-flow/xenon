@@ -24,7 +24,7 @@ Input and Output
 
 
 .. csv-table:: Input Data Structure of Stages
-   :file: misc_table/nitrogen_input.csv
+   :file: misc/nitrogen_input.csv
 
 名词解释:
     1. ``Dataset`` 指的是Nitrogen Job的数据集
@@ -36,11 +36,11 @@ Input and Output
 在Nitrogen上使用 ``Xenon`` 各阶段在 `SAVEDPATH` 的输出如下表所示：
 
 .. csv-table:: Output Data Structure of Stages
-   :file: misc_table/nitrogen_output.csv
+   :file: misc/nitrogen_output.csv
 
-:download:`Download example info.json <misc_table/info.json>`.
+:download:`Download example info.json <misc/info.json>`.
 
-.. literalinclude:: misc_table/info.json
+.. literalinclude:: misc/info.json
    :language: json
 
 
@@ -217,7 +217,7 @@ User Defined Workflow
 
 - `graph` view:
 
-.. graphviz:: misc_table/demo_workflow.gv
+.. graphviz:: misc/demo_workflow.gv
 
 见上文的 ``json description`` 和 ``graph view`` ，你应该能理解 **机器学习工作流** 的 `json` 定义方法了。
 
@@ -241,7 +241,7 @@ User Defined Workflow
 - `csv` view:
 
 .. raw:: html
-   :file: misc_table/demo_workflow.html
+   :file: misc/demo_workflow.html
 
 
 
@@ -279,7 +279,7 @@ Demo of Advanced Usage
 这里展示数据集的一部分：（做了行列采样）
 
 .. csv-table:: digits.csv(demo)
-   :file: misc_table/digits_demo.csv
+   :file: misc/digits_demo.csv
 
 为了演示，我不再采用默认的 :ref:`clf_workflow` 的机器学习工作流，而是自己设计一个机器学习工作流。这个工作流直接用所有的数值特征来训练，不做特征筛选。候选的分类器有：
 ``"extra_trees"`` ,  ``"random_forest"`` , ``"decision_tree"``
@@ -309,9 +309,9 @@ Demo of Advanced Usage
 整个 `demo` 的 `Nitrogen job script` 如下：
 
 
-:download:`Download example script for Search Advance Usage <misc_table/search_advance_usage.json>`.
+:download:`Download example script for Search Advance Usage <misc/search_advance_usage.json>`.
 
-.. literalinclude:: misc_table/search_advance_usage.json
+.. literalinclude:: misc/search_advance_usage.json
    :language: json
 
 

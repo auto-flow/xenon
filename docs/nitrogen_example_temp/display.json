@@ -5,7 +5,7 @@
     "git_branch": "v3.0",
     "git_commit": "",
     "datasets": "",
-    "command": "python scripts/display.py",
+    "command": "python scripts/display.py --task_id=0895b357beb1448c71d32eadc2650f1a",
     "use_gpu": 0,
     "env": {
         "USER_ID": "None",

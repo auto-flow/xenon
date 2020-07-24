@@ -10,7 +10,7 @@ RUN make install_apt_deps
 RUN make install_pip_deps
 # torch is installed for Xenon 4.0 prototype
 # if you are normal user, ignore it
-RUN pip install torch==1.5.0
+#RUN pip install torch==1.5.0
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
