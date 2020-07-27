@@ -71,18 +71,18 @@ def main(task_id, trial_ids):
         y_train=task_record["train_label_id"],
         is_not_realy_run=True
     )
+    # 开始做集成学习
+    xenon.estimator = xenon.fit_ensemble(
+        task_id=task_id,
+        trials_fetcher="GetSpecificTrials",
+        trials_fetcher_params={"trial_ids": list(trial_ids)}
+    )
     # 保存各种ID
     save_info_json(
         xenon.experiment_id,
         xenon.task_id,
         xenon.hdl_id,
         savedpath
-    )
-    # 开始做集成学习
-    xenon.estimator = xenon.fit_ensemble(
-        task_id=task_id,
-        trials_fetcher="GetSpecificTrials",
-        trials_fetcher_params={"trial_ids": list(trial_ids)}
     )
     # 打印id，方便用户在 predict 的时候指定 experiment_id
     experiment_id = xenon.experiment_id

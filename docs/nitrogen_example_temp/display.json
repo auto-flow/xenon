@@ -12,9 +12,7 @@
         "USER_TOKEN": "None",
         "EMAIL": "None",
         "PASSWORD": "None",
-        "DISPLAY_SIZE": "50",
-        "REG_WORKFLOW": "None",
-        "CLF_WORKFLOW": "None"
+        "DISPLAY_SIZE": "50"
     },
     "docker_image": "harbor.atompai.com/nitrogen/xenon:v3.0"
 }

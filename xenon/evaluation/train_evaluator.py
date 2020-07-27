@@ -120,7 +120,8 @@ class TrainEvaluator(BaseEvaluator):
         warning_info = StringIO()
         additional_info = {}
         support_early_stopping = getattr(model.steps[-1][1], "support_early_stopping", False)
-        with redirect_stderr(warning_info):
+        # with redirect_stderr(warning_info):
+        with open(__file__):
             # splitter 必须存在
             losses = []
             models = []
