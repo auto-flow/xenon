@@ -81,7 +81,7 @@ def main(task_id, trial_ids):
     save_info_json(
         xenon.experiment_id,
         xenon.task_id,
-        getattr(xenon,"hdl_id"),
+        getattr(xenon, "hdl_id", None),
         savedpath
     )
     # 打印id，方便用户在 predict 的时候指定 experiment_id
