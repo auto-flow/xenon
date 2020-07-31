@@ -20,7 +20,7 @@ handlers:
     formatter: formal
     filename: xenon.log
 
-# 如果设为DEBUG, sql也会下来
+
 root:
   level: DEBUG
   handlers: [console, file_handler]
