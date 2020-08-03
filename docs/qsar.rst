@@ -326,6 +326,11 @@ Display Stage
 
 .. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
+如果要执行 **display步骤** ，需要传入1个ID环境变量:
+    1. ``task_id``, 任务ID
+
+详情见 :ref:`Display ENV Table`
+
 Ensemble Stage
 ----------------------------------
 
@@ -337,9 +342,11 @@ Ensemble Stage
 
 .. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
-如果要执行 **ensemble步骤** ，需要传入两类参数:
-    1. ``task_id``, 任务ID，option，传入方式为 ``--task_id={task_id}``
-    2. ``trial_id``, 试验ID，不定长 arguments， 传入方式为 ``{trial_id_1} {trial_id_2} {trial_id_3}``
+如果要执行 **ensemble步骤** ，需要传入2个ID环境变量:
+    1. ``task_id``, 任务ID
+    2. ``trial_id``, 试验ID
+
+详情见 :ref:`Ensemble ENV Table`
 
 我们在执行 **search步骤** 时，已经得到了 `task_id=0895b357beb1448c71d32eadc2650f1a` 。集成学习的本质是选择一组你想要的模型，通过一定的权重将其组合在一起。所以还要做的就是挑选模型了，我们打开 `search_records.csv` ，选择一组想要的 ``trial_id`` 。这里我们选择 `213` , `214` 。
 
@@ -347,13 +354,19 @@ Ensemble Stage
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/5.png
 
 .. note:: 
-    **ensemble步骤** 的 `Nitrogen job` 配置不需要 `DATAPATH` ，除了权限需要的 ``USER_ID`` 与 ``USER_TOKEN`` 外，还需要传入 `command` 中蓝线的  `--task_id={task_id}` ，粉线的 `{trial_id_1} {trial_id_2} {trial_id_3}` 的参数。
+    **ensemble步骤** 的 `Nitrogen job` 配置不需要 `DATAPATH` ，除了权限需要的 ``USER_ID`` 与 ``USER_TOKEN`` 外，还需要传入 环境变量 ``TASK_ID`` 与 ``TRIAL_ID``  。
+
+.. warning::
+    图中的 `command` 传参为已经废弃的传参方式。请填写对应的环境变量。
 
 
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/6.png
     :width: 600px
 
 现在集成学习做完了，日志打印 `experiment_id=54` ，我们记下这个ID用于  **predict步骤**
+
+.. note::
+    除了查看日志，也可以通过 `result dataset` 的 ``info.json`` 查看本次job的各种ID信息。
 
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/7.png
     :width: 600px
@@ -373,14 +386,17 @@ Predict Stage
 与 **search步骤** 一样， **predict步骤** 也是需要指定数据集的，这个数据集就是对SMILES矢量化后的结果数据集，在这里是 `25345` 数据集。
 
 .. note::
-    在整个 `Usage of QSAR` 中，只有 **search步骤** 和 **predict步骤** 需要指定数据集 `DATAPATH` ，其他的步骤只需要在  `command` 中传入各种ID。
+    在整个 `Usage of QSAR` 中，只有 **search步骤** 和 **predict步骤** 需要指定数据集 `DATAPATH` ，其他的步骤只需要在  `command` 中传入各种ID（当然 `predict` 也要一个 `experiment_id` 啦）。
 
 
-**predict步骤**  需要在 `command` 中指定 ``experiment_id`` 。你可以理解，一次实验完成后会产生一个最好的模型（这个模型可以是 ``trials`` 中表现最好的模型，也可以是表现最好的 `K` 个模型集成学习后的模型），并且 **ensemble步骤** 也是被视为一次实验的。只要传入 ``experiment_id`` ，就能加载与之关联的最好模型，然后拿这个模型与预测 `DATAPATH` 中提供的数据
+**predict步骤**  需要在 环境变量 中指定 ``EXPERIMENT_ID`` 。你可以理解，一次实验完成后会产生一个最好的模型（这个模型可以是 ``trials`` 中表现最好的模型，也可以是表现最好的 `K` 个模型集成学习后的模型），并且 **ensemble步骤** 也是被视为一次实验的。只要传入 ``EXPERIMENT_ID`` ，就能加载与之关联的最好模型，然后拿这个模型与预测 `DATAPATH` 中提供的数据
 
+详情见 :ref:`Predict ENV Table`
 
+.. warning::
+    图中的 `command` 传参为已经废弃的传参方式。请填写对应的环境变量。
 
- .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/10.png
+.. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/10.png
 
 
 实验完成后，预测结果为保存在 `SAVEDPATH` 中的 ``prediction.csv`` 文件。其中 ``ID`` 为 ``data.csv`` 中的 ``NAME`` ， ``result`` 为预测结果。

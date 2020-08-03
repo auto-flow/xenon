@@ -12,7 +12,8 @@
         "USER_TOKEN": "None",
         "EMAIL": "None",
         "PASSWORD": "None",
-        "FEATURE_NAME_LIST": "None"
+        "FEATURE_NAME_LIST": "None",
+        "EXPERIMENT_ID": "45"
     },
     "docker_image": "477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0"
 }

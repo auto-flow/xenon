@@ -13,7 +13,6 @@ sys.path.insert(0, os.getcwd())
 import logging
 import os
 
-import click
 import pandas as pd
 from joblib import load
 
@@ -50,82 +49,75 @@ else:
 logger.info(f"traditional_qsar_mode = {traditional_qsar_mode}")
 env_utils.print(logger)
 
-@click.command()
-@click.option("--experiment_id")
-def main(experiment_id):
-    # 查询一条experiment记录，取出task_id
-    # 下载experiment关联的模型
-    # 加载数据
-    # 调用predict方法对数据进行预测
-    # 保存结果到savedpath
-
-    ######################################
-    # 实例化resource_manager（资源管理器） #
-    ######################################
-    resource_manager = HttpResourceManager(
-        email=env_utils.EMAIL,
-        password=env_utils.PASSWORD,
-        user_id=env_utils.USER_ID,
-        user_token=env_utils.USER_TOKEN
-    )
-    #########################
-    # 查询一条experiment记录 #
-    #########################
-    experiment_records = resource_manager._get_experiment_record(experiment_id)
-    assert len(experiment_records) > 0, ValueError(f"experiment_id {experiment_id} is invalid.")
-    experiment_record = experiment_records[0]
-    task_id = experiment_record.get("task_id", experiment_record.get("task"))
-    final_model_path = experiment_record["final_model_path"]
-    logger.info(f"task_id:\t{task_id}")
-    logger.info(f"experiment_id:\t{experiment_id}")
-    ##########################
-    # 下载experiment关联的模型 #
-    ##########################
-    local_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
-    # 判断非空
-    assert bool(final_model_path), ValueError(f"experiment {experiment_id}  was not completed normally, is invalid.")
-    resource_manager.file_system.download(final_model_path, local_path)
-    xenon = load(local_path)
-    ###########
-    # 加载数据 #
-    ###########
-    feature_name_list = env_utils.FEATURE_NAME_LIST
-    column_descriptions = {}
-    train_target_column_name = None
-    id_column_name = None
-    model_type = None
-    data, _ = load_data_from_datapath(
-        datapath,
-        train_target_column_name,
-        id_column_name,
-        logger,
-        traditional_qsar_mode,
-        model_type,
-        feature_name_list,
-        column_descriptions
-    )
-    ###############################
-    # 调用predict方法对数据进行预测 #
-    ###############################
-    if xenon.estimator is None:
-        xenon.estimator = xenon.ensemble_estimator
-    result = xenon.predict(data)
-    # 把ID与result拼在一起
-    test_id_seq = getattr(xenon.data_manager, "test_id_seq")
-    df = {
-        "result": result
-    }
-    if test_id_seq is not None:
-        df.update({
-            "ID": test_id_seq,
-        })
-    df = pd.DataFrame(df)
-    ######################
-    # 保存结果到savedpath #
-    ######################
-    predict_path = f"{savedpath}/prediction.csv"
-    df.to_csv(predict_path, index=False)
-
-
-if __name__ == '__main__':
-    main()
+# 查询一条experiment记录，取出task_id
+# 下载experiment关联的模型
+# 加载数据
+# 调用predict方法对数据进行预测
+# 保存结果到savedpath
+experiment_id = env_utils.EXPERIMENT_ID
+######################################
+# 实例化resource_manager（资源管理器） #
+######################################
+resource_manager = HttpResourceManager(
+    email=env_utils.EMAIL,
+    password=env_utils.PASSWORD,
+    user_id=env_utils.USER_ID,
+    user_token=env_utils.USER_TOKEN
+)
+#########################
+# 查询一条experiment记录 #
+#########################
+experiment_records = resource_manager._get_experiment_record(experiment_id)
+assert len(experiment_records) > 0, ValueError(f"experiment_id {experiment_id} is invalid.")
+experiment_record = experiment_records[0]
+task_id = experiment_record.get("task_id", experiment_record.get("task"))
+final_model_path = experiment_record["final_model_path"]
+logger.info(f"task_id:\t{task_id}")
+logger.info(f"experiment_id:\t{experiment_id}")
+##########################
+# 下载experiment关联的模型 #
+##########################
+local_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
+# 判断非空
+assert bool(final_model_path), ValueError(f"experiment {experiment_id}  was not completed normally, is invalid.")
+resource_manager.file_system.download(final_model_path, local_path)
+xenon = load(local_path)
+###########
+# 加载数据 #
+###########
+feature_name_list = env_utils.FEATURE_NAME_LIST
+column_descriptions = {}
+train_target_column_name = None
+id_column_name = None
+model_type = None
+data, _ = load_data_from_datapath(
+    datapath,
+    train_target_column_name,
+    id_column_name,
+    logger,
+    traditional_qsar_mode,
+    model_type,
+    feature_name_list,
+    column_descriptions
+)
+###############################
+# 调用predict方法对数据进行预测 #
+###############################
+if xenon.estimator is None:
+    xenon.estimator = xenon.ensemble_estimator
+result = xenon.predict(data)
+# 把ID与result拼在一起
+test_id_seq = getattr(xenon.data_manager, "test_id_seq")
+df = {
+    "result": result
+}
+if test_id_seq is not None:
+    df.update({
+        "ID": test_id_seq,
+    })
+df = pd.DataFrame(df)
+######################
+# 保存结果到savedpath #
+######################
+predict_path = f"{savedpath}/prediction.csv"
+df.to_csv(predict_path, index=False)

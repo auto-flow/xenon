@@ -12,7 +12,8 @@
         "USER_TOKEN": "None",
         "EMAIL": "None",
         "PASSWORD": "None",
-        "DISPLAY_SIZE": "50"
+        "DISPLAY_SIZE": "50",
+        "TASK_ID": "5a73130cfe68340968b2e6c029e71fc0"
     },
     "docker_image": "477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0"
 }

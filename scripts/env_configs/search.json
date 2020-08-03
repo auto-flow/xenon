@@ -155,5 +155,10 @@
     "name": "ENSEMBLE_SIZE",
     "default": 10,
     "description": "做 ``stacking`` 集成学习集成的模型数，``<=1`` 表示不做集成学习，加载表现最好的模型。"
+  },
+  {
+    "name": "DISPLAY_SIZE",
+    "default": 50,
+    "description": "默认只展示最好的 ``50`` 次试验"
   }
 ]

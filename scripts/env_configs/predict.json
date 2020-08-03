@@ -3,5 +3,10 @@
     "name": "FEATURE_NAME_LIST",
     "default": null,
     "description": "非空时为指定使用某几种特征，如 ``['SubFP']`` "
+  },
+  {
+    "name": "EXPERIMENT_ID",
+    "default": "45",
+    "description": "请提供一个实验ID，用于下载这次实验的最好模型， 可查看上次任务( `search` 或 `ensemble` )的 ``info.json`` "
   }
 ]

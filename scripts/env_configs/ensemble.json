@@ -1,2 +1,12 @@
 [
+  {
+    "name": "TASK_ID",
+    "default": "5a73130cfe68340968b2e6c029e71fc0",
+    "description": "你需要集成的机器学习任务的 ``task_id`` , 可以通过上次任务 `result dataset` 中的 ``info.json`` 查找"
+  },
+  {
+    "name": "TRIAL_ID",
+    "default": "[92, 61]",
+    "description": "你需要集成的试验ID， 可通过上次任务( `search` 或 `display` )的 `search_records.csv` 或 `search_records.html` 查看"
+  }
 ]

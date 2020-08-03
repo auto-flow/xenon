@@ -1,5 +1,6 @@
 name,default,description
 DISPLAY_SIZE,50,默认只展示最好的 ``50`` 次试验
+TASK_ID,5a73130cfe68340968b2e6c029e71fc0,"你需要展示机器学习任务的 ``task_id`` , 可以通过上次任务 `result dataset` 中的 ``info.json`` 查找"
 USER_ID,None, ``xenon_cli login`` 后，用 ``xenon_cli token`` 查看 ``USER_ID`` 
 USER_TOKEN,None, 如上步骤，查看 ``USER_TOEKN`` 
 EMAIL,None,登录邮箱。你可以采取 ``USER_ID`` + ``USER_TOEKN`` 的方式登录，
@@ -38,3 +39,4 @@ RANDOM_STATE,None,"搜索时使用的random_state。对样本的随机采样的�
 为空会随机产生一个随机种子。"
 FEATURE_NAME_LIST,None,非空时为指定使用某几种特征，如 ``['SubFP']`` 
 ENSEMBLE_SIZE,10,做 ``stacking`` 集成学习集成的模型数，``<=1`` 表示不做集成学习，加载表现最好的模型。
+DISPLAY_SIZE,50,默认只展示最好的 ``50`` 次试验

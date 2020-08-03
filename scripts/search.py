@@ -26,7 +26,7 @@ from scripts.utils import EnvUtils, save_current_expriment_model, load_data_from
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/search.json")
-env_utils.from_json("env_configs/display.json")
+# env_utils.from_json("env_configs/display.json")
 env_utils.update()
 logger = logging.getLogger("search.py")
 
