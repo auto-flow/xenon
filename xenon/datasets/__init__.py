@@ -3,6 +3,7 @@
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
 from pathlib import Path
+import numpy as np
 
 import joblib
 import pandas as pd
@@ -34,3 +35,23 @@ def load(name, return_train_test=False):
         return train_set, test_set
     return train_set
 
+def load_task(task_id):
+    try:
+        import openml
+    except Exception:
+        print("please: pip install openml")
+        raise SystemExit
+    task = openml.tasks.get_task(task_id)
+    train_indices, test_indices = task.get_train_test_split_indices()
+    dataset = openml.datasets.get_dataset(task.dataset_id)
+    df, y, cat, _ = dataset.get_data(target=task.target_name)
+    y = np.array(y)
+    X_train = df.iloc[train_indices, :]
+    y_train = y[train_indices]
+    X_test = df.iloc[test_indices, :]
+    y_test = y[test_indices]
+
+    del _
+    del dataset
+
+    return X_train, y_train, X_test, y_test, cat

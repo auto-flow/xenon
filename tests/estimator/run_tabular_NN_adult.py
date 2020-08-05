@@ -2,71 +2,26 @@
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
-import os
-import re
-import shutil
-import unittest
 from pathlib import Path
-from typing import Iterator, Tuple
 
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.datasets import load_digits
 from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 
 from xenon.datasets import load_task
-from xenon.tests.mock import get_mock_resource_manager
+from xenon.estimator.tabular_nn_est import TabularNNClassifier
+from xenon.utils.logging_ import setup_logger
 
+setup_logger()
 
-class LocalResourceTestCase(unittest.TestCase):
-    def setUp(self) -> None:
-        super(LocalResourceTestCase, self).setUp()
-        self.mock_resource_manager = get_mock_resource_manager()
+class RunTabularNN():
+    current_file = __file__
 
-    def tearDown(self) -> None:
-        shutil.rmtree(self.mock_resource_manager.store_path)
-
-
-class LogTestCase(LocalResourceTestCase):
-    visible_levels = None
-    log_name = None
-
-    def setUp(self) -> None:
-        super(LogTestCase, self).setUp()
-        self.log_file = os.getcwd() + "/" + self.log_name
-        self.pattern = re.compile("\[(" + "|".join(self.visible_levels) + ")\]\s\[.*:(.*)\](.*)$", re.MULTILINE)
-        if os.path.exists(self.log_file):
-            os.remove(self.log_file)
-
-    def update_log_path(self, pipe):
-        pipe.resource_manager.init_experiment_table()
-        experiment = pipe.resource_manager.ExperimentModel
-        log_path = experiment.select().where(experiment.experiment_id == pipe.experiment_id)[0].log_path
-        self.log_file = log_path
-
-    def iter_log_items(self) -> Iterator[Tuple[str, str, str]]:
-        '''
-        iterate log items
-        Returns
-        -------
-        result:Iterator[Tuple[str,str,str]]
-        (level, logger, msg)
-        like: "INFO", "peewee", "SELECT * FROM table;"
-        '''
-        log_content = Path(self.log_file).read_text()
-
-        for item in self.pattern.finditer(log_content):
-            level = item.group(1)
-            logger = item.group(2)
-            msg = item.group(3)
-            msg = msg.strip()
-            yield (level, logger, msg)
-
-class EstimatorTestCase(unittest.TestCase):
-    current_file = None
-
-    def setUp(self) -> None:
+    def __init__(self):
         cur_dir = Path(self.current_file).parent
         if (cur_dir / "126025.bz2").exists():
             X_train, y_train, X_test, y_test, cat = joblib.load(cur_dir / "126025.bz2")
@@ -98,3 +53,26 @@ class EstimatorTestCase(unittest.TestCase):
         self.y_test = label_encoder.transform(y_test)
         self.X_train = X_train
         self.X_test = X_test
+
+    def run_adult_dataset(self):
+        tabular = TabularNNClassifier(
+            verbose=1, max_epoch=64, early_stopping_rounds=16, n_jobs=-1,  # , class_weight="balanced"
+        )
+        tabular.fit(self.X_train, self.y_train, self.X_test, self.y_test, categorical_feature=self.cat_indexes.tolist())
+        print(tabular.score(self.X_test, self.y_test))
+
+    def run_multiclass(self):
+        X, y = load_digits(return_X_y=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+        tabular = TabularNNClassifier(
+            verbose=1, max_epoch=64, early_stopping_rounds=16, n_jobs=-1, lr=1e-2
+        )
+        tabular.fit(X_train, y_train, X_test, y_test)
+        print(tabular.score(X_test, y_test))
+        y_score = tabular.predict_proba(X_test)
+        assert y_score.shape[1] == 10
+        assert np.all(np.abs(y_score.sum(axis=1) - 1) < 1e3)
+        if tabular.early_stopped:
+            assert tabular.best_estimators is None
+
+RunTabularNN().run_multiclass()
