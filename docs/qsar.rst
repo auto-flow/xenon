@@ -329,6 +329,10 @@ Display Stage
 
 详情见 :ref:`Display ENV Table`
 
+如图，下载 ``search_records.html`` 查看最好模型。
+
+.. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/16.png
+
 Ensemble Stage
 ----------------------------------
 
