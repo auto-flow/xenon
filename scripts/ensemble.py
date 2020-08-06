@@ -85,9 +85,3 @@ experiment_id = xenon.experiment_id
 logger.info(f"task_id:\t{task_id}")
 logger.info(f"experiment_id:\t{experiment_id}")
 save_current_expriment_model(savedpath, experiment_id, logger, xenon)
-save_info_json(
-    os.getenv("EXPERIMENT_ID"),
-    os.getenv("TASK_ID"),
-    os.getenv("HDL_ID"),
-    savedpath
-)
