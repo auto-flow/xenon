@@ -222,8 +222,8 @@ parser_logger = get_logger("Previous_Result_Parser")
 
 def is_xenon_previous_result_dataset(datapath):
     name = Path(datapath).name
-    if name.endswith("_result") and Path(datapath).is_dir():
-        parser_logger.info(f"{name} endswith '_result' , maybe is previous Xenon result dataset.")
+    if name.endswith("result") and Path(datapath).is_dir():
+        parser_logger.info(f"{name} endswith 'result' , maybe is previous Xenon result dataset.")
         if (Path(datapath) / "info.json").is_file():
             parser_logger.info(f"'info.json' exists in {name}, I'm sure it's previous Xenon result dataset.")
             return True
@@ -244,7 +244,7 @@ def set_xenon_several_IDs_to_env_by_datapath(datapath):
 
 def process_previous_result_dataset():
     # nitrogen 本地的 result_dataset 为 job_xxx_result
-    # xbcp           result_dataset 为  xxx_result
+    # xbcp           result_dataset 为  xxx-result
     # nitrogen 多个dataset的DATAPATH /home/job/data
     datapath = os.getenv("DATAPATH")
     if bool(datapath) and isinstance(datapath, str) and os.path.isdir(datapath):

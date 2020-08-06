@@ -325,7 +325,7 @@ Display Stage
 .. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
 如果要执行 **display步骤** ，需要传入1个ID环境变量:
-    1. ``task_id``, 任务ID
+    1. ``TASK_ID``, 任务ID
 
 详情见 :ref:`Display ENV Table`
 
@@ -341,8 +341,8 @@ Ensemble Stage
 .. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
 如果要执行 **ensemble步骤** ，需要传入2个ID环境变量:
-    1. ``task_id``, 任务ID
-    2. ``trial_id``, 试验ID
+    1. ``TASK_ID``, 任务ID
+    2. ``TRIAL_ID``, 试验ID
 
 详情见 :ref:`Ensemble ENV Table`
 
@@ -380,6 +380,11 @@ Predict Stage
 
 .. note:: `demo` 是在 `Nitrogen` 本地跑的，如果你想在 ``XBCP`` 上跑，记得将 ``docker_image`` 改为 ``477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0``
 
+如果要执行 **predict步骤** ，需要传入1个ID环境变量:
+    1. ``EXPERIMENT_ID``, 实验ID
+
+详情见 :ref:`Predict ENV Table`
+
 
 与 **search步骤** 一样， **predict步骤** 也是需要指定数据集的，这个数据集就是对SMILES矢量化后的结果数据集，在这里是 `25345` 数据集。
 
@@ -389,7 +394,6 @@ Predict Stage
 
 **predict步骤**  需要在 环境变量 中指定 ``EXPERIMENT_ID`` 。你可以理解，一次实验完成后会产生一个最好的模型（这个模型可以是 ``trials`` 中表现最好的模型，也可以是表现最好的 `K` 个模型集成学习后的模型），并且 **ensemble步骤** 也是被视为一次实验的。只要传入 ``EXPERIMENT_ID`` ，就能加载与之关联的最好模型，然后拿这个模型与预测 `DATAPATH` 中提供的数据
 
-详情见 :ref:`Predict ENV Table`
 
 .. warning::
     图中的 `command` 传参为已经废弃的传参方式。请填写对应的环境变量。
