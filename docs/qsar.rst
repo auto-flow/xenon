@@ -28,9 +28,7 @@ Input and Output
 
 名词解释:
     1. ``Dataset`` 指的是Nitrogen Job的数据集
-    2. ``Options`` 指的是选项，填在 `Command` 中，填写格式为 ``--option=xxx`` 。如 **display步骤** 的 ``--task_id={task_id}``
-    3. ``Argument`` 指的是参数，填在 `Command` 中，填写格式为 ``arg1 arg2 ...`` 。如 **ensemble步骤** 的 ``213 214``
-    4. ``ENV`` 指的是环境变量。所有的环境变量都在 :ref:`ENV Description Table` 中有详细说明
+    2. ``ENV`` 指的是环境变量。所有的环境变量都在 :ref:`ENV Description Table` 中有详细说明
 
 
 在Nitrogen上使用 ``Xenon`` 各阶段在 `SAVEDPATH` 的输出如下表所示：

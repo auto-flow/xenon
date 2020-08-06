@@ -35,7 +35,7 @@ logger = logging.getLogger("search.py")
 # 2. feature.csv  但此时需要搭配对于列的描述 (用户自定义特征模式)
 datapath = os.getenv("DATAPATH")
 savedpath = os.getenv("SAVEDPATH", ".")
-assert datapath is not None
+assert bool(datapath), ValueError(f"Search Stage must has a dataset!")
 setup_logger(
     f"{savedpath}/xenon.log"
 )

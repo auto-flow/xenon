@@ -15,8 +15,9 @@ import os
 
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.logging_ import setup_logger
-from scripts.utils import EnvUtils, display
+from scripts.utils import EnvUtils, display, process_previous_result_dataset, save_info_json
 
+process_previous_result_dataset()
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/display.json")
@@ -41,3 +42,9 @@ resource_manager = HttpResourceManager(
 )
 display_size = env_utils.DISPLAY_SIZE
 display(resource_manager, task_id, display_size, savedpath)
+save_info_json(
+    os.getenv("EXPERIMENT_ID"),
+    os.getenv("TASK_ID"),
+    os.getenv("HDL_ID"),
+    savedpath
+)

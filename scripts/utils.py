@@ -13,6 +13,7 @@ import joblib
 import pandas as pd
 from tabulate import tabulate
 
+from xenon.utils.logging_ import get_logger
 from scripts import lib_display
 
 
@@ -214,3 +215,70 @@ def save_info_json(experiment_id, task_id, hdl_id, savedpath):
     if hdl_id is not None:
         info["hdl_id"] = hdl_id
     Path(f"{savedpath}/info.json").write_text(json.dumps(info))
+
+
+parser_logger = get_logger("Previous_Result_Parser")
+
+
+def is_xenon_previous_result_dataset(datapath):
+    name = Path(datapath).name
+    if name.endswith("_result") and Path(datapath).is_dir():
+        parser_logger.info(f"{name} endswith '_result' , maybe is previous Xenon result dataset.")
+        if (Path(datapath) / "info.json").is_file():
+            parser_logger.info(f"'info.json' exists in {name}, I'm sure it's previous Xenon result dataset.")
+            return True
+        else:
+            parser_logger.info(f"'info.json' not exists in {name},  it's not previous Xenon result dataset!!!")
+            return False
+    return False
+
+
+def set_xenon_several_IDs_to_env_by_datapath(datapath):
+    info = json.loads((Path(datapath) / "info.json").read_text())
+    parser_logger.info(f"parsing 'info.json' in '{datapath}' ...")
+    for k, v in info.items():
+        k = k.upper()
+        parser_logger.info(f"set {k}\t=\t'{v}'\tOK")
+        os.environ[k] = str(v)
+
+
+def process_previous_result_dataset():
+    # nitrogen 本地的 result_dataset 为 job_xxx_result
+    # xbcp           result_dataset 为  xxx_result
+    # nitrogen 多个dataset的DATAPATH /home/job/data
+    datapath = os.getenv("DATAPATH")
+    if bool(datapath) and isinstance(datapath, str) and os.path.isdir(datapath):
+        parser_logger.info(f"DATAPATH {datapath} exists, and is dir")
+        # 情况1 DATAPATH 是一个单独的result dataset, 如 DATAPATH = /home/qichuntang/xxxx_result
+        if is_xenon_previous_result_dataset(datapath):
+            set_xenon_several_IDs_to_env_by_datapath(datapath)
+        else:
+            # 情况2 DATAPATH 是 result_dataset + data_input, 如 DATAPATH = /home/qichuntang/xxxx_result
+            sub_dirs = os.listdir(datapath)
+            xenon_results = []
+            data_inputs = []
+            for sub_dir in sub_dirs:
+                path = Path(datapath) / sub_dir
+                if is_xenon_previous_result_dataset(path):
+                    xenon_results.append(path)
+                else:
+                    data_inputs.append(path)
+            if len(xenon_results) == 0:
+                parser_logger.info("current DATAPATH don't contain previous Xenon result dataset. ")
+            else:
+                parser_logger.info("=== Here is previous Xenon result dataset ===")
+                for xenon_result in xenon_results:
+                    parser_logger.info(f"* {xenon_result}")
+                if len(xenon_results) > 1:
+                    parser_logger.info(f"len(xenon_results) = {len(xenon_results)}, only use first!")
+                xenon_result = xenon_results[0]
+                set_xenon_several_IDs_to_env_by_datapath(xenon_result)
+                if len(data_inputs) > 0:
+                    parser_logger.info("=== Here is data input dir ===")
+                    for data_input in data_inputs:
+                        parser_logger.info(f"* {data_input}")
+                    if len(data_inputs) > 1:
+                        parser_logger.info(f"len(data_inputs) = {len(data_inputs)}, only use first!")
+                    data_input = str(data_inputs[0])
+                    parser_logger.info(f"set DATAPATH\t=\t'{data_input}'\tOK")
+                    os.environ["DATAPATH"] = data_input

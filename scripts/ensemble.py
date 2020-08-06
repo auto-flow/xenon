@@ -17,8 +17,9 @@ from xenon.utils.logging_ import setup_logger
 from xenon import XenonClassifier, XenonRegressor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.ml_task import MLTask
-from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json
+from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json, process_previous_result_dataset
 
+process_previous_result_dataset()
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/ensemble.json")
@@ -84,3 +85,9 @@ experiment_id = xenon.experiment_id
 logger.info(f"task_id:\t{task_id}")
 logger.info(f"experiment_id:\t{experiment_id}")
 save_current_expriment_model(savedpath, experiment_id, logger, xenon)
+save_info_json(
+    os.getenv("EXPERIMENT_ID"),
+    os.getenv("TASK_ID"),
+    os.getenv("HDL_ID"),
+    savedpath
+)

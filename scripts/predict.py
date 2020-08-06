@@ -18,8 +18,9 @@ from joblib import load
 
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.logging_ import setup_logger
-from scripts.utils import EnvUtils, load_data_from_datapath
+from scripts.utils import EnvUtils, load_data_from_datapath, process_previous_result_dataset, save_info_json
 
+process_previous_result_dataset()
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/predict.json")
@@ -121,3 +122,9 @@ df = pd.DataFrame(df)
 ######################
 predict_path = f"{savedpath}/prediction.csv"
 df.to_csv(predict_path, index=False)
+save_info_json(
+    os.getenv("EXPERIMENT_ID"),
+    os.getenv("TASK_ID"),
+    os.getenv("HDL_ID"),
+    savedpath
+)
