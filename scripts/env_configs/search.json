@@ -153,7 +153,7 @@
   },
   {
     "name": "ENSEMBLE_SIZE",
-    "default": 10,
+    "default": 3,
     "description": "做 ``stacking`` 集成学习集成的模型数，``<=1`` 表示不做集成学习，加载表现最好的模型。"
   },
   {

@@ -20,6 +20,10 @@ from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.logging_ import setup_logger
 from scripts.utils import EnvUtils, load_data_from_datapath, process_previous_result_dataset, save_info_json
 
+savedpath = os.getenv("SAVEDPATH", ".")
+setup_logger(
+    f"{savedpath}/xenon.log"
+)
 process_previous_result_dataset()
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
@@ -31,11 +35,8 @@ logger = logging.getLogger("predict.py")
 # 1. data/ 文件夹 (传统QSAR模式)
 # 2. feature.csv  但此时需要搭配对于列的描述 (用户自定义特征模式)
 datapath = os.getenv("DATAPATH")
-savedpath = os.getenv("SAVEDPATH", ".")
 assert datapath is not None
-setup_logger(
-    f"{savedpath}/xenon.log"
-)
+
 logger.info(f"DATAPATH: {datapath}")
 traditional_qsar_mode = True
 if os.path.isdir(datapath):

@@ -19,16 +19,16 @@ from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.ml_task import MLTask
 from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json, process_previous_result_dataset
 
+savedpath = os.getenv("SAVEDPATH", ".")
+setup_logger(
+    f"{savedpath}/xenon.log"
+)
 process_previous_result_dataset()
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/ensemble.json")
 env_utils.update()
 logger = logging.getLogger("ensemble.py")
-savedpath = os.getenv("SAVEDPATH", ".")
-setup_logger(
-    f"{savedpath}/xenon.log"
-)
 env_utils.print(logger)
 
 task_id = env_utils.TASK_ID

@@ -17,16 +17,17 @@ from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.logging_ import setup_logger
 from scripts.utils import EnvUtils, display, process_previous_result_dataset, save_info_json
 
+
+savedpath = os.getenv("SAVEDPATH", ".")
+setup_logger(
+    f"{savedpath}/xenon.log"
+)
 process_previous_result_dataset()
 env_utils = EnvUtils()
 env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/display.json")
 env_utils.update()
 logger = logging.getLogger("display.py")
-savedpath = os.getenv("SAVEDPATH", ".")
-setup_logger(
-    f"{savedpath}/xenon.log"
-)
 env_utils.print(logger)
 
 task_id = env_utils.TASK_ID
