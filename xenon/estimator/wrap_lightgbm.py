@@ -38,7 +38,9 @@ class LGBMEstimator(BaseEstimator):
             early_stopping_rounds=250,
             verbose=-1,
             n_jobs=1,
+            warm_start=True
     ):
+        self.warm_start = warm_start
         self.n_jobs = n_jobs
         assert self.is_classification is not None, NotImplementedError
         self.objective = objective
