@@ -22,6 +22,7 @@ Xenon : Automatic machine learning platform for XARC.
    :caption: Usage for Algorithm Developer
 
    algo
+   transplant
 
 
 

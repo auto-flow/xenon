@@ -1,5 +1,5 @@
 Installation
-----------------------
+======================
 
 在当前Python环境中安装Xenon-SDK的方法很简单:
 
@@ -22,7 +22,7 @@ Installation
 
 
 Make Predictions Offline
---------------------------------------------
+======================================
 
 在 :ref:`Search Stage` ，  :ref:`Ensemble Stage` ，  :ref:`Predict Stage` 中，SAVEDPATH 都会保留一个 `experiment_xx_best_model.bz2` ，手动下载这个模型，
 并整合到你的项目中，就可以实现离线预测（前提：Xenon-SDK已安装）
