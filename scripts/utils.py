@@ -282,3 +282,12 @@ def process_previous_result_dataset():
                     data_input = str(data_inputs[0])
                     parser_logger.info(f"set DATAPATH\t=\t'{data_input}'\tOK")
                     os.environ["DATAPATH"] = data_input
+
+def print_xenon_path(logger=None):
+    if logger is None:
+        func=print
+    else:
+        func=logger.info
+    import xenon
+    func(f"Xenon executable file: {xenon.__file__}")
+

@@ -21,7 +21,8 @@ from xenon import XenonClassifier, XenonRegressor
 from xenon.hdl.hdl_constructor import HDL_Constructor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.tuner import Tuner
-from scripts.utils import EnvUtils, save_current_expriment_model, load_data_from_datapath, display, save_info_json
+from scripts.utils import EnvUtils, save_current_expriment_model, load_data_from_datapath, display, save_info_json, \
+    print_xenon_path
 
 
 def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[XenonClassifier, XenonRegressor]:
@@ -44,7 +45,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     # env_utils.from_json("env_configs/display.json")
     env_utils.update()
     logger = logging.getLogger("search.py")
-
+    print_xenon_path(logger)
     # DATAPATH 有两种形式，
     # 1. data/ 文件夹 (传统QSAR模式)
     # 2. feature.csv  但此时需要搭配对于列的描述 (用户自定义特征模式)

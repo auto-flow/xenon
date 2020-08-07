@@ -18,7 +18,8 @@ from joblib import load
 
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.logging_ import setup_logger
-from scripts.utils import EnvUtils, load_data_from_datapath, process_previous_result_dataset, save_info_json
+from scripts.utils import EnvUtils, load_data_from_datapath, process_previous_result_dataset, save_info_json, \
+    print_xenon_path
 
 savedpath = os.getenv("SAVEDPATH", ".")
 setup_logger(
@@ -30,7 +31,7 @@ env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/predict.json")
 env_utils.update()
 logger = logging.getLogger("predict.py")
-
+print_xenon_path(logger)
 # DATAPATH 有两种形式，
 # 1. data/ 文件夹 (传统QSAR模式)
 # 2. feature.csv  但此时需要搭配对于列的描述 (用户自定义特征模式)

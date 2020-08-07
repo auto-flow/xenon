@@ -17,7 +17,8 @@ from xenon.utils.logging_ import setup_logger
 from xenon import XenonClassifier, XenonRegressor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.ml_task import MLTask
-from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json, process_previous_result_dataset
+from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json, process_previous_result_dataset, \
+    print_xenon_path
 
 savedpath = os.getenv("SAVEDPATH", ".")
 setup_logger(
@@ -29,6 +30,7 @@ env_utils.from_json("env_configs/common.json")
 env_utils.from_json("env_configs/ensemble.json")
 env_utils.update()
 logger = logging.getLogger("ensemble.py")
+print_xenon_path(logger)
 env_utils.print(logger)
 
 task_id = env_utils.TASK_ID
