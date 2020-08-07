@@ -8,8 +8,6 @@
     "command": "python scripts/search.py",
     "use_gpu": 0,
     "env": {
-        "DISPLAY_SIZE": "50",
-        "TASK_ID": "5a73130cfe68340968b2e6c029e71fc0",
         "USER_ID": "None",
         "USER_TOKEN": "None",
         "EMAIL": "None",
@@ -35,7 +33,8 @@
         "BAYES_RUNS": "60",
         "RANDOM_STATE": "None",
         "FEATURE_NAME_LIST": "None",
-        "ENSEMBLE_SIZE": "10"
+        "ENSEMBLE_SIZE": "3",
+        "DISPLAY_SIZE": "50"
     },
     "docker_image": "477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0"
 }

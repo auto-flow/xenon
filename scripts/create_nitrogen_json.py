@@ -10,7 +10,7 @@ import pandas as pd
 from scripts.utils import EnvUtils
 
 relations = {
-    "search": ["display"],
+    "search": [],
     "display": [],
     "ensemble": [],
     "predict": [],
