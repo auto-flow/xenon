@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
+import warnings
 from copy import deepcopy
 from typing import List, Optional
 
@@ -13,7 +14,7 @@ from sklearn.utils import check_array
 
 from xenon.tnn.tabular_nn import TabularNNTrainer, TabularNN
 from xenon.utils.logging_ import get_logger
-
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class TabularNNEstimator(BaseEstimator):
     is_classification = None
