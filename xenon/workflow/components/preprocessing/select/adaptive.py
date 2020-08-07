@@ -10,3 +10,4 @@ __all__ = ["AdaptiveFeatureSelector"]
 class AdaptiveFeatureSelector(XenonFeatureEngineerAlgorithm):
     class__ = "AdaptiveFeatureSelector"
     module__ = "xenon.feature_engineer.select"
+    need_y = True
