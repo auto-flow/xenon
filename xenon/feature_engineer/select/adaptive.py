@@ -60,7 +60,8 @@ class AdaptiveFeatureSelector(BaseEstimator, TransformerMixin):
             self.lgbm_iters,
             X.values,
             y,
-            lambda lgbm: lgbm.model.feature_importance("gain")
+            lambda lgbm: lgbm.model.feature_importance("gain"),
+            self.lgbm_w
         )
         self.et, self.lgbm_cost_time, self.et_imp = self.fit_model(
             ExtraTreesClassifier,
@@ -70,7 +71,8 @@ class AdaptiveFeatureSelector(BaseEstimator, TransformerMixin):
             self.et_iters,
             X.values,
             y,
-            lambda et: et.feature_importances_
+            lambda et: et.feature_importances_,
+            1 - self.lgbm_w
         )
         imp_vecs = [self.lgbm_imp, self.et_imp]
         ws = [self.lgbm_w, 1 - self.lgbm_w]
@@ -83,7 +85,7 @@ class AdaptiveFeatureSelector(BaseEstimator, TransformerMixin):
         else:
             max_feats = M
         min_feats = 1
-        n_kept_feats = min_feats + round((max_feats - min_feats) * (self.percentage)/100)
+        n_kept_feats = min_feats + round((max_feats - min_feats) * (self.percentage) / 100)
         self.logger.info(f"min_feats = {min_feats}, max_feats = {max_feats}, "
                          f"percentage = {self.percentage}, n_kept_feats = {n_kept_feats}")
         index = np.argsort(-self.feature_importance)[:n_kept_feats]
@@ -96,9 +98,9 @@ class AdaptiveFeatureSelector(BaseEstimator, TransformerMixin):
         X = util.convert_input(X)
         return X[self.columns]
 
-    def fit_model(self, clf_cls, reg_cls, params, budget, max_iters, X, y, feat_imp_callback):
+    def fit_model(self, clf_cls, reg_cls, params, budget, max_iters, X, y, feat_imp_callback, weight):
         N, M = X.shape
-        if budget == 0:
+        if budget == 0 or weight == 0:
             return None, 0, np.zeros([M])
         default_params = {
             "n_estimators": self.step,
@@ -137,13 +139,14 @@ if __name__ == '__main__':
     from xenon.utils.logging_ import setup_logger
     from sklearn.pipeline import Pipeline
     from sklearn.model_selection import train_test_split
+
     setup_logger()
     X, y = load_digits(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
-    pipe=Pipeline([
+    pipe = Pipeline([
         ("selector", AdaptiveFeatureSelector(percentage=50)),
         ("lgbm", LGBMClassifier(n_estimators=500))
     ])
-    pipe.fit(X_train,y_train)
-    score=pipe.score(X_test,y_test)
+    pipe.fit(X_train, y_train)
+    score = pipe.score(X_test, y_test)
     print(score)

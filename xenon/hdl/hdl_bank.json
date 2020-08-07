@@ -544,7 +544,7 @@
     "select": {
       "adaptive": {
         "percentage": {"_type": "quniform", "_value": [0, 100, 0.1],"_default": 80},
-        "feats_must_less_than_rows": true,
+        "feats_must_less_than_rows": false,
         "lgbm_w": {"_type": "quniform", "_value": [0, 1, 0.1],"_default": 0.5},
         "et_iters": 100,
         "lgbm_iters": 100,
