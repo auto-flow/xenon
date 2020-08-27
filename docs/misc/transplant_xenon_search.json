@@ -9,7 +9,7 @@
     "use_gpu": 0,
     "env": {
         "USER_ID": "60",
-        "USER_TOKEN": "eyJhbGciOiJIUzI1NiIsImlhdCI6MTU5NTQ4OTA5OCwiZXhwIjoxNTk1NTc1NDk4fQ.eyJpZCI6NjAsInBhc3N3b3JkX3NhbHQiOiI5cHdRcEg2SFljT1V1N2pSU0xKOVIwQkY3aDZoU3IxbiJ9.LE2wW_s729313aXg3sWa-BvIbz-m_y6UK7RGT_KFy3s",
+        "USER_TOKEN": "Your Token",
         "EMAIL": "None",
         "PASSWORD": "None",
         "DATASET_NAME": "None",

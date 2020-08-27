@@ -456,7 +456,7 @@ def display(data:dict)->str:
             y_true_all.extend(list(y_true))
             title = "valid " + str(i + 1)
             if mainTask == "classification":
-                y_score = record["y_info"]['y_preds'][i][:, 0]
+                y_score = record["y_info"]['y_preds'][i][:, 1]
                 y_score_all.extend(list(y_score))
                 info["img"].append(
                     clf_plot(
