@@ -108,7 +108,7 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
     response = None
     ok = False
     json_response = {}
-    text=None
+    text = None
     # send requests
     try:
         if method == "post":
@@ -134,15 +134,18 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         except Exception:
             json_response = {}
         text = response.text
+    status_code = -1
+    if response is not None and hasattr(response, "status_code"):
+        status_code = response.status_code
     if requests_exceptions or json_response.get("code") != "1" or (not ok):
         if requests_exceptions:
             err_info = requests_exceptions
         elif response is not None and not ok:
-            err_info = f"request url {url} status_code = {response.status_code} ."
+            err_info = f"request url {url} status_code = {status_code} ."
         else:
             err_info = f"request url {url} response code != 1 ."
         log_file_name = f"{datetime.datetime.now()}.json"
-        logger.warning(f"{err_info} log_file_name = {log_file_name}")
+        logger.warning(f"{err_info} | log_file_name = {log_file_name}")
         savedpath = os.getenv("SAVEDPATH")
         if savedpath is not None:
             root_path = savedpath
@@ -152,7 +155,7 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         Path(log_path).mkdir(parents=True, exist_ok=True)
         log_file = f"{log_path}/{log_file_name}"
         err_data = {
-            "status_code": response.status_code,
+            "status_code": status_code,
             "url": url,
             "db_params": db_params,
             "target": target,
