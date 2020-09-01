@@ -24,7 +24,7 @@ from urllib3 import Retry
 logger = logging.getLogger(__name__)
 
 session = Session()
-retry = Retry(connect=3, backoff_factor=0.5)
+retry = Retry(connect=10, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
 session.mount('http://', adapter)
 session.mount('https://', adapter)
@@ -103,28 +103,41 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
     if json_data is not None:
         json_data = json.dumps(json_data, cls=CustomJsonEncoder)
         kwargs.update({"data": json_data})
-    if method == "post":
-        response = session.post(**kwargs)
-    elif method == "get":
-        response = session.get(**kwargs)
-    elif method == "delete":
-        response = session.delete(**kwargs)
-    elif method == "patch":
-        response = session.patch(**kwargs)
-    elif method == "put":
-        response = session.put(**kwargs)
-    else:
-        raise NotImplementedError
-    # todo: 如果token过期，自动登录并重新请求
-    ok = judge_state_code(response)
+    # default values
+    requests_exceptions = None
+    response = None
+    ok = False
+    json_response = {}
+    text=None
+    # send requests
     try:
-        json_response: Optional[dict] = response.json()
-        text = None
-    except Exception:
-        json_response = {}
+        if method == "post":
+            response = session.post(**kwargs)
+        elif method == "get":
+            response = session.get(**kwargs)
+        elif method == "delete":
+            response = session.delete(**kwargs)
+        elif method == "patch":
+            response = session.patch(**kwargs)
+        elif method == "put":
+            response = session.put(**kwargs)
+        else:
+            raise NotImplementedError
+    except Exception as e:
+        logger.warning(f"Requests sending failed. exceptions:  {e}")
+        requests_exceptions = str(e)
+    if response is not None:
+        ok = judge_state_code(response)
+        try:
+            json_response: Optional[dict] = response.json()
+            text = None
+        except Exception:
+            json_response = {}
         text = response.text
-    if json_response.get("code") != "1" or (not ok):
-        if not ok:
+    if requests_exceptions or json_response.get("code") != "1" or (not ok):
+        if requests_exceptions:
+            err_info = requests_exceptions
+        elif response is not None and not ok:
             err_info = f"request url {url} status_code = {response.status_code} ."
         else:
             err_info = f"request url {url} response code != 1 ."
@@ -149,6 +162,8 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
             "params": params,
             "method": method,
         }
+        if requests_exceptions:
+            err_data.update({"requests_exceptions": requests_exceptions})
         Path(log_file).write_text(json.dumps(err_data))
     return response
 
