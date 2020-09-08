@@ -5,7 +5,7 @@
     "git_branch": "v3.0",
     "git_commit": "",
     "datasets": "25345",
-    "command": "python scripts/predict.py --experiment_id=54 ",
+    "command": "python scripts/predict.py",
     "use_gpu": 0,
     "env": {
         "USER_ID": "60",
