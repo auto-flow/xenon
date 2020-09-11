@@ -114,7 +114,7 @@ if os.path.exists(f"{datapath}/predict"):
             xenon.estimator = xenon.ensemble_estimator
         result = xenon.predict(data)
         # 把ID与result拼在一起
-        test_id_seq = getattr(xenon.data_manager, "test_id_seq")
+        test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
         df = {
             "result": result
         }
