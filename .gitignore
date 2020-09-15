@@ -9,7 +9,8 @@ run_qsar_reg.py
 run_classifier.py
 run_ova_clf.py
 delete_datasets.py
-
+info.json
+prediction.csv
 move.py
 *.db
 *.gv

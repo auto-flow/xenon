@@ -31,6 +31,16 @@ loggers:
     handlers: [file_handler]
     propagate: false
 
+  matplotlib.axes._base:
+    level: WARNING
+    handlers: [file_handler]
+    propagate: false
+
+  matplotlib.font_manager:
+    level: WARNING
+    handlers: [file_handler]
+    propagate: false
+
   hyperopt.tpe:
     level: WARNING
     handlers: [file_handler]

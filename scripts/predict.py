@@ -7,7 +7,6 @@
 ###################################
 import os
 import sys
-from pathlib import Path
 
 sys.path.insert(0, os.getcwd())
 ###################################
@@ -89,93 +88,47 @@ xenon = load(local_path)
 ###########
 # 加载数据 #
 ###########
-if os.path.exists(f"{datapath}/predict"):
-    Path(f"{savedpath}/prediction").mkdir()
-    for sub_datapath in Path(f"{datapath}/predict").iterdir():
-        feature_name_list = env_utils.FEATURE_NAME_LIST
-        column_descriptions = {}
-        train_target_column_name = None
-        id_column_name = None
-        model_type = None
-        data, _ = load_data_from_datapath(
-            sub_datapath,
-            train_target_column_name,
-            id_column_name,
-            logger,
-            traditional_qsar_mode,
-            model_type,
-            feature_name_list,
-            column_descriptions
-        )
-        ###############################
-        # 调用predict方法对数据进行预测 #
-        ###############################
-        if xenon.estimator is None:
-            xenon.estimator = xenon.ensemble_estimator
-        result = xenon.predict(data)
-        # 把ID与result拼在一起
-        test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
-        df = {
-            "result": result
-        }
-        if test_id_seq is not None:
-            df.update({
-                "ID": test_id_seq,
-            })
-        df = pd.DataFrame(df)
-        ######################
-        # 保存结果到savedpath #
-        ######################
-        predict_path = f"{savedpath}/prediction/{sub_datapath.name}.csv"
-        df.to_csv(predict_path, index=False)
-    first = True
-    prediction_file = None
-    for sub_result in Path(f"{savedpath}/prediction").iterdir():
-        if first:
-            prediction_file = pd.read_csv(sub_result, header=0)
-            first = False
-        else:
-            tmp_file = pd.read_csv(sub_result, header=0)
-            prediction_file = prediction_file.append(tmp_file)
-    if not first:
-        prediction_file.to_csv(f"{savedpath}/prediction.csv", index=False)
+feature_name_list = env_utils.FEATURE_NAME_LIST
+column_descriptions = {}
+train_target_column_name = None
+id_column_name = None
+model_type = None
+data, _ = load_data_from_datapath(
+    datapath,
+    train_target_column_name,
+    id_column_name,
+    logger,
+    traditional_qsar_mode,
+    model_type,
+    feature_name_list,
+    column_descriptions
+)
+###############################
+# 调用predict方法对数据进行预测 #
+###############################
+if xenon.estimator is None:
+    xenon.estimator = xenon.ensemble_estimator
+result = xenon.predict(data)
+# 把ID与result拼在一起
+test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
+df = {}
+if test_id_seq is not None:
+    df.update({
+        "ID": test_id_seq,
+    })
+df["RESULT"] = result
+df = pd.DataFrame(df)
+if xenon.ml_task.mainTask == "classification":
+    proba_ = xenon.predict_proba(data)
+    proba = pd.DataFrame(proba_, columns=[f"PROBA_{i}" for i in range(proba_.shape[1])])
 else:
-    feature_name_list = env_utils.FEATURE_NAME_LIST
-    column_descriptions = {}
-    train_target_column_name = None
-    id_column_name = None
-    model_type = None
-    data, _ = load_data_from_datapath(
-        datapath,
-        train_target_column_name,
-        id_column_name,
-        logger,
-        traditional_qsar_mode,
-        model_type,
-        feature_name_list,
-        column_descriptions
-    )
-    ###############################
-    # 调用predict方法对数据进行预测 #
-    ###############################
-    if xenon.estimator is None:
-        xenon.estimator = xenon.ensemble_estimator
-    result = xenon.predict(data)
-    # 把ID与result拼在一起
-    test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
-    df = {
-        "result": result
-    }
-    if test_id_seq is not None:
-        df.update({
-            "ID": test_id_seq,
-        })
-    df = pd.DataFrame(df)
-    ######################
-    # 保存结果到savedpath #
-    ######################
-    predict_path = f"{savedpath}/prediction.csv"
-    df.to_csv(predict_path, index=False)
+    proba = pd.DataFrame()
+df = pd.concat([df, proba], axis=1)
+######################
+# 保存结果到savedpath #
+######################
+predict_path = f"{savedpath}/prediction.csv"
+df.to_csv(predict_path, index=False)
 save_info_json(
     os.getenv("EXPERIMENT_ID"),
     os.getenv("TASK_ID"),

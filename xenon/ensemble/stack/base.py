@@ -27,9 +27,9 @@ class StackEstimator(EnsembleEstimator):
                     fit_intercept=False
                 )
             elif self.mainTask == "regression":
-                meta_learner = ElasticNet(fit_intercept=False,random_state=10)
+                meta_learner = ElasticNet(fit_intercept=False, random_state=10)
         self.meta_learner = meta_learner
-        self.logger=get_logger(self)
+        self.logger = get_logger(self)
 
     def fit(self, X, y):
         # fixme: 2020-4-9 更新后， 此方法弃用
@@ -49,11 +49,9 @@ class StackEstimator(EnsembleEstimator):
         meta_features = self.predict_meta_features(None, True)
         # todo: 对元学习器做 automl
         self.meta_learner.fit(meta_features, self.stacked_y_true)
-        score=self.meta_learner.score(meta_features, self.stacked_y_true)
+        score = self.meta_learner.score(meta_features, self.stacked_y_true)
         self.logger.info(f"meta_learner's performance: {score}")
         self.logger.info(f"meta_learner's coefficient: {self.meta_learner.coef_}")
-
-
 
     def predict_meta_features(self, X, is_train):
         raise NotImplementedError
