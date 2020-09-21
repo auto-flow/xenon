@@ -49,7 +49,7 @@ class StackEstimator(EnsembleEstimator):
         meta_features = self.predict_meta_features(None, True)
         # todo: 对元学习器做 automl
         self.meta_learner.fit(meta_features, self.stacked_y_true)
-        score = self.meta_learner.score(meta_features, self.stacked_y_true)
+        score = self.meta_learner.score(meta_features, self.stacked_y_true) # it is a reward for bayesian model
         self.logger.info(f"meta_learner's performance: {score}")
         self.logger.info(f"meta_learner's coefficient: {self.meta_learner.coef_}")
 
