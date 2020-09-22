@@ -7,9 +7,6 @@ from typing import Union, Optional, Dict, List, Any
 
 import numpy as np
 import pandas as pd
-from xenon.ensemble.mean.regressor import MeanRegressor
-
-from xenon.ensemble.vote.classifier import VoteClassifier
 from frozendict import frozendict
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -18,8 +15,7 @@ from xenon import constants
 from xenon.constants import ExperimentType
 from xenon.data_container import DataFrameContainer
 from xenon.data_manager import DataManager
-from xenon.ensemble.base import EnsembleEstimator
-from xenon.ensemble.trained_data_fetcher import TrainedDataFetcher
+from xenon.ensemble.stack.util import ensemble_folds_estimators
 from xenon.ensemble.trials_fetcher import TrialsFetcher
 from xenon.hdl.hdl_constructor import HDL_Constructor
 from xenon.metrics import r2, mcc
@@ -464,18 +460,15 @@ class XenonEstimator(BaseEstimator):
             **trials_fetcher_params
         )
         trial_ids = trials_fetcher.fetch()
-        estimator_list, y_true_indexes_list, y_preds_list = TrainedDataFetcher(
-            task_id, hdl_id, trial_ids, self.resource_manager).fetch()
-        # todo: 在这里，只取了验证集的数据，没有取测试集的数据。待拓展
         ml_task, y_true = self.resource_manager.get_ensemble_needed_info(task_id)
-        if len(estimator_list)==0:
+        estimator_list, y_true_indexes_list, y_preds_list, performance_list = \
+            self.resource_manager.load_estimators_in_trials(trial_ids, ml_task)
+        # todo: 在这里，只取了验证集的数据，没有取测试集的数据。待拓展
+        if len(estimator_list) == 0:
             raise ValueError("Length of estimator_list must >=1. ")
-        elif len(estimator_list)==1:
+        elif len(estimator_list) == 1:
             self.logger.info("Length of estimator_list == 1, don't do ensemble.")
-            if ml_task.mainTask == "classification":
-                ensemble_estimator = VoteClassifier(estimator_list[0])
-            else:
-                ensemble_estimator = MeanRegressor(estimator_list[0])
+            ensemble_estimator = ensemble_folds_estimators(estimator_list[0], ml_task)
         else:
             ensemble_estimator_package_name = f"xenon.ensemble.{ensemble_type}.{ml_task.role}"
             ensemble_estimator_package = import_module(ensemble_estimator_package_name)
@@ -484,6 +477,11 @@ class XenonEstimator(BaseEstimator):
             # ensemble_estimator : EnsembleEstimator
             ensemble_estimator = ensemble_estimator_class(**ensemble_params)
             ensemble_estimator.fit_trained_data(estimator_list, y_true_indexes_list, y_preds_list, y_true)
+        # compare ensemble score and every single model's scores
+        if ensemble_estimator.ensemble_score < np.max(performance_list):
+            self.logger.warning(f"After ensemble learning, ensemble score worse than best performance estimator!")
+            self.logger.warning(f"so, using best performance estimator instead of ensemble learning.")
+            ensemble_estimator = ensemble_folds_estimators(estimator_list[int(np.argmax(performance_list))], ml_task)
         self.ensemble_estimator = ensemble_estimator
         if fit_ensemble_alone:
             self.estimator = self.ensemble_estimator

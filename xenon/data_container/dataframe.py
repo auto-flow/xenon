@@ -107,12 +107,11 @@ class DataFrameContainer(DataContainer):
         self.dataset_source = record["dataset_source"]
         self.dataset_metadata = record["dataset_metadata"]
         dataset_path = record["dataset_path"]
-        upload_type = record["upload_type"]
-        columns = record["columns"]
-        if upload_type == "table":
-            df = self.resource_manager.download_df_from_table(dataset_id, columns, self.columns_mapper)
-        else:
-            df = self.resource_manager.download_df_from_fs(dataset_path, columns)
+        # upload_type = record["upload_type"]
+        # if upload_type == "table":
+        #     df = self.resource_manager.download_df_from_table(dataset_id, columns, self.columns_mapper)
+        # else:
+        df = self.resource_manager.download_df_from_fs(dataset_path)
         # inverse_columns_mapper = inverse_dict(self.columns_mapper)
         # df.columns.map(inverse_columns_mapper)
         # todo: 建立本地缓存，防止二次下载

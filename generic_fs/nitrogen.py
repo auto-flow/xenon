@@ -42,8 +42,8 @@ class NitrogenFS(FileSystem):
         return dataset_id
 
     def load_pickle(self, dataset_id):
-        tmp_path = self.join("/tmp", uuid4().hex + ".bz2")
-        self.download(dataset_id, tmp_path)
+        tmp_path = self.join("/tmp", dataset_id + ".bz2") # uuid4().hex
+        self.download(dataset_id, tmp_path) # fixme: can move judge statement to 'download' func
         return load(tmp_path)
 
     def upload(self, path, local_path) -> str:
@@ -85,6 +85,8 @@ class NitrogenFS(FileSystem):
         return str(dataset_id)
 
     def download(self, dataset_id, local_path):
+        if os.path.exists(local_path):
+            return
         url = self.get_url_of_dataset_id(dataset_id)
         assert url is not None, ValueError(f"dataste_id='{dataset_id}' is invalid")
         chunk_size = 1024 * 1024 * 128
