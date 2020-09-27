@@ -27,14 +27,14 @@ class StackEstimator(EnsembleEstimator):
                 penalty='elasticnet',
                 solver="saga",
                 l1_ratio=hp.uniform('l1_ratio', 0, 1),
-                C=hp.lognormal('C', np.log(0.01), np.log(10000)), # anti human design
+                C=hp.loguniform('C', np.log(0.01), np.log(10000)), # anti human design
                 fit_intercept=hp.choice('fit_intercept', [True, False]), # fixme
                 random_state=42
             )
         elif self.mainTask == "regression":
             meta_cls = ElasticNet
             meta_hps = dict(
-                alpha=hp.lognormal('alpha', np.log(1e-2), np.log(10)),
+                alpha=hp.loguniform('alpha', np.log(1e-2), np.log(10)),
                 l1_ratio=hp.uniform('l1_ratio', 0, 1),
                 fit_intercept=hp.choice('fit_intercept', [True, False]), # fixme
                 normalize=True,
