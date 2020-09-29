@@ -133,11 +133,11 @@ class DataManager(StrSignatureMixin):
         # ---set column descriptions, upload to dataset-----------------------------------------------------
         if self.X_train is not None:
             self.X_train.set_column_descriptions(self.final_column_descriptions)
-            self.X_train.upload(self.upload_type)
+            # self.X_train.upload(self.upload_type)
             self.logger.info(f"TrainSet's DataSet ID = {self.X_train.dataset_id}")
         if self.X_test is not None:
             self.X_test.set_column_descriptions(self.final_column_descriptions)
-            self.X_test.upload(self.upload_type)
+            # self.X_test.upload(self.upload_type)
             self.logger.info(f"TestSet's DataSet ID = {self.X_test.dataset_id}")
         # ---origin hash-----------------------------------------------------
         self.train_set_id = self.X_train.get_hash() if self.X_train is not None else ""
