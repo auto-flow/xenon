@@ -18,7 +18,7 @@ ID_COLUMN_NAME,None,主键列， 如 ``NAME`` 。仅在用户自定义特征文�
 METRIC,None,模型评价指标，若为空，分类为 ``mcc`` ，回归为 ``r2`` 
 KFOLD,5,"搜索时使用的交叉验证的折数， ``2~10`` 为交叉验证，
 
-``0.1~0.99`` 为 ``Holdout`` ， ``1`` 为留1验证 "
+``0.1~0.99`` 为 ``Holdout`` ，如填 ``0.2`` 表示用 `20%` 的数据做验证集， ``1`` 为留1验证 "
 SPECIFIC_TASK_TOKEN,None,不想让相同的任务关联到一个 ``task_id`` 时，设置这个参数
 SEARCH_THREAD_NUM,3,搜索时启动的进程数。届时，将有 ``SEARCH_THREAD_NUM`` 个进程同时执行 训练->预测 的验证过程
 PER_RUN_TIME_LIMIT,1800,限制每次尝试(trial)的运行时间，单位为秒(second)，默认为1800秒，即30分钟。
