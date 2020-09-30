@@ -10,6 +10,7 @@ import sys
 from typing import Union, Optional
 
 import psutil
+from sklearn.model_selection import StratifiedShuffleSplit
 
 sys.path.insert(0, os.getcwd())
 ###################################
@@ -224,7 +225,10 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     elif kfold == 1:
         splitter = LeaveOneOut()
     elif kfold < 1:
-        splitter = ShuffleSplit(n_splits=1, test_size=kfold, random_state=0)
+        if model_type == "clf":
+            splitter = StratifiedShuffleSplit(n_splits=1, test_size=kfold, random_state=0)
+        else:
+            splitter = ShuffleSplit(n_splits=1, test_size=kfold, random_state=0)
     else:
         raise ValueError(f"Invalid KFOLD {kfold}.")
     logger.info(f"KFOLD = {kfold}, data_splitter will be interpret as {splitter}.")
