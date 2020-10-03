@@ -101,7 +101,7 @@ class LGBMEstimator(BaseEstimator):
             num_threads=self.n_jobs
         )
         if self.objective == "multiclass":
-            param.update({"num_class": np.max(y) + 1})
+            param.update({"num_class": int(np.max(y) + 1)})
         num_boost_round = self.n_estimators - self.current_iterations
         if num_boost_round <= 0:
             self.logger.warning(f"num_boost_round = {num_boost_round}, <=0, "
