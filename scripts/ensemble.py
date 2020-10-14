@@ -69,6 +69,7 @@ xenon.fit(
     y_train=task_record["train_label_id"],
     is_not_realy_run=True
 )
+xenon.ml_task = ml_task
 # 开始做集成学习
 xenon.estimator = xenon.fit_ensemble(
     task_id=task_id,

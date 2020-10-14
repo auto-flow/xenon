@@ -85,6 +85,7 @@ local_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
 assert bool(final_model_path), ValueError(f"experiment {experiment_id}  was not completed normally, is invalid.")
 resource_manager.file_system.download(final_model_path, local_path)
 xenon = load(local_path)
+is_classifier = ("Classifier" in xenon.__class__.__name__)
 ###########
 # 加载数据 #
 ###########
@@ -118,7 +119,7 @@ if test_id_seq is not None:
     })
 df["RESULT"] = result
 df = pd.DataFrame(df)
-if xenon.ml_task.mainTask == "classification":
+if is_classifier:
     proba_ = xenon.predict_proba(data)
     proba = pd.DataFrame(proba_, columns=[f"PROBA_{i}" for i in range(proba_.shape[1])])
 else:
