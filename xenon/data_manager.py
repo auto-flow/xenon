@@ -175,13 +175,19 @@ class DataManager(StrSignatureMixin):
                                        resource_manager=self.resource_manager)
             y_train.upload()
             self.y_train = y_train
-            self.train_label_id = self.y_train.get_hash() if self.y_train is not None else ""
+            self.train_label_id = self.y_train.get_hash()
+        else:
+            self.y_train = None
+            self.train_label_id = ""
         if y_test is not None and not is_not_realy_run:
             y_test = NdArrayContainer("TestLabel", dataset_instance=y_test,
                                       resource_manager=self.resource_manager)
             y_test.upload()
             self.y_test = y_test
-            self.test_label_id = self.y_test.get_hash() if self.y_test is not None else ""
+            self.test_label_id = self.y_test.get_hash()
+        else:
+            self.y_test = None
+            self.test_label_id = ""
         self.ml_task: MLTask = get_ml_task_from_y(y_train.data)
         if self.X_train is not None:
             self.columns = self.X_train.columns
