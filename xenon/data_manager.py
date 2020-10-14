@@ -50,7 +50,8 @@ class DataManager(StrSignatureMixin):
             highR_nan_threshold: float = 0.5,
             highR_cat_threshold: float = 0.5,
             consider_ordinal_as_cat=False,
-            upload_type="fs"
+            upload_type="fs",
+            is_not_realy_run=False
     ):
         '''
 
@@ -130,22 +131,23 @@ class DataManager(StrSignatureMixin):
                     final_column_descriptions[essential_feature_group].append(column)
             self.final_column_descriptions = final_column_descriptions
         self.final_column_descriptions = dict(self.final_column_descriptions)
-        # ---set column descriptions, upload to dataset-----------------------------------------------------
-        if self.X_train is not None:
-            self.X_train.set_column_descriptions(self.final_column_descriptions)
-            # self.X_train.upload(self.upload_type)
-            self.logger.info(f"TrainSet's DataSet ID = {self.X_train.dataset_id}")
-        if self.X_test is not None:
-            self.X_test.set_column_descriptions(self.final_column_descriptions)
-            # self.X_test.upload(self.upload_type)
-            self.logger.info(f"TestSet's DataSet ID = {self.X_test.dataset_id}")
-        # ---origin hash-----------------------------------------------------
-        self.train_set_id = self.X_train.get_hash() if self.X_train is not None else ""
-        self.test_set_id = self.X_test.get_hash() if self.X_test is not None else ""
-        if self.input_train_hash:
-            assert self.input_train_hash == self.train_set_id
-        if self.input_test_hash:
-            assert self.input_test_hash == self.test_set_id
+        if not is_not_realy_run:
+            # ---set column descriptions, upload to dataset-----------------------------------------------------
+            if self.X_train is not None:
+                self.X_train.set_column_descriptions(self.final_column_descriptions)
+                self.X_train.upload(self.upload_type, upload_data=False)
+                self.logger.info(f"TrainSet's DataSet ID = {self.X_train.dataset_id}")
+            if self.X_test is not None:
+                self.X_test.set_column_descriptions(self.final_column_descriptions)
+                self.X_test.upload(self.upload_type, upload_data=False)
+                self.logger.info(f"TestSet's DataSet ID = {self.X_test.dataset_id}")
+            # ---origin hash-----------------------------------------------------
+            self.train_set_id = self.X_train.get_hash() if self.X_train is not None else ""
+            self.test_set_id = self.X_test.get_hash() if self.X_test is not None else ""
+            if self.input_train_hash:
+                assert self.input_train_hash == self.train_set_id
+            if self.input_test_hash:
+                assert self.input_test_hash == self.test_set_id
         # ---pop auxiliary columns-----------------------------------------------------
         y_train, y_test = self.pop_auxiliary_feature_groups()
         # --验证X与X_test的列应该相同
@@ -167,19 +169,20 @@ class DataManager(StrSignatureMixin):
             self.label_encoder = LabelEncoder()
             y_train = self.label_encoder.fit_transform(y_train)
             y_test = self.encode_label(y_test)
-        if y_train is not None:
+        self.y_train = self.y_test = None
+        if y_train is not None and not is_not_realy_run:
             y_train = NdArrayContainer("TrainLabel", dataset_instance=y_train,
                                        resource_manager=self.resource_manager)
             y_train.upload()
-        if y_test is not None:
+            self.y_train = y_train
+            self.train_label_id = self.y_train.get_hash() if self.y_train is not None else ""
+        if y_test is not None and not is_not_realy_run:
             y_test = NdArrayContainer("TestLabel", dataset_instance=y_test,
                                       resource_manager=self.resource_manager)
             y_test.upload()
+            self.y_test = y_test
+            self.test_label_id = self.y_test.get_hash() if self.y_test is not None else ""
         self.ml_task: MLTask = get_ml_task_from_y(y_train.data)
-        self.y_train = y_train
-        self.y_test = y_test
-        self.train_label_id = self.y_train.get_hash() if self.y_train is not None else ""
-        self.test_label_id = self.y_test.get_hash() if self.y_test is not None else ""
         if self.X_train is not None:
             self.columns = self.X_train.columns
         else:
@@ -383,7 +386,7 @@ class DataManager(StrSignatureMixin):
             if not np.all(X.columns == self.columns):
                 self.logger.warning(f"{X.dataset_source}'s columns do not match the TrainSet's columns by position!")
                 X.data = X.data[self.columns]
-        elif isinstance(X_origin,DataFrameContainer):
+        elif isinstance(X_origin, DataFrameContainer):
             pass
         else:
             raise NotImplementedError

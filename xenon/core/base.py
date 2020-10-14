@@ -208,8 +208,10 @@ class XenonEstimator(BaseEstimator):
         self.data_manager: DataManager = DataManager(
             self.resource_manager,
             X_train, y_train, X_test, y_test, dataset_metadata, column_descriptions, self.highR_nan_threshold,
-            self.highR_cat_threshold, self.consider_ordinal_as_cat, upload_type
+            self.highR_cat_threshold, self.consider_ordinal_as_cat, upload_type, is_not_realy_run=is_not_realy_run
         )
+        if is_not_realy_run:
+            return self
         # parse ml_task
         self.ml_task = self.data_manager.ml_task
         if self.checked_mainTask is not None:
@@ -423,7 +425,7 @@ class XenonEstimator(BaseEstimator):
             rh_db_table_name=resource_manager.runhistory_table_name
         )
 
-    def fit_ensemble(
+    def  fit_ensemble(
             self,
             task_id=None,
             hdl_id=None,

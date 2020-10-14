@@ -3,6 +3,7 @@
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
 import hashlib
+import json
 from collections import defaultdict
 from copy import deepcopy
 from typing import Union, List
@@ -14,7 +15,7 @@ from frozendict import frozendict
 
 from xenon.constants import VARIABLE_PATTERN, UNIQUE_FEATURE_GROUPS
 from xenon.data_container.base import DataContainer
-from xenon.utils.dataframe import inverse_dict, process_duplicated_columns, get_unique_col_name
+from xenon.utils.dataframe import process_duplicated_columns, get_unique_col_name
 from xenon.utils.hash import get_hash_of_dataframe, get_hash_of_dict, get_hash_of_str
 
 
@@ -80,13 +81,16 @@ class DataFrameContainer(DataContainer):
         else:
             raise NotImplementedError
 
-    def upload(self, upload_type="fs"):
+    def upload(self, upload_type="fs", upload_data=True):
         assert upload_type in ("table", "fs")
         self.dataset_id = self.get_hash()
         if self.dataset_id == self.uploaded_hash:
             return
-        dataset_path = self.resource_manager.get_dataset_path(self.dataset_id)
-        dataset_path = self.resource_manager.upload_df_to_fs(self.data, dataset_path)
+        if upload_data:
+            dataset_path = self.resource_manager.get_dataset_path(self.dataset_id)
+            dataset_path = self.resource_manager.upload_df_to_fs(self.data, dataset_path)
+        else:
+            dataset_path = ""
         response = self.resource_manager.insert_dataset_record(
             self.dataset_id, self.dataset_metadata, self.dataset_type, dataset_path,
             upload_type, self.dataset_source, self.column_descriptions,
@@ -109,10 +113,19 @@ class DataFrameContainer(DataContainer):
         dataset_path = record["dataset_path"]
         upload_type = record["upload_type"]
         columns = record["columns"]
+        if isinstance(columns, str):
+            try:
+                columns = json.loads(columns)
+            except Exception as e:
+                self.logger.error(e)
+                columns = []
         if upload_type == "table":
             df = self.resource_manager.download_df_from_table(dataset_id, columns, self.columns_mapper)
         else:
-            df = self.resource_manager.download_df_from_fs(dataset_path, columns)
+            if dataset_path:
+                df = self.resource_manager.download_df_from_fs(dataset_path, columns)
+            else:
+                df = pd.DataFrame(columns=columns)
         # inverse_columns_mapper = inverse_dict(self.columns_mapper)
         # df.columns.map(inverse_columns_mapper)
         # todo: 建立本地缓存，防止二次下载
