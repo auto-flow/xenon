@@ -56,13 +56,6 @@ if ml_task.mainTask == "classification":
     xenon = XenonClassifier(**kwargs)
 else:
     xenon = XenonRegressor(**kwargs)
-# 查询输入的trials记录，并打印模型表现
-logger.info("Selected trials' performance:")
-default_metric = "accuracy" if ml_task.mainTask == "classification" else "r2"
-for trial_id in trial_ids:
-    trial_record = resource_manager._get_trial_records_by_id(trial_id, task_id, 0)
-    performance = trial_record["all_score"][default_metric]
-    logger.info(f"trial_id = {trial_id}\t{default_metric} = {performance}")
 # 蹭蹭不进去(is_not_realy_run=True)，只是计算data_manager
 xenon.fit(
     X_train=task_record["train_set_id"],

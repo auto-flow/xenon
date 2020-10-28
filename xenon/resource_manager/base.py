@@ -288,12 +288,15 @@ class ResourceManager(StrSignatureMixin):
         record = self._get_trial_records_by_id(trial_id, self.task_id, self.user_id)[0]
         return record["dict_hyper_param"]
 
-    def load_estimators_in_trials(self, trials: Union[List, Tuple]) -> Tuple[List, List, List]:
+    def load_estimators_in_trials(self, trials: Union[List, Tuple], ml_task: MLTask) -> Tuple[List, List, List, List]:
         self.init_trial_table()
         records = self._get_trial_records_by_ids(trials, self.task_id, self.user_id)
         estimator_list = []
         y_true_indexes_list = []
         y_preds_list = []
+        performance_list = []
+        default_metric = "accuracy" if ml_task.mainTask == "classification" else "r2"
+
         for record in records:
             exists = True
             if not self.file_system.exists(record["models_path"]):
@@ -304,7 +307,11 @@ class ResourceManager(StrSignatureMixin):
                 y_info = self.file_system.load_pickle(record["y_info_path"])
                 y_true_indexes_list.append(y_info["y_true_indexes"])
                 y_preds_list.append(y_info["y_preds"])
-        return estimator_list, y_true_indexes_list, y_preds_list
+                performance = record["all_score"][default_metric]
+                trial_id = record["trial_id"]
+                performance_list.append(performance)
+                self.logger.info(f"trial_id = {trial_id}\t{default_metric} = {performance}")
+        return estimator_list, y_true_indexes_list, y_preds_list, performance_list
 
     def set_is_master(self, is_master):
         self.is_master = is_master
@@ -612,16 +619,14 @@ class ResourceManager(StrSignatureMixin):
             df = df[columns]
         return df
 
-    def download_df_from_fs(self, dataset_path, columns=None):
-        tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
+    def download_df_from_fs(self, dataset_path):
+        tmp_path = f"/tmp/tmp_df_{get_hash_of_str(dataset_path)}.h5"
         self.file_system.download(dataset_path, tmp_path)
         df: pd.DataFrame = pd.read_hdf(tmp_path, "dataset")
-        # if columns is not None:
-        #     df = df[columns]
         return df
 
     def download_arr_from_fs(self, dataset_path):
-        tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
+        tmp_path = f"/tmp/tmp_arr_{get_hash_of_str(dataset_path)}.h5"
         self.file_system.download(dataset_path, tmp_path)
         with h5py.File(tmp_path, 'r') as hf:
             arr = hf['dataset'][:]
