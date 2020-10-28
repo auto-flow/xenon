@@ -80,7 +80,7 @@ class TrainEvaluator(BaseEvaluator):
 
     def loss(self, y_true, y_hat):
         score, true_score = calculate_score(
-            y_true, y_hat, self.ml_task, self.metric,
+            y_true, y_hat, self.ml_task.mainTask, self.metric,
             should_calc_all_metric=self.should_calc_all_metric)
 
         if isinstance(score, dict):

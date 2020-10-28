@@ -3,6 +3,7 @@ import multiprocessing
 import os
 from copy import deepcopy
 from importlib import import_module
+from pathlib import Path
 from typing import Union, Optional, Dict, List, Any
 
 import numpy as np
@@ -421,7 +422,7 @@ class XenonEstimator(BaseEstimator):
             rh_db_table_name=resource_manager.runhistory_table_name
         )
 
-    def  fit_ensemble(
+    def fit_ensemble(
             self,
             task_id=None,
             hdl_id=None,
@@ -463,8 +464,14 @@ class XenonEstimator(BaseEstimator):
         )
         trial_ids = trials_fetcher.fetch()
         ml_task, y_true = self.resource_manager.get_ensemble_needed_info(task_id)
-        estimator_list, y_true_indexes_list, y_preds_list, performance_list = \
+        # in this function, print trial_id and performance
+        estimator_list, y_true_indexes_list, y_preds_list, performance_list, scores_list = \
             self.resource_manager.load_estimators_in_trials(trial_ids, ml_task)
+        # ensemble 表格信息
+        self.trial_ids = trial_ids
+        self.scores_list = scores_list
+        self.weights = None
+        self.ensemble_info = None
         # todo: 在这里，只取了验证集的数据，没有取测试集的数据。待拓展
         if len(estimator_list) == 0:
             raise ValueError("Length of estimator_list must >=1. ")
@@ -479,6 +486,19 @@ class XenonEstimator(BaseEstimator):
             # ensemble_estimator : EnsembleEstimator
             ensemble_estimator = ensemble_estimator_class(**ensemble_params)
             ensemble_estimator.fit_trained_data(estimator_list, y_true_indexes_list, y_preds_list, y_true)
+            # ensemble 表格信息
+            self.weights = ensemble_estimator.weights
+            self.ensemble_score = ensemble_estimator.all_score
+            # 形成一个ensemble的表格
+            df = pd.concat([
+                pd.DataFrame(pd.Series(self.trial_ids).astype(str).tolist() + ['stacking'], columns=['trial_id']),
+                pd.DataFrame(self.weights.tolist() + [0], columns=['weight']),
+                pd.DataFrame(self.scores_list + [self.ensemble_score])
+            ], axis=1)
+            # 把这个表格存到结果文件中
+            self.ensemble_info = df
+            self.output_ensemble_info()
+
         # compare ensemble score and every single model's scores
         if ensemble_estimator.ensemble_score < np.max(performance_list):
             self.logger.warning(f"After ensemble learning, ensemble score worse than best performance estimator!")
@@ -489,6 +509,10 @@ class XenonEstimator(BaseEstimator):
             self.estimator = self.ensemble_estimator
             self.resource_manager.finish_experiment(self.log_path, self)
         return self.ensemble_estimator
+
+    def output_ensemble_info(self):
+        savedpath = Path(os.getenv("SAVEDPATH", ".")) / "ensemble_info.csv"
+        self.ensemble_info.to_csv(savedpath, index=False)
 
     def auto_fit_ensemble(self):
         # todo: 调研stacking等ensemble方法的表现评估

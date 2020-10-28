@@ -16,6 +16,9 @@ from frozendict import frozendict
 from playhouse.reflection import generate_models
 from redis import Redis
 
+from generic_fs import FileSystem
+from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, create_database
+from generic_fs.utils.fs import get_file_system
 from xenon.constants import RESOURCE_MANAGER_CLOSE_ALL_LOGGER, CONNECTION_POOL_CLOSE_MSG, START_SAFE_CLOSE_MSG, \
     END_SAFE_CLOSE_MSG, ExperimentType
 from xenon.data_manager import DataManager
@@ -28,9 +31,6 @@ from xenon.utils.hash import get_hash_of_str, get_hash_of_dict
 from xenon.utils.klass import StrSignatureMixin
 from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask
-from generic_fs import FileSystem
-from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, create_database
-from generic_fs.utils.fs import get_file_system
 
 
 def get_field_of_type(type_, df, column):
@@ -288,13 +288,14 @@ class ResourceManager(StrSignatureMixin):
         record = self._get_trial_records_by_id(trial_id, self.task_id, self.user_id)[0]
         return record["dict_hyper_param"]
 
-    def load_estimators_in_trials(self, trials: Union[List, Tuple], ml_task: MLTask) -> Tuple[List, List, List, List]:
+    def load_estimators_in_trials(self, trials: Union[List, Tuple], ml_task: MLTask) -> Tuple[List, List, List, List, List]:
         self.init_trial_table()
         records = self._get_trial_records_by_ids(trials, self.task_id, self.user_id)
         estimator_list = []
         y_true_indexes_list = []
         y_preds_list = []
         performance_list = []
+        scores_list = []
         default_metric = "accuracy" if ml_task.mainTask == "classification" else "r2"
 
         for record in records:
@@ -307,11 +308,13 @@ class ResourceManager(StrSignatureMixin):
                 y_info = self.file_system.load_pickle(record["y_info_path"])
                 y_true_indexes_list.append(y_info["y_true_indexes"])
                 y_preds_list.append(y_info["y_preds"])
-                performance = record["all_score"][default_metric]
+                all_score = record["all_score"]
+                performance = all_score[default_metric]
                 trial_id = record["trial_id"]
                 performance_list.append(performance)
+                scores_list.append(all_score)
                 self.logger.info(f"trial_id = {trial_id}\t{default_metric} = {performance}")
-        return estimator_list, y_true_indexes_list, y_preds_list, performance_list
+        return estimator_list, y_true_indexes_list, y_preds_list, performance_list, scores_list
 
     def set_is_master(self, is_master):
         self.is_master = is_master

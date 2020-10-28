@@ -12,7 +12,6 @@ from sklearn.utils.multiclass import type_of_target
 
 from xenon.metrics import classification_metrics
 from xenon.utils.array import sanitize_array
-from xenon.utils.ml_task import MLTask
 
 
 class Scorer(object, metaclass=ABCMeta):
@@ -301,14 +300,19 @@ for name, metric in [
         CLASSIFICATION_METRICS[qualified_name] = globals()[qualified_name]
 
 
-def calculate_score(solution, prediction, ml_task: MLTask, metric,
+def calculate_score(solution, prediction, mainTask, metric=None,
                     should_calc_all_metric=False):
     if isinstance(solution, (pd.Series, pd.DataFrame)):
         solution = solution.values
+    if metric is None:
+        if mainTask == "classification":
+            metric = accuracy
+        else:
+            metric = r2
     if should_calc_all_metric:
         score = dict()
         true_score = {}
-        if ml_task.mainTask == "regression":
+        if mainTask == "regression":
             # TODO put this into the regression metric itself
             cprediction = sanitize_array(prediction)
             metric_dict = copy.copy(REGRESSION_METRICS)

@@ -8,6 +8,10 @@
 import os
 import sys
 
+from xenon.ensemble.mean.regressor import MeanRegressor
+from xenon.ensemble.stack.base import StackEstimator
+from xenon.ensemble.vote.classifier import VoteClassifier
+
 sys.path.insert(0, os.getcwd())
 ###################################
 import logging
@@ -109,27 +113,49 @@ data, _ = load_data_from_datapath(
 ###############################
 if xenon.estimator is None:
     xenon.estimator = xenon.ensemble_estimator
-result = xenon.predict(data)
-# 把ID与result拼在一起
-test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
-df = {}
-if test_id_seq is not None:
-    df.update({
-        "ID": test_id_seq,
-    })
-df["RESULT"] = result
-df = pd.DataFrame(df)
-if is_classifier:
-    proba_ = xenon.predict_proba(data)
-    proba = pd.DataFrame(proba_, columns=[f"PROBA_{i}" for i in range(proba_.shape[1])])
-else:
-    proba = pd.DataFrame()
-df = pd.concat([df, proba], axis=1)
+
+
+def complex_predict(suffix=""):
+    result = xenon.predict(data)
+    # 把ID与result拼在一起
+    test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
+    df = {}
+    if test_id_seq is not None:
+        df.update({
+            "ID": test_id_seq,
+        })
+    df["RESULT"] = result
+    df = pd.DataFrame(df)
+    if is_classifier:
+        proba_ = xenon.predict_proba(data)
+        proba = pd.DataFrame(proba_, columns=[f"PROBA_{i}" for i in range(proba_.shape[1])])
+    else:
+        proba = pd.DataFrame()
+    df = pd.concat([df, proba], axis=1)
+    predict_path = f"{savedpath}/prediction{suffix}.csv"
+    df.to_csv(predict_path, index=False)
+
+
+# baseline
+complex_predict()
+# 花架子
+if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
+    logger.info("current model is a stacking model, will use every base-model to do prediction.")
+    xenon.output_ensemble_info()
+    estimators_list = xenon.estimator.estimators_list
+    for i, trial_id in enumerate(xenon.trial_ids):
+        estimators = estimators_list[i]
+        if is_classifier:
+            new_ensemble = VoteClassifier(estimators)
+        else:
+            new_ensemble = MeanRegressor(estimators)
+        xenon.estimator = new_ensemble
+        complex_predict(f"_{trial_id}")
+
 ######################
 # 保存结果到savedpath #
 ######################
-predict_path = f"{savedpath}/prediction.csv"
-df.to_csv(predict_path, index=False)
+
 save_info_json(
     os.getenv("EXPERIMENT_ID"),
     os.getenv("TASK_ID"),

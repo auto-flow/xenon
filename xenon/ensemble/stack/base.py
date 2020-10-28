@@ -6,9 +6,11 @@ from hyperopt import fmin, tpe
 from hyperopt import hp, space_eval
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression, ElasticNet
+from sklearn.metrics import accuracy_score, r2_score
 from sklearn.utils._testing import ignore_warnings
 
 from xenon.ensemble.base import EnsembleEstimator
+from xenon.metrics import calculate_score
 from xenon.utils import typing_
 from xenon.utils.logging_ import get_logger
 
@@ -80,11 +82,20 @@ class StackEstimator(EnsembleEstimator):
             self.logger.info(f"\t{k}\t=\t{v}")
         self.meta_learner = self.meta_cls(**best_point)
         self.meta_learner.fit(meta_features, self.stacked_y_true)
-        score = self.meta_learner.score(meta_features, self.stacked_y_true)  # it is a reward for bayesian model
+        if self.mainTask == "classification":
+            self.stacked_y_pred = self.meta_learner.predict_proba(meta_features)
+            score = accuracy_score(self.stacked_y_true, self.stacked_y_pred.argmax(axis=1))
+        else:
+            self.stacked_y_pred = self.meta_learner.predict(meta_features)
+            score = r2_score(self.stacked_y_true, self.stacked_y_pred)
+        _, self.all_score = calculate_score(
+            self.stacked_y_true, self.stacked_y_pred, self.mainTask,
+            should_calc_all_metric=True)
         self.ensemble_score = score
         self.logger.info(f"meta_learner's performance : {score}")
         self.logger.info(f"meta_learner's coefficient : {self.meta_learner.coef_}")
         self.logger.info(f"meta_learner's intercept   : {self.meta_learner.intercept_}")
+        self.weights = np.abs(self.meta_learner.coef_).sum(axis=0)
 
     def predict_meta_features(self, X, is_train):
         raise NotImplementedError
