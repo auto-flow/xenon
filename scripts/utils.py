@@ -16,6 +16,7 @@ from tabulate import tabulate
 from xenon.utils.logging_ import get_logger
 from scripts import lib_display
 
+util_logger=get_logger(__name__)
 
 class EnvUtils:
     def __init__(self):
@@ -203,7 +204,10 @@ def display(resource_manager, task_id, display_size, savedpath):
     search_records_csv_path = f"{savedpath}/search_records.csv"
     search_records_html_path = f"{savedpath}/search_records.html"
     search_records_df.to_csv(search_records_csv_path, index=False)
-    Path(search_records_html_path).write_text(lib_display.display(data))
+    try:
+        Path(search_records_html_path).write_text(lib_display.display(data))
+    except Exception as e:
+        util_logger.error(e)
 
 
 def save_info_json(experiment_id, task_id, hdl_id, savedpath):

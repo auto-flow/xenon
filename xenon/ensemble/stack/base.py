@@ -1,9 +1,12 @@
 import os
 from typing import List
-from hyperopt import hp, space_eval
+
 import numpy as np
-from sklearn.linear_model import LogisticRegression, ElasticNet
 from hyperopt import fmin, tpe
+from hyperopt import hp, space_eval
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.linear_model import LogisticRegression, ElasticNet
+from sklearn.utils._testing import ignore_warnings
 
 from xenon.ensemble.base import EnsembleEstimator
 from xenon.utils import typing_
@@ -27,8 +30,8 @@ class StackEstimator(EnsembleEstimator):
                 penalty='elasticnet',
                 solver="saga",
                 l1_ratio=hp.uniform('l1_ratio', 0, 1),
-                C=hp.loguniform('C', np.log(0.01), np.log(10000)), # anti human design
-                fit_intercept=hp.choice('fit_intercept', [True, False]), # fixme
+                C=hp.loguniform('C', np.log(0.01), np.log(10000)),  # anti human design
+                fit_intercept=hp.choice('fit_intercept', [True, False]),  # fixme
                 random_state=42
             )
         elif self.mainTask == "regression":
@@ -36,7 +39,7 @@ class StackEstimator(EnsembleEstimator):
             meta_hps = dict(
                 alpha=hp.loguniform('alpha', np.log(1e-2), np.log(10)),
                 l1_ratio=hp.uniform('l1_ratio', 0, 1),
-                fit_intercept=hp.choice('fit_intercept', [True, False]), # fixme
+                fit_intercept=hp.choice('fit_intercept', [True, False]),  # fixme
                 normalize=True,
                 positive=True,  # force all coef_ to true
                 random_state=42,
@@ -53,6 +56,8 @@ class StackEstimator(EnsembleEstimator):
     #     meta_features = self.predict_meta_features(X, True)
     #     self.meta_learner.fit(meta_features, y)
 
+    @ignore_warnings(category=ConvergenceWarning)
+    @ignore_warnings(category=FutureWarning)
     def fit_trained_data(
             self,
             estimators_list: List[List[typing_.GenericEstimator]],
@@ -67,11 +72,11 @@ class StackEstimator(EnsembleEstimator):
             return -self.meta_cls(**point).fit(meta_features, self.stacked_y_true). \
                 score(meta_features, self.stacked_y_true)
 
-        max_evals=int(os.getenv("AUTO_ENSEMBLE_TRIALS", 500))
-        best = fmin(objective, self.meta_hps, algo=tpe.suggest, max_evals=max_evals)
+        max_evals = int(os.getenv("AUTO_ENSEMBLE_TRIALS", 50))
+        best = fmin(objective, self.meta_hps, algo=tpe.suggest, max_evals=max_evals, show_progressbar=False, verbose=0)
         best_point = space_eval(self.meta_hps, best)
         self.logger.info(f"meta_learner's hyper-parameters: ")
-        for k,v in best_point.items():
+        for k, v in best_point.items():
             self.logger.info(f"\t{k}\t=\t{v}")
         self.meta_learner = self.meta_cls(**best_point)
         self.meta_learner.fit(meta_features, self.stacked_y_true)

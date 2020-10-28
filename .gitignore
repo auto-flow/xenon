@@ -17,7 +17,8 @@ move.py
 *.h5
 *.pdf
 search_records.csv
-search_records.html
+savedpath/clf_test_1/search_records.html
+savedpath
 run
 .virtual_documents
 .ipynb_checkpoints
