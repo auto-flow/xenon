@@ -7,16 +7,19 @@ import json
 import os
 from copy import deepcopy
 from pathlib import Path
+from typing import List
 from typing import Tuple
 
 import joblib
 import pandas as pd
 from tabulate import tabulate
 
-from xenon.utils.logging_ import get_logger
 from scripts import lib_display
+from xenon.interpret.feat_imp import get_feature_importances_in_xenon
+from xenon.utils.logging_ import get_logger
 
-util_logger=get_logger(__name__)
+util_logger = get_logger(__name__)
+
 
 class EnvUtils:
     def __init__(self):
@@ -172,6 +175,18 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
         f"Experiment(experiment_id={experiment_id}) is finished, the best model will be saved in {final_model_path}.")
     final_model = xenon.copy()
     joblib.dump(final_model, final_model_path)
+    logger.info("save feature importance to SAVEDPATH")
+    feature_importances: List[pd.DataFrame] = get_feature_importances_in_xenon(xenon)
+    if len(feature_importances) == 1:
+        feature_importances[0].to_csv(f"{savedpath}/feature_importance.csv")
+    else:
+        if hasattr(xenon, "trial_ids"):
+            assert len(xenon.trial_ids) == len(feature_importances), ValueError
+            suffixs = [f"{trial_id}" for trial_id in xenon.trial_ids]
+        else:
+            suffixs = [f"{i}" for i in range(len(feature_importances))]
+        for suffix, feature_importance in zip(suffixs, feature_importances):
+            feature_importance.to_csv(f"{savedpath}/feature_importance_{suffix}.csv")
 
 
 def display(resource_manager, task_id, display_size, savedpath):
@@ -287,11 +302,11 @@ def process_previous_result_dataset():
                     parser_logger.info(f"set DATAPATH\t=\t'{data_input}'\tOK")
                     os.environ["DATAPATH"] = data_input
 
+
 def print_xenon_path(logger=None):
     if logger is None:
-        func=print
+        func = print
     else:
-        func=logger.info
+        func = logger.info
     import xenon
     func(f"Xenon executable file: {xenon.__file__}")
-

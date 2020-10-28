@@ -5,7 +5,7 @@ __all__ = ["LGBMRegressor"]
 
 class LGBMRegressor(XenonClassificationAlgorithm):
     class__ = "LGBMRegressor"
-    module__ = "xenon.estimator.wrap_lightgbm"
+    module__ = "xenon_ext.wrap_lightgbm"
 
     boost_model = True
     tree_model = True
