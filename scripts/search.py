@@ -7,13 +7,14 @@
 ###################################
 import os
 import sys
+
+sys.path.insert(0, os.getcwd())
+os.system("conda config --set ssl_verify False")
+###################################
 from typing import Union, Optional
 
 import psutil
 from sklearn.model_selection import StratifiedShuffleSplit
-
-sys.path.insert(0, os.getcwd())
-###################################
 import logging
 import multiprocessing as mp
 import numpy as np
