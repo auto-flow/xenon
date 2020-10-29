@@ -100,7 +100,7 @@ class NitrogenFS(FileSystem):
         assert url is not None, ValueError(f"dataste_id='{dataset_id}' is invalid")
         chunk_size = 1024 * 1024 * 128
         # todo: 这里报警告
-        download_data = requests.get(url, stream=True, verify=False)
+        download_data = session.get(url, stream=True, verify=False)
         with open(local_path, 'wb') as f:
             for chunk in download_data.iter_content(chunk_size=chunk_size):
                 if chunk:
