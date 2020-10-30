@@ -12,7 +12,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from generic_fs.utils.http import send_requests, get_data_of_response
 
 logger = logging.getLogger(__name__)
-
+import click
 from joblib import dump, load
 
 from generic_fs import FileSystem
@@ -105,9 +105,4 @@ class NitrogenFS(FileSystem):
             for chunk in download_data.iter_content(chunk_size=chunk_size):
                 if chunk:
                     f.write(chunk)
-        # self.get_small_file(url,local_path)
 
-    def get_small_file(self, url, localfile):
-        with open(localfile, 'wb') as f:
-            r = requests.get(url, allow_redirects=True)
-            f.write(r.content)
