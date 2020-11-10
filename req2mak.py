@@ -10,7 +10,7 @@ packages = Path("requirements.txt").read_text().split("\n")
 packages = [package for package in packages if package and (not package.startswith("#"))]
 deleted_lines = []
 found = False
-token = "install_all"
+token = "install_pip_deps"
 mark = f"{token}:"
 for line in lines:
     if line == mark:
