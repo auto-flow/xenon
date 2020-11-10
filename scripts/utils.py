@@ -184,9 +184,12 @@ def display(resource_manager, task_id, display_size, savedpath):
     for record in records_copy:
         y_info_path = record["y_info_path"]
         # keys: ['y_true_indexes', 'y_preds', 'y_test_pred']
-        y_info = resource_manager.file_system.load_pickle(y_info_path)
-        record["y_info"] = y_info
-        processed_records.append(record)
+        try:
+            y_info = resource_manager.file_system.load_pickle(y_info_path)
+            record["y_info"] = y_info
+            processed_records.append(record)
+        except Exception as e:
+            parser_logger.error(e)
     data = {
         "mainTask": ml_task.mainTask,
         "records": processed_records,
