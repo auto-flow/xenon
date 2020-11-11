@@ -183,13 +183,19 @@ def display(resource_manager, task_id, display_size, savedpath):
     records_copy = deepcopy(records)
     for record in records_copy:
         y_info_path = record["y_info_path"]
+        trial_id = record["trial_id"]
+        exception = None
         # keys: ['y_true_indexes', 'y_preds', 'y_test_pred']
         try:
             y_info = resource_manager.file_system.load_pickle(y_info_path)
             record["y_info"] = y_info
             processed_records.append(record)
         except Exception as e:
-            parser_logger.error(e)
+            exception = str(e)
+            parser_logger.error(f"error trial_id = {trial_id}")
+        if exception is not None:
+            parser_logger.error(exception)
+
     data = {
         "mainTask": ml_task.mainTask,
         "records": processed_records,
@@ -286,11 +292,11 @@ def process_previous_result_dataset():
                     parser_logger.info(f"set DATAPATH\t=\t'{data_input}'\tOK")
                     os.environ["DATAPATH"] = data_input
 
+
 def print_xenon_path(logger=None):
     if logger is None:
-        func=print
+        func = print
     else:
-        func=logger.info
+        func = logger.info
     import xenon
     func(f"Xenon executable file: {xenon.__file__}")
-
