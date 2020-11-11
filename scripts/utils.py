@@ -17,6 +17,7 @@ from tabulate import tabulate
 from scripts import lib_display
 from xenon.interpret.feat_imp import get_feature_importances_in_xenon
 from xenon.utils.logging_ import get_logger
+import numpy as np
 
 util_logger = get_logger(__name__)
 
@@ -180,13 +181,21 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
     if len(feature_importances) == 1:
         feature_importances[0].to_csv(f"{savedpath}/feature_importance.csv")
     else:
+        N = len(feature_importances)
         if hasattr(xenon, "trial_ids"):
-            assert len(xenon.trial_ids) == len(feature_importances), ValueError
+            assert len(xenon.trial_ids) == N, ValueError
             suffixs = [f"{trial_id}" for trial_id in xenon.trial_ids]
+            weights = np.array(xenon.weights)
+            weights /= weights.sum()
         else:
-            suffixs = [f"{i}" for i in range(len(feature_importances))]
-        for suffix, feature_importance in zip(suffixs, feature_importances):
+            suffixs = [f"{i}" for i in range(N)]
+            weights = np.ones([N]) / N
+        s_df = feature_importances[0]
+        final_feature_importance = pd.DataFrame(np.zeros(s_df.shape), columns=s_df.columns, index=s_df.index)
+        for suffix, feature_importance, weight in zip(suffixs, feature_importances, weights):
             feature_importance.to_csv(f"{savedpath}/feature_importance_{suffix}.csv")
+            final_feature_importance += weight * feature_importance
+        final_feature_importance.to_csv(f"{savedpath}/feature_importance_stacking.csv")
 
 
 def display(resource_manager, task_id, display_size, savedpath):
