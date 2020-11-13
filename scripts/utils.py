@@ -92,6 +92,9 @@ class EnvUtils:
                 func(k + " : " + type(v).__name__)
                 func(v)
                 func("-" * 50)
+        env_s = ";".join([f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None]])
+        func("env string for debug in pycharm:")
+        func(env_s)
 
     __repr__ = __str__
 
