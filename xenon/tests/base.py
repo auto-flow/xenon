@@ -15,6 +15,7 @@ import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 
+import xenon
 from xenon.datasets import load_task
 from xenon.tests.mock import get_mock_resource_manager
 
@@ -63,6 +64,7 @@ class LogTestCase(LocalResourceTestCase):
             msg = msg.strip()
             yield (level, logger, msg)
 
+
 class EstimatorTestCase(unittest.TestCase):
     current_file = None
 
@@ -98,3 +100,33 @@ class EstimatorTestCase(unittest.TestCase):
         self.y_test = label_encoder.transform(y_test)
         self.X_train = X_train
         self.X_test = X_test
+
+
+class SimulateNitrogenTestCase(unittest.TestCase):
+    env_str = None
+    name = None
+    script = None
+
+    def test(self):
+        # assert self.name is not None, NotImplementedError("You should specific name first!")
+        for k_v in self.env_str.split(";"):
+            k, v = k_v.split("=")
+            os.environ[k] = v
+        root_path = Path(xenon.__path__[0]).parent
+        savedpath = root_path / "savedpath"
+        savedpath_ = savedpath / self.name
+        cnt = 0
+        while savedpath_.exists():
+            savedpath_ = savedpath / f"{self.name}_{cnt}"
+            cnt += 1
+        savedpath_.mkdir(parents=True, exist_ok=True)
+        print(f"Current savedpath = {savedpath_}")
+        os.environ["SAVEDPATH"] = str(savedpath_)
+        script_path = root_path / "scripts" / f"{self.script}.py"
+        # todo: 参考xenon_cli的方法
+        cmd = f"python {script_path}"
+        print(cmd)
+        os.system(cmd)
+
+    def do_test(self, savedpath: Path):
+        pass
