@@ -3,6 +3,11 @@ reinstall:
 	rm -rf build dist *.egg-info
 	python setup.py install
 
+reinstall_ext:
+	pip uninstall xenon_ext -y
+	rm -rf build dist *.egg-info
+	python setup_ext.py install
+
 upload:
 	rm -rf build dist *.egg-info
 	python setup.py sdist

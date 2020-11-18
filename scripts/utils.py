@@ -5,6 +5,9 @@
 import ast
 import json
 import os
+import subprocess
+import sys
+import uuid
 from copy import deepcopy
 from pathlib import Path
 from typing import List
@@ -13,6 +16,7 @@ from typing import Tuple
 import joblib
 import pandas as pd
 from tabulate import tabulate
+from xenon.tools.external_delivery import transform_xenon
 
 from scripts import lib_display
 from xenon.interpret.feat_imp import get_feature_importances_in_xenon
@@ -326,3 +330,42 @@ def print_xenon_path(logger=None):
         func = logger.info
     import xenon
     func(f"Xenon executable file: {xenon.__file__}")
+
+
+def external_delivery(xenon, savedpath=".", logger=None):
+    if logger is None:
+        func = print
+    else:
+        func = logger.info
+    sk_model = transform_xenon(xenon)
+    feature_names = xenon.feature_names
+    root = Path(__file__).parent.parent
+    subprocess.check_call([sys.executable, 'setup_ext.py', 'bdist'], cwd=root.as_posix())
+    # tmp_path = f"/tmp/{uuid.uuid4()}"
+    # os.system(f"mkdir {tmp_path}")
+    dist_dir = f"{root}/dist"
+    fname = os.listdir(dist_dir)[0]
+    # os.system(f"mv {dist_dir}/{fname} {tmp_path}/")
+    external_delivery_path = Path(savedpath) / "external_delivery"
+    external_delivery_path.mkdir(parents=True, exist_ok=True)
+    func(f"xenon_ext install bag: {external_delivery_path}/{fname}")
+    os.system(f"mv {dist_dir}/{fname} {external_delivery_path}/{fname}")
+    os.system(f"rm -rf  {root}/build {root}/dist {root}/*.egg-info")
+    func(f"external_delivery model path: {external_delivery_path}/model.bz2")
+    joblib.dump(sk_model, open(f"{external_delivery_path}/model.bz2", "wb+"))
+    func(f"model's feature_names: {external_delivery_path}/feature_names.json")
+    json.dump(list(feature_names), open(f"{external_delivery_path}/feature_names.json", "w+"))
+    func(f"mock_data csv for unittest: {external_delivery_path}/mock_data.csv")
+    mock_data = pd.DataFrame(np.zeros([10, len(feature_names)]), columns=feature_names)
+    mock_data.to_csv(f"{external_delivery_path}/mock_data.csv", index=False)
+    func(f"test.py: {external_delivery_path}/test.py")
+    os.system(f"cp {root}/xenon_ext/test.py {external_delivery_path}/test.py")
+    func(f"Makefile: {external_delivery_path}/Makefile")
+    os.system(f"cp {root}/xenon_ext/Makefile {external_delivery_path}/Makefile")
+
+
+if __name__ == '__main__':
+    from joblib import load
+
+    xenon = load("/home/tqc/Project/Xenon/savedpath/test_feat_imp_clf_stacking_2/experiment_680_best_model.bz2")
+    external_delivery(xenon, "/home/tqc/Project/Xenon/savedpath/ext")

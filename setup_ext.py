@@ -4,7 +4,6 @@
 # @Contact    : tqichun@gmail.com
 import os
 import re
-import subprocess
 import sys
 
 from setuptools import setup, find_packages
@@ -28,15 +27,13 @@ if sys.version_info < (3, 5):
         '3.6 or higher.' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
 
-# install xenon_cli
-subprocess.check_call([sys.executable, 'setup.py', 'install'], cwd="./xenon_client")
 
 with open('README.rst') as fh:
     long_description = fh.read()
 
 GIT_PATTERN = re.compile(r"git\+https://github\.com/(.*?)/(.*?)\.git")
 HERE = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(HERE, 'requirements.txt')) as fp:
+with open(os.path.join(HERE, 'requirements_ext.txt')) as fp:
     install_requires = []
     for r in fp.readlines():
         r = r.strip()
@@ -72,25 +69,21 @@ def get_package_data(name, suffixes):
 needed_suffixes = ['.json', '.txt', '.yml', '.yaml', '.bz2', '.csv']
 
 setup(
-    name='xenon',
+    name='xenon_ext',
     version=version,
     author='qichun tang',
     author_email='tqichun@gmail.com',
-    description='Xenon: XARC AutoML Platform.',
+    description='Xenon-ext: XARC AutoML Platform External.',
     long_description=long_description,
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
     packages=find_packages("./", exclude=['test', 'examples',
-                                          'xenon_server', 'xenon_client', 'scripts']),
+                                          'xenon_server', 'xenon_client', 'scripts', 'xenon']),
     package_dir={
-        'xenon': './xenon',
         'xenon_ext': './xenon_ext',
-        'dsmac': './dsmac',
-        'generic_fs': './generic_fs'
     },
-    package_data={'xenon': get_package_data('xenon', needed_suffixes),
-                  'dsmac': get_package_data('dsmac', needed_suffixes)},
+    package_data={'xenon_ext': get_package_data('xenon_ext', needed_suffixes)},
     python_requires='>=3.6.*',
     install_requires=install_requires,
     platforms=['Linux'],
