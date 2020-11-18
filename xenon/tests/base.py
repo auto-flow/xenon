@@ -127,6 +127,7 @@ class SimulateNitrogenTestCase(unittest.TestCase):
         cmd = f"python {script_path}"
         print(cmd)
         os.system(cmd)
+        self.do_test(savedpath_)
 
     def do_test(self, savedpath: Path):
-        pass
+        raise NotImplementedError

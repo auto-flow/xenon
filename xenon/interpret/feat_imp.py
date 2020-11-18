@@ -3,7 +3,7 @@
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
 from copy import deepcopy
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ from xenon.workflow.ml_workflow import ML_Workflow
 logger = get_logger(__name__)
 
 
-def get_feature_importances_in_workflow(ml_workflow: ML_Workflow, columns):
+def get_feature_importances_in_workflow(ml_workflow: ML_Workflow, columns) -> Tuple[pd.DataFrame, pd.Index]:
     selected_columns = deepcopy(columns)
     df = pd.DataFrame(index=columns)
     for i, (name, wrap_component) in enumerate(ml_workflow.steps[:-1]):
@@ -41,17 +41,32 @@ def get_feature_importances_in_workflow(ml_workflow: ML_Workflow, columns):
         df.loc[selected_columns, name] = feat_imp
     df[pd.isna(df)] = 0
     df.index.name = "columns"
-    return df
+    return df, selected_columns
 
 
-def get_feature_importances_in_workflows(ml_workflows: List[ML_Workflow], columns):
-    dfs = [get_feature_importances_in_workflow(ml_workflow, columns) for ml_workflow in ml_workflows]
-    values = np.array([df.values for df in dfs])
-    df = pd.DataFrame(values.mean(axis=0), index=dfs[0].index, columns=dfs[0].columns)
-    return df
+def get_feature_importances_in_workflows(ml_workflows: List[ML_Workflow], columns) -> Tuple[pd.DataFrame, pd.Index]:
+    # 获取所有的kfold模型的特征重要度
+    outputs = [get_feature_importances_in_workflow(ml_workflow, columns) for ml_workflow in ml_workflows]
+    values = np.array([output[0].values for output in outputs])
+    # 对筛出来的列名做投票
+    k_selected_columns_list = [output[1] for output in outputs]
+    k = len(k_selected_columns_list)     # 比如=5
+    m = k // 2 + 1 if k % 2 else k // 2  # 比如=3
+    res_selected_columns = []
+    for column in columns:
+        # 开始投票
+        hit_nums = 0
+        for selected_columns in k_selected_columns_list:
+            if column in selected_columns:
+                hit_nums += 1
+        if hit_nums >= m:
+            res_selected_columns.append(column)
+    # 对特征重要度求平均
+    df = pd.DataFrame(values.mean(axis=0), index=outputs[0][0].index, columns=outputs[0][0].columns)
+    return df, pd.Index(res_selected_columns)
 
 
-def get_feature_importances_in_xenon(xenon: XenonEstimator) -> List[pd.DataFrame]:
+def get_feature_importances_in_xenon(xenon: XenonEstimator) -> List[Tuple[pd.DataFrame, pd.Index]]:
     columns = xenon.data_manager.columns
     xenon_estimator = xenon.estimator
     if isinstance(xenon_estimator, (MeanRegressor, VoteClassifier)):
@@ -64,7 +79,7 @@ def get_feature_importances_in_xenon(xenon: XenonEstimator) -> List[pd.DataFrame
 if __name__ == '__main__':
     from joblib import load
 
-    xenon = load("/home/tqc/PycharmProjects/Xenon/savedpath/ensemble_test_1/experiment_292_best_model.bz2")
+    xenon = load("/home/tqc/Project/Xenon/savedpath/ensemble_test_1/experiment_292_best_model.bz2")
     columns = xenon.data_manager.columns
     estimators = xenon.estimator.estimators_list[0]
     results = get_feature_importances_in_xenon(xenon)

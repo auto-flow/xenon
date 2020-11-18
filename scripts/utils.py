@@ -177,9 +177,14 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
     final_model = xenon.copy()
     joblib.dump(final_model, final_model_path)
     logger.info("save feature importance to SAVEDPATH")
-    feature_importances: List[pd.DataFrame] = get_feature_importances_in_xenon(xenon)
+    outputs = get_feature_importances_in_xenon(xenon)
+    # 一个列表, 每个item是stacking模型每个base-model的特征重要度
+    feature_importances: List[pd.DataFrame] = [output[0] for output in outputs]
+    #                                            的特征筛选列
+    selected_columns_list: List[pd.Index] = [output[1] for output in outputs]
     if len(feature_importances) == 1:
         feature_importances[0].to_csv(f"{savedpath}/feature_importance.csv")
+        json.dump(selected_columns_list[0].tolist(), open(f"{savedpath}/selected_columns.json", "w+"))
     else:
         N = len(feature_importances)
         if hasattr(xenon, "trial_ids"):
@@ -192,8 +197,10 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
             weights = np.ones([N]) / N
         s_df = feature_importances[0]
         final_feature_importance = pd.DataFrame(np.zeros(s_df.shape), columns=s_df.columns, index=s_df.index)
-        for suffix, feature_importance, weight in zip(suffixs, feature_importances, weights):
+        for suffix, feature_importance, selected_columns, weight in \
+                zip(suffixs, feature_importances, selected_columns_list, weights):
             feature_importance.to_csv(f"{savedpath}/feature_importance_{suffix}.csv")
+            json.dump(selected_columns.tolist(), open(f"{savedpath}/selected_columns_{suffix}.json", "w+"))
             final_feature_importance += weight * feature_importance
         final_feature_importance.to_csv(f"{savedpath}/feature_importance_stacking.csv")
 

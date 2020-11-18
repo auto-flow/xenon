@@ -500,7 +500,8 @@ class XenonEstimator(BaseEstimator):
             self.output_ensemble_info()
 
         # compare ensemble score and every single model's scores
-        if ensemble_estimator.ensemble_score < np.max(performance_list):
+        if hasattr(ensemble_estimator, "ensemble_score") and \
+                ensemble_estimator.ensemble_score < np.max(performance_list):
             self.logger.warning(f"After ensemble learning, ensemble score worse than best performance estimator!")
             self.logger.warning(f"so, using best performance estimator instead of ensemble learning.")
             ensemble_estimator = ensemble_folds_estimators(estimator_list[int(np.argmax(performance_list))], ml_task)
@@ -545,3 +546,7 @@ class XenonEstimator(BaseEstimator):
         self.resource_manager.end_safe_close()
         self.data_manager: DataManager = tmp_dm
         return res
+
+    @property
+    def feature_names(self):
+        return self.data_manager.columns
