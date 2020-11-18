@@ -5,6 +5,7 @@
 import os
 import re
 import shutil
+import sys
 import unittest
 from pathlib import Path
 from typing import Iterator, Tuple
@@ -124,7 +125,7 @@ class SimulateNitrogenTestCase(unittest.TestCase):
         os.environ["SAVEDPATH"] = str(savedpath_)
         script_path = root_path / "scripts" / f"{self.script}.py"
         # todo: 参考xenon_cli的方法
-        cmd = f"python {script_path}"
+        cmd = f"{sys.executable} {script_path}"
         print(cmd)
         os.system(cmd)
         self.do_test(savedpath_)
