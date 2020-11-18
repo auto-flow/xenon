@@ -70,7 +70,7 @@ def get_feature_importances_in_xenon(xenon: XenonEstimator) -> List[Tuple[pd.Dat
     columns = xenon.data_manager.columns
     xenon_estimator = xenon.estimator
     if isinstance(xenon_estimator, (MeanRegressor, VoteClassifier)):
-        return [get_feature_importances_in_workflow(xenon_estimator.models, columns)]
+        return [get_feature_importances_in_workflows(xenon_estimator.models, columns)]
     elif isinstance(xenon_estimator, StackEstimator):
         return [get_feature_importances_in_workflows(estimators, columns) for estimators in
                 xenon_estimator.estimators_list]
@@ -79,8 +79,7 @@ def get_feature_importances_in_xenon(xenon: XenonEstimator) -> List[Tuple[pd.Dat
 if __name__ == '__main__':
     from joblib import load
 
-    xenon = load("/home/tqc/Project/Xenon/savedpath/ensemble_test_1/experiment_292_best_model.bz2")
+    xenon = load("/home/tqc/Project/Xenon/savedpath/test_feat_imp_clf_single/experiment_674_best_model.bz2")
     columns = xenon.data_manager.columns
-    estimators = xenon.estimator.estimators_list[0]
     results = get_feature_importances_in_xenon(xenon)
     print(results)
