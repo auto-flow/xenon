@@ -37,3 +37,23 @@ Make Predictions Offline
 
 .. note:: `TestSet` 的数据，特征列要与 `TrainSet` 的特征列一致。
 
+Get Column Names Before Feature Engineering
+===========================================
+
+在 :ref:`Search Stage` ，  :ref:`Ensemble Stage` ，  :ref:`Predict Stage` 中，SAVEDPATH 都会保留一个 `experiment_xx_best_model.bz2` ，手动下载这个模型，
+并整合到你的项目中，就可以实现离线预测（前提：Xenon-SDK已安装），然后按照以下方法可获取矢量化后进行训练的所有特征名
+
+.. code-block:: python
+
+    from joblib import load
+    xenon_workflow = load("experiment_xx_best_model.bz2")
+    # 输出矢量化后的feature_names
+    print(xenon.feature_names)
+
+
+Get Selected Column Names After Feature Selection
+=================================================
+
+在 :ref:`Search Stage` ，  :ref:`Ensemble Stage` 中，SAVEDPATH会额外生成 `feature_importance_xxx.csv` 和 `selected_columns_xxx.json`，分别保存的是xxx模型的特征重要度以及筛选后的特征名
+
+
