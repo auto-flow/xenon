@@ -56,12 +56,14 @@ Get Selected Column Names After Feature Selection
 
 在 :ref:`Search Stage` ，  :ref:`Ensemble Stage` 中，SAVEDPATH会额外生成 `feature_importance_xxx.csv` 和 `selected_columns_xxx.json`，分别保存的是xxx模型的特征重要度以及筛选后的特征名
 
-selected_columns文件示例：
+其中feature_importance中的值是模型5折取平均，selected_columns中筛选保留的特征名是模型的5折进行投票，最后保留下来的。有可能会出现feature_importance会出现某个特征有值，但selected_columns最终没有存下来的情况，这是因为不同折的模型方差较大，平均下来能在feature_importance中有值但不能通过投票留存下来
+
+selected_columns文件示例：（非真实数据仅作格式查看）
 
 .. literalinclude:: algo/selected_columns_21598.json
    :language: json
 
-feature_importance文件示例：(文件过大只截取显示一部分内容)
+feature_importance文件示例：（非真实数据仅作格式查看）(文件过大只截取显示一部分内容)
 
 
 .. csv-table:: 
