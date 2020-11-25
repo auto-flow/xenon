@@ -8,7 +8,7 @@ import shutil
 import sys
 import unittest
 from pathlib import Path
-from typing import Iterator, Tuple
+from typing import Iterator, Tuple, Optional
 
 import joblib
 import numpy as np
@@ -107,28 +107,48 @@ class SimulateNitrogenTestCase(unittest.TestCase):
     env_str = None
     name = None
     script = None
+    download_nitrogen_data = False
+    dataset_id = None
+    dataset_name = None
 
     def test(self):
         # assert self.name is not None, NotImplementedError("You should specific name first!")
         for k_v in self.env_str.split(";"):
-            k, v = k_v.split("=")
-            os.environ[k] = v
+            if "=" in k_v:
+                k, v = k_v.split("=")
+                os.environ[k] = v
         root_path = Path(xenon.__path__[0]).parent
         savedpath = root_path / "savedpath"
+        datapath = root_path / "data"
+        # 处理 savedpath
         savedpath_ = savedpath / self.name
         cnt = 0
         while savedpath_.exists():
             savedpath_ = savedpath / f"{self.name}_{cnt}"
             cnt += 1
         savedpath_.mkdir(parents=True, exist_ok=True)
-        print(f"Current savedpath = {savedpath_}")
+        print(f"Current SAVEDPATH = {savedpath_}")
         os.environ["SAVEDPATH"] = str(savedpath_)
+        # 处理 datapath
+        datapath_=None
+        if self.download_nitrogen_data:
+            assert self.dataset_id is not None, ValueError
+            assert self.dataset_name is not None, ValueError
+            datapath_ = datapath / self.dataset_name
+            if not datapath_.exists():
+                print(f"{datapath_} didn't exitst, download from nitrogen, "
+                      f"please make sure you have login in nitrogen!")
+                os.system(f"nitrogen download {self.dataset_id} -p {datapath}")
+            else:
+                print(f"{datapath_} exists.")
+            os.environ["DATAPATH"] = str(datapath_)
+            print(f"Current DATAPATH = {datapath_}")
+        # 开始瞎搞
         script_path = root_path / "scripts" / f"{self.script}.py"
-        # todo: 参考xenon_cli的方法
         cmd = f"{sys.executable} {script_path}"
         print(cmd)
         os.system(cmd)
-        self.do_test(savedpath_)
+        self.do_test(savedpath_, datapath_)
 
-    def do_test(self, savedpath: Path):
+    def do_test(self, savedpath: Path, datapath:Optional[Path]=None):
         raise NotImplementedError
