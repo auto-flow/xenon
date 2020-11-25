@@ -143,6 +143,7 @@ if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info
     logger.info("current model is a stacking model, will use every base-model to do prediction.")
     xenon.output_ensemble_info()
     estimators_list = xenon.estimator.estimators_list
+    pre_estimator = xenon.estimator
     for i, trial_id in enumerate(xenon.trial_ids):
         estimators = estimators_list[i]
         if is_classifier:
@@ -151,6 +152,7 @@ if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info
             new_ensemble = MeanRegressor(estimators)
         xenon.estimator = new_ensemble
         complex_predict(f"_{trial_id}")
+    xenon.estimator = pre_estimator
 
 ######################
 # 保存结果到savedpath #
