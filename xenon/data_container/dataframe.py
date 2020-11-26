@@ -25,7 +25,10 @@ class DataFrameContainer(DataContainer):
 
     def __init__(self, dataset_source="", dataset_path=None, dataset_instance=None, dataset_id=None,
                  resource_manager=None,
-                 dataset_metadata=frozendict()):
+                 dataset_metadata=frozendict(),
+                 process_dirty=False
+    ):
+        self.process_dirty = process_dirty
         self.column_descriptions = None
         self.feature_groups = pd.Series([])
         self.columns_mapper = {}
@@ -53,15 +56,18 @@ class DataFrameContainer(DataContainer):
                         columns[first_ix] = get_unique_col_name(columns, dup_col)
             # set unique columns to dataset_instance
             dataset_instance.columns = columns
-            # 2. rename dirty columns
-            for i, column in enumerate(columns):
-                if not VARIABLE_PATTERN.match(column):
-                    columns[i] = get_unique_col_name(columns, "col")
-            # 3. adapt to database standard
-            columns = pd.Series([inflection.underscore(column).lower() for column in columns])
-            # fixme: 可能出现 NAME name 的情况导致重名
-            # 4. assemble columns_mapper
-            self.columns_mapper = dict(zip(origin_columns, columns))
+            if self.process_dirty:
+                # 2. rename dirty columns
+                for i, column in enumerate(columns):
+                    if not VARIABLE_PATTERN.match(column):
+                        columns[i] = get_unique_col_name(columns, "col")
+                # 3. adapt to database standard
+                columns = pd.Series([inflection.underscore(column).lower() for column in columns])
+                # fixme: 可能出现 NAME name 的情况导致重名
+                # 4. assemble columns_mapper
+                self.columns_mapper = dict(zip(origin_columns, columns))
+            else:
+                self.columns_mapper = {}
         else:
             raise NotImplementedError
         return dataset_instance
