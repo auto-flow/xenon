@@ -13,8 +13,8 @@ import joblib
 import pandas as pd
 from tabulate import tabulate
 
-from xenon.utils.logging_ import get_logger
 from scripts import lib_display
+from xenon.utils.logging_ import get_logger
 
 
 class EnvUtils:
@@ -92,7 +92,8 @@ class EnvUtils:
                 func(k + " : " + type(v).__name__)
                 func(v)
                 func("-" * 50)
-        env_s = ";".join([f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None]])
+        env_s = ";".join(
+            [f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None] and not k.endswith("WORKFLOW")])
         func("env string for debug in pycharm:")
         func(env_s)
 
