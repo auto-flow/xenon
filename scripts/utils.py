@@ -7,21 +7,20 @@ import json
 import os
 import subprocess
 import sys
-import uuid
 from copy import deepcopy
 from pathlib import Path
 from typing import List
 from typing import Tuple
 
 import joblib
+import numpy as np
 import pandas as pd
 from tabulate import tabulate
-from xenon.tools.external_delivery import transform_xenon
 
 from scripts import lib_display
 from xenon.interpret.feat_imp import get_feature_importances_in_xenon
+from xenon.tools.external_delivery import transform_xenon
 from xenon.utils.logging_ import get_logger
-import numpy as np
 
 util_logger = get_logger(__name__)
 
@@ -207,6 +206,11 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
             json.dump(selected_columns.tolist(), open(f"{savedpath}/selected_columns_{suffix}.json", "w+"))
             final_feature_importance += weight * feature_importance
         final_feature_importance.to_csv(f"{savedpath}/feature_importance_stacking.csv")
+    # 产生对外交付模型
+    if os.getenv("EXTERNAL_DELIVERY", "").lower() == "true":
+        print("start external_delivery")
+        external_delivery(xenon, savedpath, logger)
+
 
 
 def display(resource_manager, task_id, display_size, savedpath):
@@ -362,7 +366,7 @@ def external_delivery(xenon, savedpath=".", logger=None):
     os.system(f"cp {root}/xenon_ext/test.py {external_delivery_path}/test.py")
     func(f"Makefile: {external_delivery_path}/Makefile")
     os.system(f"cp {root}/xenon_ext/Makefile {external_delivery_path}/Makefile")
-
+    os.system(f"tar -zcvf {savedpath}/external_delivery.tar.gz {savedpath}/external_delivery --remove-files ")
 
 if __name__ == '__main__':
     from joblib import load

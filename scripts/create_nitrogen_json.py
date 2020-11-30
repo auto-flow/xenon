@@ -10,9 +10,9 @@ import pandas as pd
 from scripts.utils import EnvUtils
 
 relations = {
-    "search": [],
+    "search": ["create_model"],
     "display": [],
-    "ensemble": [],
+    "ensemble": ["create_model"],
     "predict": [],
 }
 
@@ -43,8 +43,8 @@ ENV Description Table
 """)
 ignore_list = ["REG_WORKFLOW", "CLF_WORKFLOW"]
 for key, include_list in relations.items():
-    include_list.append("common")
-    include_list.append(key)
+    include_list.insert(0, key)  # 第二
+    include_list.insert(0, "common")  # 第一
     env_utils = EnvUtils()
     for include in include_list:
         env_utils.from_json(f"env_configs/{include}.json")
@@ -55,9 +55,9 @@ for key, include_list in relations.items():
         if name in ignore_list:
             json_data = env_item["default"]
             name = name.lower()
-            (complex_env_dir / f"{name}.json").write_text(json.dumps(json_data,indent=4))
+            (complex_env_dir / f"{name}.json").write_text(json.dumps(json_data, indent=4))
             env_item["default"] = f":ref:`{name}`"
-        env_item["default"]=str(env_item["default"])
+        env_item["default"] = str(env_item["default"])
     df = pd.DataFrame(env_items)
     df["default"] = df["default"].astype(str)
     df = df[["name", "default", "description"]]
@@ -138,7 +138,7 @@ Complex ENV
 
 """)
 for ignore in ignore_list:
-    ignore=ignore.lower()
+    ignore = ignore.lower()
     f.write(f"""
 
 {ignore}

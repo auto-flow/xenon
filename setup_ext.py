@@ -78,8 +78,8 @@ setup(
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
-    packages=find_packages("./", exclude=['test', 'examples',
-                                          'xenon_server', 'xenon_client', 'scripts', 'xenon']),
+    packages=find_packages("./", exclude=['test', 'examples', 'dsmac', 'generic_fs',
+                                          'xenon_server', 'xenon_client', 'scripts', 'xenon'], include=["xenon_ext"]),
     package_dir={
         'xenon_ext': './xenon_ext',
     },
