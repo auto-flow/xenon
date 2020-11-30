@@ -13,7 +13,8 @@
         "EMAIL": "None",
         "PASSWORD": "None",
         "TASK_ID": "5a73130cfe68340968b2e6c029e71fc0",
-        "TRIAL_ID": "[92, 61]"
+        "TRIAL_ID": "[92, 61]",
+        "EXTERNAL_DELIVERY": "True"
     },
     "docker_image": "harbor.atompai.com/nitrogen/xenon:v3.0"
 }

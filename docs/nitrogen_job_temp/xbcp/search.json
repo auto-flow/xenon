@@ -34,7 +34,8 @@
         "RANDOM_STATE": "None",
         "FEATURE_NAME_LIST": "None",
         "ENSEMBLE_SIZE": "3",
-        "DISPLAY_SIZE": "50"
+        "DISPLAY_SIZE": "50",
+        "EXTERNAL_DELIVERY": "True"
     },
     "docker_image": "477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0"
 }
