@@ -7,6 +7,9 @@
 ###################################
 import os
 import sys
+from concurrent.futures.thread import ThreadPoolExecutor
+from concurrent.futures import wait
+from pathlib import Path
 
 from xenon.ensemble.mean.regressor import MeanRegressor
 from xenon.ensemble.stack.base import StackEstimator
@@ -90,32 +93,59 @@ assert bool(final_model_path), ValueError(f"experiment {experiment_id}  was not 
 resource_manager.file_system.download(final_model_path, local_path)
 xenon = load(local_path)
 is_classifier = ("Classifier" in xenon.__class__.__name__)
-###########
-# 加载数据 #
-###########
-feature_name_list = env_utils.FEATURE_NAME_LIST
-column_descriptions = {}
-train_target_column_name = None
-id_column_name = None
-model_type = None
-data, _ = load_data_from_datapath(
-    datapath,
-    train_target_column_name,
-    id_column_name,
-    logger,
-    traditional_qsar_mode,
-    model_type,
-    feature_name_list,
-    column_descriptions
-)
-###############################
-# 调用predict方法对数据进行预测 #
-###############################
-if xenon.estimator is None:
-    xenon.estimator = xenon.ensemble_estimator
 
 
-def complex_predict(suffix=""):
+def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
+    ###########
+    # 加载数据 #
+    ###########
+    feature_name_list = env_utils.FEATURE_NAME_LIST
+    column_descriptions = {}
+    train_target_column_name = None
+    id_column_name = None
+    model_type = None
+    data, _ = load_data_from_datapath(
+        data_path,
+        train_target_column_name,
+        id_column_name,
+        logger,
+        traditional_qsar_mode,
+        model_type,
+        feature_name_list,
+        column_descriptions
+    )
+    ###############################
+    # 调用predict方法对数据进行预测 #
+    ###############################
+    if xenon.estimator is None:
+        xenon.estimator = xenon.ensemble_estimator
+
+    # baseline
+    if saved_in_dir:
+        complex_predict(data, f"{saved_dir}/prediction", saved_filename=sub_datapath.name)
+    else:
+        complex_predict(data, saved_dir)
+    # 花架子
+    if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
+        logger.info("current model is a stacking model, will use every base-model to do prediction.")
+        xenon.output_ensemble_info()
+        estimators_list = xenon.estimator.estimators_list
+        pre_estimator = xenon.estimator
+        for i, trial_id in enumerate(xenon.trial_ids):
+            estimators = estimators_list[i]
+            if is_classifier:
+                new_ensemble = VoteClassifier(estimators)
+            else:
+                new_ensemble = MeanRegressor(estimators)
+            xenon.estimator = new_ensemble
+            if saved_in_dir:
+                complex_predict(data, f"{saved_dir}/prediction_{trial_id}", saved_filename=sub_datapath.name)
+            else:
+                complex_predict(data, saved_dir, suffix=f"_{trial_id}")
+        xenon.estimator = pre_estimator
+
+
+def complex_predict(data, saved_dir, saved_filename="prediction", suffix=""):
     result = xenon.predict(data)
     # 把ID与result拼在一起
     test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
@@ -132,31 +162,50 @@ def complex_predict(suffix=""):
     else:
         proba = pd.DataFrame()
     df = pd.concat([df, proba], axis=1)
-    predict_path = f"{savedpath}/prediction{suffix}.csv"
+    predict_path = f"{saved_dir}/{saved_filename}{suffix}.csv"
     df.to_csv(predict_path, index=False)
 
 
-# baseline
-complex_predict()
-# 花架子
-if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
-    logger.info("current model is a stacking model, will use every base-model to do prediction.")
-    xenon.output_ensemble_info()
-    estimators_list = xenon.estimator.estimators_list
-    pre_estimator = xenon.estimator
-    for i, trial_id in enumerate(xenon.trial_ids):
-        estimators = estimators_list[i]
-        if is_classifier:
-            new_ensemble = VoteClassifier(estimators)
+def combine_csv_in_dir(dir):
+    first = True
+    prediction_file = None
+    for sub_result in Path(dir).iterdir():
+        if first:
+            prediction_file = pd.read_csv(sub_result, header=0)
+            first = False
         else:
-            new_ensemble = MeanRegressor(estimators)
-        xenon.estimator = new_ensemble
-        complex_predict(f"_{trial_id}")
-    xenon.estimator = pre_estimator
+            tmp_file = pd.read_csv(sub_result, header=0)
+            prediction_file = prediction_file.append(tmp_file)
+    if not first:
+        prediction_file.to_csv(f"{dir}.csv", index=False)
 
-######################
-# 保存结果到savedpath #
-######################
+
+if os.path.exists(f"{datapath}/predict"):
+    # 切分数据批量预测
+    Path(f"{savedpath}/prediction").mkdir(exist_ok=True)
+    if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
+        for trial_id in xenon.trial_ids:
+            Path(f"{savedpath}/{trial_id}").mkdir(exist_ok=True)
+
+    thread_num = os.getenv("PREDICT_THREAD_NUM")
+    if thread_num is not None and int(thread_num) > 1:
+        thread_num = int(thread_num)
+        with ThreadPoolExecutor(max_workers=thread_num) as t:
+            task_list = []
+            for sub_datapath in Path(f"{datapath}/predict").iterdir():
+                task = t.submit(single_dir_predict, sub_datapath, savedpath, True)
+                task_list.append(task)
+                wait(task_list)
+    else:
+        for sub_datapath in Path(f"{datapath}/predict").iterdir():
+            single_dir_predict(sub_datapath, savedpath, saved_in_dir=True)
+
+    combine_csv_in_dir(f"{savedpath}/prediction")
+    if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
+        for trial_id in xenon.trial_ids:
+            combine_csv_in_dir(f"{savedpath}/prediction_{trial_id}")
+else:
+    single_dir_predict(datapath, savedpath)
 
 save_info_json(
     os.getenv("EXPERIMENT_ID"),
