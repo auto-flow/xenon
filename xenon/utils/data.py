@@ -4,7 +4,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from datefinder import find_dates
+# from datefinder import find_dates
 from scipy.sparse import issparse
 from sklearn.utils.multiclass import type_of_target
 
@@ -161,14 +161,15 @@ def is_text(s, cat_been_checked=False):
 
 
 def is_date(s, cat_been_checked=False):
-    if not isinstance(s, pd.Series):
-        s = pd.Series(s)
-    if not cat_been_checked:
-        if not is_cat(s, consider_ordinal_as_cat=False):
-            return False
-    s = s.dropna()
-    s = s.astype(str)
-    return all(bool(list(find_dates(elem, strict=True))) for elem in s)
+    # if not isinstance(s, pd.Series):
+    #     s = pd.Series(s)
+    # if not cat_been_checked:
+    #     if not is_cat(s, consider_ordinal_as_cat=False):
+    #         return False
+    # s = s.dropna()
+    # s = s.astype(str)
+    return False
+    # return all(bool(list(find_dates(elem, strict=True))) for elem in s)
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ class RandomForestWithInstancesHPO(RandomForestWithInstances):
 
     Attributes
     ----------
-    rf_opts : pyrfr.regression.rf_opts
+    rf_opts :    pyrfr.regression.rf_opts
         Random forest hyperparameter
     n_points_per_tree : int
     rf : regression.binary_rss_forest

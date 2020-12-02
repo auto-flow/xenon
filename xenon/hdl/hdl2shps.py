@@ -9,7 +9,6 @@ from ConfigSpace import CategoricalHyperparameter, Constant
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import ForbiddenInClause, ForbiddenEqualsClause, ForbiddenAndConjunction
 from ConfigSpace import InCondition, EqualsCondition
-from hyperopt import fmin, tpe, hp
 
 import xenon.hdl.smac as smac_hdl
 from xenon.constants import PHASE2, SERIES_CONNECT_LEADER_TOKEN
@@ -112,6 +111,8 @@ class HDL2SHPS(StrSignatureMixin):
             ))
 
     def __rely_model(self, cs: ConfigurationSpace):
+        from hyperopt import fmin, tpe, hp
+
         if not RelyModels.info:
             return
         all_models = list(cs.get_hyperparameter(f"{PHASE2}:__choice__").choices)

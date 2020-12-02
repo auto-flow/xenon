@@ -29,14 +29,16 @@ if sys.version_info < (3, 5):
     )
 
 # install xenon_cli
-subprocess.check_call([sys.executable, 'setup.py', 'install'], cwd="./xenon_client")
+# subprocess.check_call([sys.executable, 'setup.py', 'install'], cwd="./xenon_client")
+
+install_file = 'requirements_tiny.txt'
 
 with open('README.rst') as fh:
     long_description = fh.read()
 
 GIT_PATTERN = re.compile(r"git\+https://github\.com/(.*?)/(.*?)\.git")
 HERE = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(HERE, 'requirements.txt')) as fp:
+with open(os.path.join(HERE, install_file)) as fp:
     install_requires = []
     for r in fp.readlines():
         r = r.strip()

@@ -6,7 +6,6 @@ from generic_fs.utils.utils import remove_None_value
 
 logger = logging.getLogger(__name__)
 
-import hdfs
 from joblib import dump, load
 
 from generic_fs import FileSystem
@@ -34,6 +33,7 @@ class HDFS(FileSystem):
         }
         kwargs = remove_None_value(kwargs)
         # todo 调研参数
+        import hdfs
         self.client = hdfs.client.InsecureClient(
             self.url, self.user,
             **kwargs

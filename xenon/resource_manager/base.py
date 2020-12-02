@@ -7,14 +7,12 @@ from copy import deepcopy
 from math import ceil
 from typing import Dict, Tuple, List, Union, Any
 
-import h5py
 import numpy as np
 import pandas as pd
 import peewee as pw
 from frozendict import frozendict
 # from playhouse.fields import PickleField
 from playhouse.reflection import generate_models
-from redis import Redis
 
 from xenon.constants import RESOURCE_MANAGER_CLOSE_ALL_LOGGER, CONNECTION_POOL_CLOSE_MSG, START_SAFE_CLOSE_MSG, \
     END_SAFE_CLOSE_MSG, ExperimentType
@@ -372,6 +370,7 @@ class ResourceManager(StrSignatureMixin):
         if self.is_init_redis:
             return True
         try:
+            from redis import Redis
             self.redis_client = Redis(**self.redis_params)
             self.is_init_redis = True
             return True
@@ -565,6 +564,7 @@ class ResourceManager(StrSignatureMixin):
         return self.file_system.upload(dataset_path, tmp_path)
 
     def upload_ndarray_to_fs(self, arr: np.ndarray, dataset_path):
+        import h5py
         tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
