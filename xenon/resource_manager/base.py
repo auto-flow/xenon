@@ -623,6 +623,7 @@ class ResourceManager(StrSignatureMixin):
     def download_arr_from_fs(self, dataset_path):
         tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
         self.file_system.download(dataset_path, tmp_path)
+        import h5py
         with h5py.File(tmp_path, 'r') as hf:
             arr = hf['dataset'][:]
         return arr
