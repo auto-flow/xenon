@@ -217,7 +217,6 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
         external_delivery(xenon, savedpath, logger)
 
 
-
 def display(resource_manager, task_id, display_size, savedpath):
     user_id = resource_manager.user_id
     records = resource_manager._get_sorted_trial_records(task_id, user_id, display_size)
@@ -340,6 +339,7 @@ def process_previous_result_dataset():
                     parser_logger.info(f"set DATAPATH\t=\t'{data_input}'\tOK")
                     os.environ["DATAPATH"] = data_input
 
+
 def print_xenon_path(logger=None):
     if logger is None:
         func = print
@@ -380,6 +380,7 @@ def external_delivery(xenon, savedpath=".", logger=None):
     func(f"Makefile: {external_delivery_path}/Makefile")
     os.system(f"cp {root}/xenon_ext/Makefile {external_delivery_path}/Makefile")
     os.system(f"tar -zcvf {savedpath}/external_delivery.tar.gz {savedpath}/external_delivery --remove-files ")
+
 
 if __name__ == '__main__':
     from joblib import load
