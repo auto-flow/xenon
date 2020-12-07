@@ -1,5 +1,6 @@
 run_search.sh
 # Byte-compiled / optimized / DLL files
+run_search.sh
 __pycache__/
 *.py[cod]
 *$py.class

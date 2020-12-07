@@ -7,14 +7,12 @@ from copy import deepcopy
 from math import ceil
 from typing import Dict, Tuple, List, Union, Any
 
-import h5py
 import numpy as np
 import pandas as pd
 import peewee as pw
 from frozendict import frozendict
 # from playhouse.fields import PickleField
 from playhouse.reflection import generate_models
-from redis import Redis
 
 from generic_fs import FileSystem
 from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, create_database
@@ -382,6 +380,7 @@ class ResourceManager(StrSignatureMixin):
         if self.is_init_redis:
             return True
         try:
+            from redis import Redis
             self.redis_client = Redis(**self.redis_params)
             self.is_init_redis = True
             return True
@@ -575,6 +574,7 @@ class ResourceManager(StrSignatureMixin):
         return self.file_system.upload(dataset_path, tmp_path)
 
     def upload_ndarray_to_fs(self, arr: np.ndarray, dataset_path):
+        import h5py
         tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
@@ -631,6 +631,7 @@ class ResourceManager(StrSignatureMixin):
     def download_arr_from_fs(self, dataset_path):
         tmp_path = f"/tmp/tmp_arr_{get_hash_of_str(dataset_path)}.h5"
         self.file_system.download(dataset_path, tmp_path)
+        import h5py
         with h5py.File(tmp_path, 'r') as hf:
             arr = hf['dataset'][:]
         return arr

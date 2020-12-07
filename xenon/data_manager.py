@@ -388,10 +388,17 @@ class DataManager(StrSignatureMixin):
         if isinstance(X_origin, np.ndarray):
             X.columns = self.columns
         elif isinstance(X_origin, pd.DataFrame):
-            assert set(X.columns) == set(self.columns)
-            if not np.all(X.columns == self.columns):
-                self.logger.warning(f"{X.dataset_source}'s columns do not match the TrainSet's columns by position!")
-                X.data = X.data[self.columns]
+            # assert set(X.columns) == set(self.columns)
+            assert len(X.columns) == len(self.columns), ValueError(
+                "model_columns' length should equal to data_columns' length!!!")
+            for data_column, model_column in zip(X.columns, self.columns):
+                if data_column != model_column:
+                    self.logger.warning(
+                        f"data_column = {data_column}, model_column = {model_column}, we use data_column instead of model_column. ")
+            # fixme: 已经在xenon/data_manager.py:395 处理了
+            # if not np.all(X.columns == self.columns):
+            #     self.logger.warning(f"{X.dataset_source}'s columns do not match the TrainSet's columns by position!")
+            #     X.data = X.data[self.columns]
         elif isinstance(X_origin, DataFrameContainer):
             pass
         else:

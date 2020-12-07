@@ -23,6 +23,7 @@ from xenon.tools.external_delivery import transform_xenon
 from xenon.utils.logging_ import get_logger
 
 util_logger = get_logger(__name__)
+from xenon.utils.logging_ import get_logger
 
 
 class EnvUtils:
@@ -100,6 +101,10 @@ class EnvUtils:
                 func(k + " : " + type(v).__name__)
                 func(v)
                 func("-" * 50)
+        env_s = ";".join(
+            [f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None] and not k.endswith("WORKFLOW")])
+        func("env string for debug in pycharm:")
+        func(env_s)
 
     __repr__ = __str__
 
@@ -223,10 +228,19 @@ def display(resource_manager, task_id, display_size, savedpath):
     records_copy = deepcopy(records)
     for record in records_copy:
         y_info_path = record["y_info_path"]
+        trial_id = record["trial_id"]
+        exception = None
         # keys: ['y_true_indexes', 'y_preds', 'y_test_pred']
-        y_info = resource_manager.file_system.load_pickle(y_info_path)
-        record["y_info"] = y_info
-        processed_records.append(record)
+        try:
+            y_info = resource_manager.file_system.load_pickle(y_info_path)
+            record["y_info"] = y_info
+            processed_records.append(record)
+        except Exception as e:
+            exception = str(e)
+            parser_logger.error(f"error trial_id = {trial_id}")
+        if exception is not None:
+            parser_logger.error(exception)
+
     data = {
         "mainTask": ml_task.mainTask,
         "records": processed_records,
@@ -325,7 +339,6 @@ def process_previous_result_dataset():
                     data_input = str(data_inputs[0])
                     parser_logger.info(f"set DATAPATH\t=\t'{data_input}'\tOK")
                     os.environ["DATAPATH"] = data_input
-
 
 def print_xenon_path(logger=None):
     if logger is None:

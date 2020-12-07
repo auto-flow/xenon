@@ -2,7 +2,10 @@ import logging
 import typing
 
 import numpy as np
-from pyrfr import regression
+try:
+    from pyrfr import regression
+except Exception:
+    regression = None
 
 from dsmac.configspace import ConfigurationSpace
 from dsmac.epm.base_rf import BaseModel

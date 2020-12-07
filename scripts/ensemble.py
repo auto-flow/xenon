@@ -9,6 +9,7 @@ import os
 import sys
 
 sys.path.insert(0, os.getcwd())
+os.system("conda config --set ssl_verify False")
 ###################################
 import logging
 import os

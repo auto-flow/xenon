@@ -1,17 +1,28 @@
 import logging
 import os
+import warnings
 from uuid import uuid4
 
 import requests
+from requests.adapters import HTTPAdapter
+from requests.sessions import Session
+from urllib3 import Retry
+from urllib3.exceptions import InsecureRequestWarning
 
 from generic_fs.utils.http import send_requests, get_data_of_response
 
 logger = logging.getLogger(__name__)
-
+import click
 from joblib import dump, load
 
 from generic_fs import FileSystem
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
+session = Session()
+retry = Retry(connect=10, backoff_factor=0.5)
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 class NitrogenFS(FileSystem):
     def __init__(self, db_params):
@@ -74,7 +85,7 @@ class NitrogenFS(FileSystem):
             return str(message[0])
         s3_header = {'Content-Type': 'multipart/form-data'}
         with open(local_path, 'rb') as f:
-            requests.put(url, data=f, headers=s3_header)
+            session.put(url, data=f, headers=s3_header, verify=False)
         response = send_requests(
             self.db_params, "dataset",
             params={"file_name": path, "file_size": str(os.path.getsize(local_path))},
@@ -91,14 +102,9 @@ class NitrogenFS(FileSystem):
         assert url is not None, ValueError(f"dataste_id='{dataset_id}' is invalid")
         chunk_size = 1024 * 1024 * 128
         # todo: 这里报警告
-        download_data = requests.get(url, stream=True)
+        download_data = session.get(url, stream=True, verify=False)
         with open(local_path, 'wb') as f:
             for chunk in download_data.iter_content(chunk_size=chunk_size):
                 if chunk:
                     f.write(chunk)
-        # self.get_small_file(url,local_path)
 
-    def get_small_file(self, url, localfile):
-        with open(localfile, 'wb') as f:
-            r = requests.get(url, allow_redirects=True)
-            f.write(r.content)

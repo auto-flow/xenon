@@ -8,6 +8,7 @@ import logging
 # from requests.packages.urllib3.util.retry import Retry
 import os
 import sys
+import warnings
 from copy import deepcopy
 from pathlib import Path
 from typing import Optional
@@ -20,6 +21,9 @@ from frozendict import frozendict
 from requests.adapters import HTTPAdapter
 from requests.sessions import Session
 from urllib3 import Retry
+from urllib3.exceptions import InsecureRequestWarning
+
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +107,7 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
     if json_data is not None:
         json_data = json.dumps(json_data, cls=CustomJsonEncoder)
         kwargs.update({"data": json_data})
+    kwargs.update(verify=False)
     # default values
     requests_exceptions = None
     response = None

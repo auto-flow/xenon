@@ -16,6 +16,7 @@ from xenon.ensemble.stack.base import StackEstimator
 from xenon.ensemble.vote.classifier import VoteClassifier
 
 sys.path.insert(0, os.getcwd())
+os.system("conda config --set ssl_verify False")
 ###################################
 import logging
 import os
