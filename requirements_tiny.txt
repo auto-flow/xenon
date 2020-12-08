@@ -1,5 +1,4 @@
-Cython>=0.29.14
-ConfigSpaceX==0.4.12
+ConfigSpace==0.4.12
 peewee==3.13.1
 numpy>=1.18.1
 pandas>=1.0.1
@@ -9,9 +8,7 @@ mlxtend>=0.17.0
 lightgbm>=2.2.3
 seaborn>=0.9.0
 matplotlib>=3.0.0
-ruamel.yaml>=0.16.0
 scikit_learn==0.22.2
-psutil>=5.5.1
 json5>=0.9.1
 PyYAML>=5.3
 typing-extensions==3.7.4.2
@@ -20,8 +17,4 @@ inflection>=0.4.0
 click>=7.0
 requests>=2.24.0
 tabulate
-pyDOE==0.3.8
-emcee==3.0.2
-sobol-seq==0.1.2
 lazy-import==0.2.2
-pynisher>=0.4.1

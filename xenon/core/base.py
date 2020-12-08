@@ -80,14 +80,14 @@ class XenonEstimator(BaseEstimator):
             high ratio NaN threshold, you can find example and practice in :class:`xenon.hdl.hdl_constructor.HDL_Constructor`
 
         highR_cat_threshold: float
-            high ratio categorical feature's cardinality threshold, you can find example and practice in :class:`xenon.hdl.hdl_constructor.HDL_Constructor`
+            high ratio categorical feature's cardinality threshold, you caGn find example and practice in :class:`xenon.hdl.hdl_constructor.HDL_Constructor`
 
         kwargs
             if parameters like ``tuner`` or ``hdl_constructor`` and ``resource_manager`` are passing None,
 
             you can passing kwargs to make passed parameter work. See the following example.
 
-        Examples
+        ExamplesG
         ---------
         In this example, you can see a trick to seed kwargs parameters with out initializing
         :class:`xenon.hdl.hdl_constructor.HDL_Constructor` or other class.

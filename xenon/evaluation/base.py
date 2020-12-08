@@ -1,4 +1,4 @@
-from ConfigSpace import Configuration
+from xenon.lazy_import import Configuration
 
 from xenon.utils.klass import StrSignatureMixin
 

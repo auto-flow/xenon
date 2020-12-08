@@ -7,7 +7,7 @@ from itertools import product
 from typing import Dict, Optional, Callable, Union, List, Any, Tuple
 
 import numpy as np
-from ConfigSpace import ConfigurationSpace, Configuration
+from xenon.lazy_import import ConfigurationSpace, Configuration
 from frozendict import frozendict
 
 from xenon.evaluation.ensemble_evaluator import EnsembleEvaluator
@@ -20,8 +20,12 @@ from xenon.utils.config_space import get_random_initial_configs, get_grid_initia
 from xenon.utils.klass import StrSignatureMixin
 from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask
-from dsmac.facade.smac_hpo_facade import SMAC4HPO
-from dsmac.scenario.scenario import Scenario
+
+try:
+    from dsmac.facade.smac_hpo_facade import SMAC4HPO
+    from dsmac.scenario.scenario import Scenario
+except Exception:
+    SMAC4HPO = Scenario = None
 
 
 class Tuner(StrSignatureMixin):
@@ -155,7 +159,6 @@ class Tuner(StrSignatureMixin):
 
     def set_random_state(self, random_state):
         self.random_state = random_state
-
 
     def hdl2shps(self, hdl: Dict):
         hdl2shps = HDL2SHPS()

@@ -5,10 +5,11 @@ from importlib import import_module
 from typing import Dict, List
 
 import numpy as np
-from ConfigSpace import CategoricalHyperparameter, Constant
-from ConfigSpace import ConfigurationSpace
-from ConfigSpace import ForbiddenInClause, ForbiddenEqualsClause, ForbiddenAndConjunction
-from ConfigSpace import InCondition, EqualsCondition
+from xenon.lazy_import import (
+    CategoricalHyperparameter, Constant, ConfigurationSpace,
+    ForbiddenInClause, ForbiddenEqualsClause, ForbiddenAndConjunction,
+    InCondition, EqualsCondition
+)
 
 import xenon.hdl.smac as smac_hdl
 from xenon.constants import PHASE2, SERIES_CONNECT_LEADER_TOKEN

@@ -1,7 +1,7 @@
 import math
 from typing import Any, List
 
-from ConfigSpace import CategoricalHyperparameter, \
+from xenon.lazy_import import CategoricalHyperparameter, \
     UniformFloatHyperparameter, UniformIntegerHyperparameter, Constant
 
 from xenon.utils.math_ import float_gcd

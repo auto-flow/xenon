@@ -183,6 +183,11 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
     logger.info(
         f"Experiment(experiment_id={experiment_id}) is finished, the best model will be saved in {final_model_path}.")
     final_model = xenon.copy()
+    # prevent pickle error in tiny enviroment
+    final_model.shps = None
+    final_model.tuner.shps = None
+    final_model.tuners = None
+    final_model.hdl_constructors = None
     joblib.dump(final_model, final_model_path)
     logger.info("save feature importance to SAVEDPATH")
     outputs = get_feature_importances_in_xenon(xenon)

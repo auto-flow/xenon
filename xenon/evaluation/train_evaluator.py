@@ -7,7 +7,7 @@ from time import time
 from typing import Dict, Optional, List
 
 import numpy as np
-from ConfigSpace import Configuration
+from xenon.lazy_import import Configuration
 
 from xenon.constants import PHASE2, PHASE1, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN
 from xenon.data_container import DataFrameContainer
@@ -24,8 +24,13 @@ from xenon.utils.packages import get_class_object_in_pipeline_components
 from xenon.utils.pipeline import concat_pipeline
 from xenon.utils.sys_ import get_trance_back_msg
 from xenon.workflow.ml_workflow import ML_Workflow
-from dsmac.runhistory.runhistory_db import RunHistoryDB
-from dsmac.runhistory.utils import get_id_of_config
+
+# lazy import dsmac
+try:
+    from dsmac.runhistory.runhistory_db import RunHistoryDB
+    from dsmac.runhistory.utils import get_id_of_config
+except Exception:
+    RunHistoryDB = get_id_of_config = None
 
 
 class TrainEvaluator(BaseEvaluator):
@@ -121,7 +126,7 @@ class TrainEvaluator(BaseEvaluator):
         additional_info = {}
         support_early_stopping = getattr(model.steps[-1][1], "support_early_stopping", False)
         with redirect_stderr(warning_info):
-        # with open(__file__):
+            # with open(__file__):
             # splitter 必须存在
             losses = []
             models = []

@@ -4,9 +4,9 @@ import typing
 
 import emcee
 import numpy as np
-from lazy_import import lazy_callable
+from lazy_import import lazy_callable, lazy_module
 
-from dsmac.configspace import ConfigurationSpace
+CS = lazy_module("ConfigSpace")
 from dsmac.epm.base_gp import BaseModel
 from dsmac.epm.gaussian_process import GaussianProcess
 
@@ -19,19 +19,19 @@ GaussianProcessRegressor = lazy_callable(
 class GaussianProcessMCMC(BaseModel):
 
     def __init__(
-        self,
-        configspace: ConfigurationSpace,
-        types: np.ndarray,
-        bounds: typing.List[typing.Tuple[float, float]],
-        seed: int,
-        kernel: Kernel,
-        n_mcmc_walkers: int = 20,
-        chain_length: int = 50,
-        burnin_steps: int = 50,
-        normalize_y: bool = True,
-        mcmc_sampler: str = 'emcee',
-        average_samples: bool = False,
-        **kwargs
+            self,
+            configspace: CS.ConfigurationSpace,
+            types: np.ndarray,
+            bounds: typing.List[typing.Tuple[float, float]],
+            seed: int,
+            kernel: Kernel,
+            n_mcmc_walkers: int = 20,
+            chain_length: int = 50,
+            burnin_steps: int = 50,
+            normalize_y: bool = True,
+            mcmc_sampler: str = 'emcee',
+            average_samples: bool = False,
+            **kwargs
     ):
         """
         Gaussian process model.
@@ -100,7 +100,7 @@ class GaussianProcessMCMC(BaseModel):
         # Internal statistics
         self._n_ll_evals = 0
 
-    def _train(self, X: np.ndarray, y: np.ndarray, do_optimize: bool=True):
+    def _train(self, X: np.ndarray, y: np.ndarray, do_optimize: bool = True):
         """
         Performs MCMC sampling to sample hyperparameter configurations from the
         likelihood and trains for each sample a GP on X and y

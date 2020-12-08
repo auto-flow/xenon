@@ -82,7 +82,7 @@ def find_pkgs(pkg_name):
     return res
 
 
-all_pkgs = ['xenon', 'dsmac', 'generic_fs']
+all_pkgs = ['xenon', 'generic_fs', 'xenon_ext']  # tiny 版本不再安装 dsmac
 
 
 def build_package_dir(pkgs):

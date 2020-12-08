@@ -4,7 +4,8 @@ from copy import deepcopy
 from typing import List, Union, Dict
 
 import numpy as np
-from ConfigSpace import ConfigurationSpace, Configuration, CategoricalHyperparameter, OrdinalHyperparameter, Constant, \
+from xenon.lazy_import import ConfigurationSpace, Configuration, CategoricalHyperparameter, \
+    OrdinalHyperparameter, Constant, \
     UniformFloatHyperparameter, UniformIntegerHyperparameter
 
 from xenon.hdl.smac import _encode

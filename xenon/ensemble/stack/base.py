@@ -2,8 +2,7 @@ import os
 from typing import List
 
 import numpy as np
-from hyperopt import fmin, tpe
-from hyperopt import hp, space_eval
+from xenon.lazy_import import fmin, tpe, hp, space_eval
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression, ElasticNet
 from sklearn.metrics import accuracy_score, r2_score
@@ -95,7 +94,14 @@ class StackEstimator(EnsembleEstimator):
         self.logger.info(f"meta_learner's performance : {score}")
         self.logger.info(f"meta_learner's coefficient : {self.meta_learner.coef_}")
         self.logger.info(f"meta_learner's intercept   : {self.meta_learner.intercept_}")
-        self.weights = np.abs(self.meta_learner.coef_).sum(axis=0)
+        coef_ = self.meta_learner.coef_
+        if coef_.ndim == 2:
+            self.weights = np.abs(coef_).sum(axis=0)
+        elif coef_.ndim == 1:
+            self.weights = coef_
+        else:
+            raise Exception
+        self.meta_hps = None  # prevent pickle exception in tiny enviroment
 
     def predict_meta_features(self, X, is_train):
         raise NotImplementedError
