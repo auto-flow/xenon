@@ -357,7 +357,7 @@ def external_delivery(xenon, savedpath=".", logger=None):
     sk_model = transform_xenon(xenon)
     feature_names = xenon.feature_names
     root = Path(__file__).parent.parent
-    subprocess.check_call([sys.executable, 'setup_ext.py', 'bdist'], cwd=root.as_posix())
+    subprocess.check_call([sys.executable, 'setup_ext.py', 'bdist_wheel'], cwd=root.as_posix())
     # tmp_path = f"/tmp/{uuid.uuid4()}"
     # os.system(f"mkdir {tmp_path}")
     dist_dir = f"{root}/dist"
@@ -373,13 +373,13 @@ def external_delivery(xenon, savedpath=".", logger=None):
     func(f"model's feature_names: {external_delivery_path}/feature_names.json")
     json.dump(list(feature_names), open(f"{external_delivery_path}/feature_names.json", "w+"))
     func(f"mock_data csv for unittest: {external_delivery_path}/mock_data.csv")
-    mock_data = pd.DataFrame(np.zeros([10, len(feature_names)]), columns=feature_names)
+    mock_data = pd.DataFrame(np.random.rand(10, len(feature_names)), columns=feature_names)
     mock_data.to_csv(f"{external_delivery_path}/mock_data.csv", index=False)
     func(f"test.py: {external_delivery_path}/test.py")
     os.system(f"cp {root}/xenon_ext/test.py {external_delivery_path}/test.py")
     func(f"Makefile: {external_delivery_path}/Makefile")
     os.system(f"cp {root}/xenon_ext/Makefile {external_delivery_path}/Makefile")
-    os.system(f"tar -zcvf {savedpath}/external_delivery.tar.gz {savedpath}/external_delivery --remove-files ")
+    os.system(f"cd {savedpath} && tar -zcvf external_delivery.tar.gz external_delivery --remove-files ")
 
 
 if __name__ == '__main__':

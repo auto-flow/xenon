@@ -71,7 +71,29 @@ def get_package_data(name, suffixes):
     return ret
 
 
-needed_suffixes = ['.json', '.txt', '.yml', '.yaml', '.bz2', '.csv']
+needed_suffixes = ['.json', '.txt', '.yml', '.yaml', '.bz2', '.csv', '.py']
+
+
+def find_pkgs(pkg_name):
+    res = []
+    for dirpath, dirnames, filenames in os.walk(pkg_name):
+        if "__init__.py" in filenames:
+            res.append(f"{dirpath}/*")
+    return res
+
+
+all_pkgs = ['xenon', 'dsmac', 'generic_fs']
+
+
+def build_package_dir(pkgs):
+    # return {k: find_pkgs(k) for k in pkgs}
+    return {k: k for k in pkgs}
+
+
+def build_package_data(pkgs):
+    # return {k: find_pkgs(k) for k in pkgs}
+    return {k: get_package_data(k, needed_suffixes) for k in pkgs}
+
 
 setup(
     name='xenon',
@@ -83,16 +105,9 @@ setup(
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
-    packages=find_packages("./", exclude=['test', 'examples',
-                                          'xenon_server', 'xenon_client', 'scripts']),
-    package_dir={
-        'xenon': './xenon',
-        'xenon_ext': './xenon_ext',
-        'dsmac': './dsmac',
-        'generic_fs': './generic_fs'
-    },
-    package_data={'xenon': get_package_data('xenon', needed_suffixes),
-                  'dsmac': get_package_data('dsmac', needed_suffixes)},
+    packages=find_packages("./", include=all_pkgs),
+    package_dir=build_package_dir(all_pkgs),
+    package_data=build_package_data(all_pkgs),
     python_requires='>=3.6.*',
     install_requires=install_requires,
     platforms=['Linux'],

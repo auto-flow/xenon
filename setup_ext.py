@@ -27,7 +27,6 @@ if sys.version_info < (3, 5):
         '3.6 or higher.' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
 
-
 with open('README.rst') as fh:
     long_description = fh.read()
 
@@ -39,12 +38,6 @@ with open(os.path.join(HERE, 'requirements_ext.txt')) as fp:
         r = r.strip()
         if r.startswith("#"):
             continue
-        elif r.startswith("git+"):
-            match = GIT_PATTERN.match(r)
-            if match:
-                package_name = match.group(2)
-            install_require = f"{package_name} @ {r}"
-            install_requires += [install_require]
         else:
             install_requires += [r]
 
@@ -66,7 +59,26 @@ def get_package_data(name, suffixes):
     return ret
 
 
-needed_suffixes = ['.json', '.txt', '.yml', '.yaml', '.bz2', '.csv']
+needed_suffixes = ['.json', '.txt', '.yml', '.yaml', '.bz2', '.csv', '.py']
+
+
+def find_pkgs(pkg_name):
+    res = []
+    for dirpath, dirnames, filenames in os.walk(pkg_name):
+        if "__init__.py" in filenames:
+            res.append(f"{dirpath}/*")
+    return res
+
+def build_package_dir(pkgs):
+    # return {k: find_pkgs(k) for k in pkgs}
+    return {k: k for k in pkgs}
+
+
+def build_package_data(pkgs):
+    # return {k: find_pkgs(k) for k in pkgs}
+    return {k: get_package_data(k, needed_suffixes) for k in pkgs}
+
+all_pkgs = ['xenon_ext']
 
 setup(
     name='xenon_ext',
@@ -78,12 +90,9 @@ setup(
     long_description_content_type='text/x-rst',
     license='BSD',
     url='https://bitbucket.org/xtalpi/xenon',
-    packages=find_packages("./", exclude=['test', 'examples', 'dsmac', 'generic_fs',
-                                          'xenon_server', 'xenon_client', 'scripts', 'xenon'], include=["xenon_ext"]),
-    package_dir={
-        'xenon_ext': './xenon_ext',
-    },
-    package_data={'xenon_ext': get_package_data('xenon_ext', needed_suffixes)},
+    packages=find_packages("./", include=all_pkgs),
+    package_dir=build_package_dir(all_pkgs),
+    package_data=build_package_data(all_pkgs),
     python_requires='>=3.6.*',
     install_requires=install_requires,
     platforms=['Linux'],

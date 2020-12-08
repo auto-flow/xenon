@@ -13,6 +13,8 @@ upload:
 	python setup.py sdist
 	twine upload dist/*
 
+clean:
+	rm -rf build dist *.egg-info.*
 
 hello:
 	echo "hello world"

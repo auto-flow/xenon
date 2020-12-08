@@ -15,7 +15,8 @@ class TestClfEnsembleSingle(SimulateNitrogenTestCase):
     TRIAL_ID = [12041]
     env_str = f"PYTHONUNBUFFERED=1;USER_ID=2;" \
               f"USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;" \
-              f"TASK_ID=a581d55e299de5f52cbfc3bf5c643ee7;TRIAL_ID={TRIAL_ID}"
+              f"TASK_ID=a581d55e299de5f52cbfc3bf5c643ee7;TRIAL_ID={TRIAL_ID};" \
+              f"EXTERNAL_DELIVERY=True"
     name = "test_clf_ensemble_single"
     script = "ensemble"
 
@@ -29,7 +30,8 @@ class TestClfEnsembleStacking(SimulateNitrogenTestCase):
     TRIAL_ID = [12041, 12047, 12038]
     env_str = f"PYTHONUNBUFFERED=1;USER_ID=2;" \
               f"USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;" \
-              f"TASK_ID=a581d55e299de5f52cbfc3bf5c643ee7;TRIAL_ID={TRIAL_ID}"
+              f"TASK_ID=a581d55e299de5f52cbfc3bf5c643ee7;TRIAL_ID={TRIAL_ID};" \
+              f"EXTERNAL_DELIVERY=True"
     name = "test_clf_ensemble_stacking"
     script = "ensemble"
 
@@ -48,7 +50,8 @@ class TestClfPredictFromSingle(SimulateNitrogenTestCase):
     download_nitrogen_data = True
     env_str = f"PYTHONUNBUFFERED=1;USER_ID=2;" \
               f"USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;" \
-              f"EXPERIMENT_ID={EXPERIMENT_ID};FEATURE_NAME_LIST=['AP2D'];"
+              f"EXPERIMENT_ID={EXPERIMENT_ID};FEATURE_NAME_LIST=['AP2D'];" \
+              f"EXTERNAL_DELIVERY=True"
     name = "test_clf_predict_single"
     script = "predict"
 
@@ -73,7 +76,8 @@ class TestClfPredictFromStacking(SimulateNitrogenTestCase):
     download_nitrogen_data = True
     env_str = f"PYTHONUNBUFFERED=1;USER_ID=2;" \
               f"USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;" \
-              f"EXPERIMENT_ID={EXPERIMENT_ID};FEATURE_NAME_LIST=['AP2D'];"
+              f"EXPERIMENT_ID={EXPERIMENT_ID};FEATURE_NAME_LIST=['AP2D'];" \
+              f"EXTERNAL_DELIVERY=True"
     name = "test_clf_predict_stacking"
     script = "predict"
 
