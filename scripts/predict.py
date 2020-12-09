@@ -10,6 +10,7 @@ import sys
 from concurrent.futures.thread import ThreadPoolExecutor
 from concurrent.futures import wait
 from pathlib import Path
+import multiprocessing as mp
 
 from xenon.ensemble.mean.regressor import MeanRegressor
 from xenon.ensemble.stack.base import StackEstimator
@@ -191,6 +192,8 @@ if os.path.exists(f"{datapath}/predict"):
     thread_num = os.getenv("PREDICT_THREAD_NUM")
     if thread_num is not None and int(thread_num) > 1:
         thread_num = int(thread_num)
+        if thread_num >= mp.cpu_count():
+            thread_num = mp.cpu_count() - 1
         with ThreadPoolExecutor(max_workers=thread_num) as t:
             task_list = []
             for sub_datapath in Path(f"{datapath}/predict").iterdir():
