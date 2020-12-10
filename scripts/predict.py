@@ -188,10 +188,11 @@ if os.path.exists(f"{datapath}/predict"):
             Path(f"{savedpath}/{trial_id}").mkdir(exist_ok=True)
 
     thread_num = os.getenv("PREDICT_THREAD_NUM")
+    cpu_count = os.getenv('CPU')
     if thread_num is not None and int(thread_num) > 1:
         thread_num = int(thread_num)
-        if thread_num >= mp.cpu_count():
-            thread_num = mp.cpu_count() - 1
+        if cpu_count is not None and thread_num > int(cpu_count) - 1:
+            thread_num = int(cpu_count) - 1
         with ThreadPoolExecutor(max_workers=thread_num) as t:
             task_list = []
             for sub_datapath in Path(f"{datapath}/predict").iterdir():
