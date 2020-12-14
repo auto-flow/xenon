@@ -2,7 +2,6 @@ import datetime
 import hashlib
 import os
 import shutil
-import traceback
 from copy import deepcopy
 from math import ceil
 from typing import Dict, Tuple, List, Union, Any
@@ -17,8 +16,7 @@ from playhouse.reflection import generate_models
 from generic_fs import FileSystem
 from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, create_database
 from generic_fs.utils.fs import get_file_system
-from xenon.constants import RESOURCE_MANAGER_CLOSE_ALL_LOGGER, CONNECTION_POOL_CLOSE_MSG, START_SAFE_CLOSE_MSG, \
-    END_SAFE_CLOSE_MSG, ExperimentType
+from xenon.constants import RESOURCE_MANAGER_CLOSE_ALL_LOGGER, ExperimentType
 from xenon.data_manager import DataManager
 from xenon.ensemble.mean.regressor import MeanRegressor
 from xenon.ensemble.vote.classifier import VoteClassifier
@@ -182,15 +180,12 @@ class ResourceManager(StrSignatureMixin):
         self.close_dataset_db()
         self.close_record_db()
         self.file_system.close_fs()
-        self.close_all_logger.warning(CONNECTION_POOL_CLOSE_MSG)
-        stack_txt = "".join(traceback.format_stack())
-        self.close_all_logger.info(stack_txt)
 
     def start_safe_close(self):
-        self.close_all_logger.info(START_SAFE_CLOSE_MSG)
+        pass
 
     def end_safe_close(self):
-        self.close_all_logger.info(END_SAFE_CLOSE_MSG)
+        pass
 
     def __reduce__(self):
         self.close_all()
@@ -286,7 +281,8 @@ class ResourceManager(StrSignatureMixin):
         record = self._get_trial_records_by_id(trial_id, self.task_id, self.user_id)[0]
         return record["dict_hyper_param"]
 
-    def load_estimators_in_trials(self, trials: Union[List, Tuple], ml_task: MLTask) -> Tuple[List, List, List, List, List]:
+    def load_estimators_in_trials(self, trials: Union[List, Tuple], ml_task: MLTask) -> Tuple[
+        List, List, List, List, List]:
         self.init_trial_table()
         records = self._get_trial_records_by_ids(trials, self.task_id, self.user_id)
         estimator_list = []
