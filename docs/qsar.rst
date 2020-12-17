@@ -373,6 +373,46 @@ Ensemble Stage
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/7.png
     :width: 600px
 
+Enriched Ensemble Infomation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`v1.1` 更新后，集成学习变得更加智能，且输出信息更丰富。
+
+- 更智能的集成学习
+
+Xenon采用stacking进行集成学习，原理如图，详情见 `博客 <https://towardsdatascience.com/ensemble-methods-bagging-boosting-and-stacking-c9214a10a205>`_ 。在旧版本中，meta-learner的超参数
+是预设的，这样做不够智能，可能会训练出表现不好的meta-learner。
+
+.. image:: https://miro.medium.com/max/700/1*ZucZsXkOwrpY2XaPh6teRw@2x.png
+    :width: 600px
+
+在 `v1.1` 更新后，我们采用hyperopt对meta-learner的超参数进行50次trial，以期望找到最好的
+meta-learner超参数配置。
+
+除了更智能地寻找meta-learner的超参数配置， `v1.1` 也能自动识别stacking后的模型表现是否降低。
+
+如果stacking后的模型表现低于基模型表现中的最大值，则放弃使用stacking模型，改为用那个表现最好的基模型。
+
+.. csv-table:: ensemble_info.csv
+   :file: misc/stacking_not_work.csv
+
+
+如上表(ensemble_info.csv)所示，stacking后的accuracy为0.825， 小于基模型中最大的0.826，
+所以本次ensemble stage不采用stacking模型，改为用那个表现最好的基模型。
+
+- 输出更丰富的信息
+
+如上表的 ``ensemble_info.csv`` 所示:
+    - `trial_id` 表示基模型的ID
+    - `weight` 表示meta-learner的权重
+        + 在分类任务中， meta-learner是LogisticRegression
+        + 在回归任务中，meta-learner是ElasticNet
+    - 后面的列，如 `accuracy` ， `average_precision` 等表示各个模型的评价指标
+    - 最后一行为stacking的信息
+
+ 
+
+
 
 Predict Stage
 ----------------------------------
