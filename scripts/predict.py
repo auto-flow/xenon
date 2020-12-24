@@ -94,6 +94,9 @@ resource_manager.file_system.download(final_model_path, local_path)
 xenon = load(local_path)
 is_classifier = ("Classifier" in xenon.__class__.__name__)
 
+predict_base_model = isinstance(xenon.estimator, StackEstimator) \
+                     and getattr(xenon, "ensemble_info", None) is not None \
+                     and env_utils.PREDICT_BASE_MODEL
 
 def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
     ###########
@@ -121,12 +124,13 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
         xenon.estimator = xenon.ensemble_estimator
 
     # baseline
+    # 多文件夹版本
     if saved_in_dir:
-        complex_predict(data, f"{saved_dir}/prediction", saved_filename=sub_datapath.name)
+        complex_predict(data, saved_dir=f"{saved_dir}/prediction", saved_filename=sub_datapath.name)
     else:
         complex_predict(data, saved_dir)
     # 花架子
-    if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
+    if predict_base_model:
         logger.info("current model is a stacking model, will use every base-model to do prediction.")
         xenon.output_ensemble_info()
         estimators_list = xenon.estimator.estimators_list
@@ -138,8 +142,9 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
             else:
                 new_ensemble = MeanRegressor(estimators)
             xenon.estimator = new_ensemble
+            # 多文件夹版本
             if saved_in_dir:
-                complex_predict(data, f"{saved_dir}/prediction_{trial_id}", saved_filename=sub_datapath.name)
+                complex_predict(data, saved_dir=f"{saved_dir}/prediction_{trial_id}", saved_filename=sub_datapath.name)
             else:
                 complex_predict(data, saved_dir, suffix=f"_{trial_id}")
         xenon.estimator = pre_estimator
@@ -183,12 +188,13 @@ def combine_csv_in_dir(dir):
 if os.path.exists(f"{datapath}/predict"):
     # 切分数据批量预测
     Path(f"{savedpath}/prediction").mkdir(exist_ok=True)
-    if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
+    if predict_base_model:
         for trial_id in xenon.trial_ids:
-            Path(f"{savedpath}/{trial_id}").mkdir(exist_ok=True)
+            Path(f"{savedpath}/prediction_{trial_id}").mkdir(exist_ok=True)
 
-    thread_num = os.getenv("PREDICT_THREAD_NUM")
+    thread_num = env_utils.PREDICT_THREAD_NUM
     cpu_count = os.getenv('CPU')
+    logger.info(f"cpu_count = {cpu_count}, thread_num = {thread_num}")
     if thread_num is not None and int(thread_num) > 1:
         thread_num = int(thread_num)
         if cpu_count is not None and thread_num > int(cpu_count) - 1:
@@ -204,7 +210,7 @@ if os.path.exists(f"{datapath}/predict"):
             single_dir_predict(sub_datapath, savedpath, saved_in_dir=True)
 
     combine_csv_in_dir(f"{savedpath}/prediction")
-    if isinstance(xenon.estimator, StackEstimator) and getattr(xenon, "ensemble_info", None) is not None:
+    if predict_base_model:
         for trial_id in xenon.trial_ids:
             combine_csv_in_dir(f"{savedpath}/prediction_{trial_id}")
 else:
