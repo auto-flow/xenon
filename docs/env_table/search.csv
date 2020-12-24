@@ -38,4 +38,4 @@ RANDOM_STATE,None,"搜索时使用的random_state。对样本的随机采样的�
 FEATURE_NAME_LIST,None,非空时为指定使用某几种特征，如 ``['SubFP']`` 
 ENSEMBLE_SIZE,3,做 ``stacking`` 集成学习集成的模型数，``<=1`` 表示不做集成学习，加载表现最好的模型。
 DISPLAY_SIZE,50,默认只展示最好的 ``50`` 次试验
-EXTERNAL_DELIVERY,True,是否产生对外交付模型，该模型只依赖部分xenon代码，可以交付给外部用户
+EXTERNAL_DELIVERY,False,是否产生对外交付模型，该模型只依赖部分xenon代码，可以交付给外部用户

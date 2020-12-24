@@ -35,7 +35,7 @@
         "FEATURE_NAME_LIST": "None",
         "ENSEMBLE_SIZE": "3",
         "DISPLAY_SIZE": "50",
-        "EXTERNAL_DELIVERY": "True"
+        "EXTERNAL_DELIVERY": "False"
     },
     "docker_image": "harbor.atompai.com/nitrogen/xenon:v3.0"
 }

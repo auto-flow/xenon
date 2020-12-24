@@ -13,7 +13,9 @@
         "EMAIL": "None",
         "PASSWORD": "None",
         "FEATURE_NAME_LIST": "None",
-        "EXPERIMENT_ID": "45"
+        "EXPERIMENT_ID": "45",
+        "PREDICT_THREAD_NUM": "3",
+        "PREDICT_BASE_MODEL": "False"
     },
     "docker_image": "harbor.atompai.com/nitrogen/xenon:v3.0"
 }
