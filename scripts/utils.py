@@ -3,7 +3,7 @@
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
 import ast
-import json
+import json5 as json
 import os
 import subprocess
 import sys
@@ -388,7 +388,9 @@ def external_delivery(xenon, savedpath=".", logger=None):
 
 
 if __name__ == '__main__':
-    from joblib import load
-
-    xenon = load("/home/tqc/Project/Xenon/savedpath/test_feat_imp_clf_stacking_2/experiment_680_best_model.bz2")
-    external_delivery(xenon, "/home/tqc/Project/Xenon/savedpath/ext")
+    env=EnvUtils()
+    env.from_json('env_configs/search.json')
+    print(env)
+    print(env)
+    # xenon = load("/home/tqc/Project/Xenon/savedpath/test_feat_imp_clf_stacking_2/experiment_680_best_model.bz2")
+    # external_delivery(xenon, "/home/tqc/Project/Xenon/savedpath/ext")
