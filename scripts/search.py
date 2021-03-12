@@ -15,6 +15,7 @@ from typing import Union, Optional
 
 import psutil
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import KFold, StratifiedKFold, LeaveOneOut, ShuffleSplit
 import logging
 import multiprocessing as mp
 import numpy as np
@@ -149,8 +150,8 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     column_descriptions = env_utils.COLUMN_DESCRIPTIONS
     train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
     id_column_name = env_utils.ID_COLUMN_NAME
-    # 公用的数据加载部分
-    data, column_descriptions = load_data_from_datapath(
+    # 公用的数据加载部分（SPLIT表示自定义切分）
+    data, column_descriptions, SPLIT = load_data_from_datapath(
         datapath,
         train_target_column_name,
         id_column_name,
@@ -213,27 +214,29 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     # ------------------#
     # splitter 数据切分  #
     # ------------------#
-    from sklearn.model_selection import KFold, StratifiedKFold, LeaveOneOut, ShuffleSplit
+    if SPLIT is not None:
+        logger.info("User specific SPLIT, using SPLIT instead of KFOLD")
+        logger.info("indicator 'TRAIN' is the train-set samples, other are validation-set samples.")
 
-    kfold = env_utils.KFOLD
-    if kfold > 1:
-        kfold = int(kfold)
-        kfold_kwargs = dict(n_splits=kfold, shuffle=True, random_state=0)
-        if model_type == "clf":
-            splitter = StratifiedKFold(**kfold_kwargs)
-        else:
-            splitter = KFold(**kfold_kwargs)
-    elif kfold == 1:
-        splitter = LeaveOneOut()
-    elif kfold < 1:
-        if model_type == "clf":
-            splitter = StratifiedShuffleSplit(n_splits=1, test_size=kfold, random_state=0)
-        else:
-            splitter = ShuffleSplit(n_splits=1, test_size=kfold, random_state=0)
     else:
-        raise ValueError(f"Invalid KFOLD {kfold}.")
-    logger.info(f"KFOLD = {kfold}, data_splitter will be interpret as {splitter}.")
-
+        kfold = env_utils.KFOLD
+        if kfold > 1:
+            kfold = int(kfold)
+            kfold_kwargs = dict(n_splits=kfold, shuffle=True, random_state=0)
+            if model_type == "clf":
+                splitter = StratifiedKFold(**kfold_kwargs)
+            else:
+                splitter = KFold(**kfold_kwargs)
+        elif kfold == 1:
+            splitter = LeaveOneOut()
+        elif kfold < 1:
+            if model_type == "clf":
+                splitter = StratifiedShuffleSplit(n_splits=1, test_size=kfold, random_state=0)
+            else:
+                splitter = ShuffleSplit(n_splits=1, test_size=kfold, random_state=0)
+        else:
+            raise ValueError(f"Invalid KFOLD {kfold}.")
+        logger.info(f"KFOLD = {kfold}, data_splitter will be interpret as {splitter}.")
     # ------------------------#
     # stacking 集成学习的参数  #
     # ------------------------#
@@ -245,7 +248,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         logger.info(f"Xenon will stack {ensemble_size} models.")
         fit_ensemble_params = {"trials_fetcher_params": {"k": ensemble_size}}
     # --------------#
-    # 启动Xenon  #
+    # 启动Xenon     #
     # --------------#
     xenon.fit(
         X_train=data,

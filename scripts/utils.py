@@ -3,16 +3,17 @@
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
 import ast
-import json5 as json
 import os
 import subprocess
 import sys
+from collections import Counter
 from copy import deepcopy
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from typing import Tuple
 
 import joblib
+import json5 as json
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
@@ -118,7 +119,7 @@ def load_data_from_datapath(
         model_type,
         feature_name_list,
         column_descriptions
-) -> Tuple[pd.DataFrame, dict]:
+) -> Tuple[pd.DataFrame, dict, Optional[pd.Series]]:
     if traditional_qsar_mode:
         # 情况一 ： DATAPATH = job_xxx_result/
         # job_xxx_result/ (DATAPATH)
@@ -175,7 +176,13 @@ def load_data_from_datapath(
         if train_target_column_name is not None:
             assert train_target_column_name in data.columns, ValueError(
                 f"TRAIN_TARGET_COLUMN_NAME {train_target_column_name} do not exist in data.csv")
-    return data, column_descriptions
+    SPLIT = None
+    if "SPLIT" in data.columns:
+        SPLIT = data.pop("SPLIT")
+        logger.info("Train Data using custom data split method.")
+        logger.info(f"SPLIT statistics: {Counter(SPLIT)}")
+    logger.info(f"Data Loading successfully. Data Shape: {data.shape}")
+    return data, column_descriptions, SPLIT
 
 
 def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
@@ -388,7 +395,7 @@ def external_delivery(xenon, savedpath=".", logger=None):
 
 
 if __name__ == '__main__':
-    env=EnvUtils()
+    env = EnvUtils()
     env.from_json('env_configs/search.json')
     print(env)
     print(env)

@@ -98,6 +98,7 @@ predict_base_model = isinstance(xenon.estimator, StackEstimator) \
                      and getattr(xenon, "ensemble_info", None) is not None \
                      and env_utils.PREDICT_BASE_MODEL
 
+
 def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
     ###########
     # 加载数据 #
@@ -107,7 +108,7 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
     train_target_column_name = None
     id_column_name = None
     model_type = None
-    data, _ = load_data_from_datapath(
+    data, *_ = load_data_from_datapath(
         data_path,
         train_target_column_name,
         id_column_name,
