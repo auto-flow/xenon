@@ -26,6 +26,7 @@ from xenon.resource_manager.http import HttpResourceManager
 from xenon.tuner import Tuner
 from scripts.utils import EnvUtils, save_current_expriment_model, load_data_from_datapath, display, save_info_json, \
     print_xenon_path
+from mlxtend.evaluate import PredefinedHoldoutSplit
 
 
 def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[XenonClassifier, XenonRegressor]:
@@ -187,6 +188,23 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     # clf metrics
     from xenon.metrics import accuracy, mcc, sensitivity, specificity, \
         balanced_accuracy, f1, precision, recall, pac_score
+    # multi-class clf metrics
+    from xenon.metrics import roc_auc_ovo_macro, roc_auc_ovo_weighted, roc_auc_ovr_macro, roc_auc_ovr_weighted, \
+            f1_macro, f1_micro, f1_weighted
+    #         { 'roc_auc_ovo_macro': 1.0,
+    # 'roc_auc_ovo_weighted': 1.0,
+    # 'roc_auc_ovr_macro': 1.0,
+    # 'roc_auc_ovr_weighted': 1.0,
+    # 'precision_macro': 1.0,
+    # 'precision_micro': 1.0,
+    # 'precision_weighted': 1.0,
+    # 'recall_macro': 1.0,
+    # 'recall_micro': 1.0,
+    # 'recall_weighted': 1.0,
+    # 'f1_macro': 1.0,
+    # 'f1_micro': 1.0,
+    # 'f1_weighted': 1.0}
+
     # reg metrics
     from xenon.metrics import r2, mean_squared_error, median_absolute_error
 
@@ -201,6 +219,14 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         "precision": precision,
         "recall": recall,
         "pac_score": pac_score,
+        # multi-class clf
+        'f1_macro': f1_macro,
+        'f1_micro': f1_micro,
+        'f1_weighted': f1_weighted,
+        'roc_auc_ovo_macro': roc_auc_ovo_macro,
+        'roc_auc_ovo_weighted': roc_auc_ovo_weighted,
+        'roc_auc_ovr_macro': roc_auc_ovr_macro,
+        'roc_auc_ovr_weighted': roc_auc_ovr_weighted,
         # reg
         "r2": r2,
         "mean_squared_error": mean_squared_error,
@@ -217,7 +243,11 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     if SPLIT is not None:
         logger.info("User specific SPLIT, using SPLIT instead of KFOLD")
         logger.info("indicator 'TRAIN' is the train-set samples, other are validation-set samples.")
-
+        mask = (SPLIT != "TRAIN")
+        valid_indices = np.arange(data.shape[0])[mask]
+        n_valids = valid_indices.size
+        logger.info(f"{n_valids} train-set samples, {data.shape[0] - n_valids} valid-set samples")
+        splitter = PredefinedHoldoutSplit(valid_indices)
     else:
         kfold = env_utils.KFOLD
         if kfold > 1:

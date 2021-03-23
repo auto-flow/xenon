@@ -87,7 +87,6 @@ class TrainEvaluator(BaseEvaluator):
         score, true_score = calculate_score(
             y_true, y_hat, self.ml_task.mainTask, self.metric,
             should_calc_all_metric=self.should_calc_all_metric)
-
         if isinstance(score, dict):
             err = self.metric._optimum - score[self.metric.name]
             all_score = true_score

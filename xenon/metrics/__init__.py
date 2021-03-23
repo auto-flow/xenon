@@ -348,7 +348,7 @@ def calculate_score(solution, prediction, mainTask, metric=None,
                     #     raise e
 
     else:
-        if ml_task.mainTask == "regression":
+        if mainTask == "regression":
             # TODO put this into the regression metric itself
             cprediction = sanitize_array(prediction)
             score = metric(solution, cprediction)

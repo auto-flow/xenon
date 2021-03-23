@@ -66,7 +66,7 @@ def choice(label: str, options: List, default=None):
     if default:
         kwargs.update({'default_value': _encode(default)})
     hp=CategoricalHyperparameter(label, choices, weights=proba_list, **kwargs)
-    hp.probabilities=proba_list  # fixme: don't make sense
+    # hp.probabilities=proba_list  # fixme: don't make sense
     return hp
 
 
