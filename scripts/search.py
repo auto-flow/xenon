@@ -191,7 +191,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     # multi-class clf metrics
     from xenon.metrics import roc_auc_ovo_macro, roc_auc_ovo_weighted, roc_auc_ovr_macro, roc_auc_ovr_weighted, \
             f1_macro, f1_micro, f1_weighted
-    #         { 'roc_auc_ovo_macro': 1.0,
+    #  { 'roc_auc_ovo_macro': 1.0,
     # 'roc_auc_ovo_weighted': 1.0,
     # 'roc_auc_ovr_macro': 1.0,
     # 'roc_auc_ovr_weighted': 1.0,
