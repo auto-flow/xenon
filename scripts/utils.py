@@ -229,9 +229,15 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
         external_delivery(xenon, savedpath, logger)
 
 
-def display(resource_manager, task_id, display_size, savedpath):
+def display(
+        resource_manager, task_id, display_size, savedpath,
+        trial_ids=None, ensemble_estimator=None, file_name="search_records", output_csv=True
+):
     user_id = resource_manager.user_id
-    records = resource_manager._get_sorted_trial_records(task_id, user_id, display_size)
+    if trial_ids is None:
+        records = resource_manager._get_sorted_trial_records(task_id, user_id, display_size)
+    else:
+        records = resource_manager._get_trial_records_by_ids(trial_ids, task_id, user_id)
     ml_task, y_train = resource_manager.get_ensemble_needed_info(task_id)
     y_train = y_train.data
     # 处理records, 加载y_info_path
@@ -251,12 +257,31 @@ def display(resource_manager, task_id, display_size, savedpath):
             parser_logger.error(f"error trial_id = {trial_id}")
         if exception is not None:
             parser_logger.error(exception)
+    # 处理stacking ensemble的可视化
+    # fixme: 但是输出csv有点问题，把下面的records改成processed_records会好一点
+    if ensemble_estimator is not None:
+        ensemble_record = processed_records[0].copy()
+        for k, v in ensemble_record.items():
+            if isinstance(v, (int, float, bool)):
+                ensemble_record[k] = 0
+            else:
+                ensemble_record[k] = ''
+        ensemble_record['all_score'] = ensemble_estimator.all_score
+        y_true_indexes = processed_records[0]['y_info']['y_true_indexes']
+        y_preds = []
+        for ix in y_true_indexes:
+            y_preds.append(ensemble_estimator.stacked_y_pred[ix])
+        y_info = {"y_true_indexes": y_true_indexes, "y_preds": y_preds}
+        ensemble_record["y_info"] = y_info
+        ensemble_record["trial_id"] = "stacking"
+        processed_records.append(ensemble_record)
 
     data = {
         "mainTask": ml_task.mainTask,
         "records": processed_records,
         "y_train": y_train
     }
+
     output_records = deepcopy(records)
     for output_record in output_records:
         output_record.pop("all_scores")
@@ -265,13 +290,14 @@ def display(resource_manager, task_id, display_size, savedpath):
         output_record.pop("losses")
         output_record.update(output_record.pop("all_score"))
     search_records_df = pd.DataFrame(output_records)
-    search_records_csv_path = f"{savedpath}/search_records.csv"
-    search_records_html_path = f"{savedpath}/search_records.html"
-    search_records_df.to_csv(search_records_csv_path, index=False)
-    try:
-        Path(search_records_html_path).write_text(lib_display.display(data))
-    except Exception as e:
-        util_logger.error(e)
+    search_records_csv_path = f"{savedpath}/{file_name}.csv"
+    search_records_html_path = f"{savedpath}/{file_name}.html"
+    if output_csv:
+        search_records_df.to_csv(search_records_csv_path, index=False)
+    # try:
+    Path(search_records_html_path).write_text(lib_display.display(data))
+    # except Exception as e:
+    #     util_logger.error(e)
 
 
 def save_info_json(experiment_id, task_id, hdl_id, savedpath):

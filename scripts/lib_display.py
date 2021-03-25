@@ -6,6 +6,7 @@ import pickle
 import os
 import numpy as np
 import pandas as pd
+
 try:
     from liquid import Liquid
 except:
@@ -392,7 +393,7 @@ def reg_plot(y_true, y_pred, xmin, xmax, title=None):
 
 
 # main
-def display(data:dict)->str:
+def display(data: dict) -> str:
     """
 
     Parameters
@@ -419,13 +420,20 @@ def display(data:dict)->str:
         info["trial_id"] = record["trial_id"]
         info["estimator"] = record["estimator"]
         info["cost_time"] = str("{:.2f}").format(record["cost_time"])
-        info["preprocessing"] = str(record["dict_hyper_param"]["preprocessing"])
-        info["estimating"] = str(record["dict_hyper_param"]["estimating"][info["estimator"]])
+        if record["dict_hyper_param"]:
+            info["preprocessing"] = str(record["dict_hyper_param"]["preprocessing"])
+            info["estimating"] = str(record["dict_hyper_param"]["estimating"][info["estimator"]])
+        else:
+            info["preprocessing"] = ''
+            info["estimating"] = ''
         info["loss"] = str("{:.2f}").format(record["loss"])
 
-        if mainTask == "classification":
-            cms = record["additional_info"]["confusion_matrices"]
-            cm = np.concatenate(np.sum(cms, axis=0)) / len(cms)
+        if mainTask == "classification":  # fixme: 如果不是二分类就报错
+            try:
+                cms = record["additional_info"]["confusion_matrices"]
+                cm = np.concatenate(np.sum(cms, axis=0)) / len(cms)
+            except:
+                cm = [0] * 4
             info["tn"] = str(cm[0])
             info["fp"] = str(cm[1])
             info["fn"] = str(cm[2])
@@ -520,4 +528,3 @@ def display(data:dict)->str:
     res_html = Liquid(html).render(**temp_dict)
 
     return res_html
-

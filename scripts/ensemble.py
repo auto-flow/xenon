@@ -9,7 +9,7 @@ import os
 import sys
 
 sys.path.insert(0, os.getcwd())
-os.system("conda config --set ssl_verify False")
+
 ###################################
 import logging
 import os
@@ -19,7 +19,7 @@ from xenon import XenonClassifier, XenonRegressor
 from xenon.resource_manager.http import HttpResourceManager
 from xenon.utils.ml_task import MLTask
 from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json, process_previous_result_dataset, \
-    print_xenon_path
+    print_xenon_path, display
 
 savedpath = os.getenv("SAVEDPATH", ".")
 setup_logger(
@@ -70,6 +70,9 @@ xenon.estimator = xenon.fit_ensemble(
     trials_fetcher="GetSpecificTrials",
     trials_fetcher_params={"trial_ids": list(trial_ids)}
 )
+# 满足集成学习可视化的需求
+display(resource_manager, task_id, 100, savedpath, trial_ids=trial_ids, # 感觉输出csv的代码有点问题，就不输出了
+        ensemble_estimator=xenon.ensemble_estimator, file_name="ensemble_records", output_csv=False)
 # 保存各种ID
 save_info_json(
     xenon.experiment_id,

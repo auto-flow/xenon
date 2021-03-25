@@ -537,30 +537,6 @@ class ResourceManager(StrSignatureMixin):
         self.is_init_dataset = False
         self.DatasetModel = None
 
-    def upload_df_to_table(self, df, dataset_id, column_mapper):
-        dataset_db = self.init_dataset_db()
-
-        class Meta:
-            database = dataset_db
-            table_name = f"dataset_{dataset_id}"
-
-        origin_columns = deepcopy(df.columns)
-        df.columns = pd.Series(df.columns).map(column_mapper)
-        database_id = get_unique_col_name(df.columns, "id")
-        dict_ = {"Meta": Meta, database_id: pw.AutoField()}
-        for col_name, dtype in zip(df.columns, df.dtypes):
-            dict_[col_name] = get_field_of_type(dtype, df, col_name)
-        DataframeModel = type("DataframeModel", (pw.Model,), dict_)
-        dataset_db.create_tables([DataframeModel])
-        sp0 = df.shape[0]
-        L = 500
-        N = ceil(sp0 / L)
-        for i in range(N):
-            sub_df = df.iloc[i * L:min(sp0, (i + 1) * L)]
-            sub_df = replace_nan_to_None(sub_df)
-            dicts = sub_df.to_dict('records')
-            DataframeModel.insert_many(dicts).execute()
-        df.columns = origin_columns
 
     def upload_df_to_fs(self, df: pd.DataFrame, dataset_path):
         tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
