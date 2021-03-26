@@ -419,14 +419,14 @@ def display(data: dict) -> str:
         info = dict()
         info["trial_id"] = record["trial_id"]
         info["estimator"] = record["estimator"]
-        info["cost_time"] = str("{:.2f}").format(record["cost_time"])
+        info["cost_time"] = str("{:.4f}").format(record["cost_time"])
         if record["dict_hyper_param"]:
             info["preprocessing"] = str(record["dict_hyper_param"]["preprocessing"])
             info["estimating"] = str(record["dict_hyper_param"]["estimating"][info["estimator"]])
         else:
-            info["preprocessing"] = ''
-            info["estimating"] = ''
-        info["loss"] = str("{:.2f}").format(record["loss"])
+            info["preprocessing"] = record.get('preprocessing', '')
+            info["estimating"] = record.get('estimating', '')
+        info["loss"] = str("{:.4f}").format(record["loss"])
 
         if mainTask == "classification":  # fixme: 如果不是二分类就报错
             try:
@@ -438,19 +438,19 @@ def display(data: dict) -> str:
             info["fp"] = str(cm[1])
             info["fn"] = str(cm[2])
             info["tp"] = str(cm[3])
-            info["mcc"] = str("{:.2f}").format(record["all_score"]["mcc"])
-            info["se"] = str("{:.2f}").format(record["all_score"]["sensitivity"])
-            info["sp"] = str("{:.2f}").format(record["all_score"]["specificity"])
-            info["acc"] = str("{:.2f}").format(record["all_score"]["accuracy"])
-            info["auc"] = str("{:.2f}").format(record["all_score"]["roc_auc"])
-            info["f1"] = str("{:.2f}").format(record["all_score"]["f1"])
+            info["mcc"] = str("{:.4f}").format(record["all_score"]["mcc"])
+            info["se"] = str("{:.4f}").format(record["all_score"]["sensitivity"])
+            info["sp"] = str("{:.4f}").format(record["all_score"]["specificity"])
+            info["acc"] = str("{:.4f}").format(record["all_score"]["accuracy"])
+            info["auc"] = str("{:.4f}").format(record["all_score"]["roc_auc"])
+            info["f1"] = str("{:.4f}").format(record["all_score"]["f1"])
         else:  # regression
-            info["r2"] = str("{:.2f}").format(record["all_score"]["r2"])
-            info["mse"] = str("{:.2f}").format(record["all_score"]["mean_squared_error"])
-            info["mae"] = str("{:.2f}").format(record["all_score"]["mean_absolute_error"])
-            info["pearsonr"] = str("{:.2f}").format(record["all_score"]["pearsonr"])
-            info["spearmanr"] = str("{:.2f}").format(record["all_score"]["spearmanr"])
-            info["kendalltau"] = str("{:.2f}").format(record["all_score"]["kendalltau"])
+            info["r2"] = str("{:.4f}").format(record["all_score"]["r2"])
+            info["mse"] = str("{:.4f}").format(record["all_score"]["mean_squared_error"])
+            info["mae"] = str("{:.4f}").format(record["all_score"]["mean_absolute_error"])
+            info["pearsonr"] = str("{:.4f}").format(record["all_score"]["pearsonr"])
+            info["spearmanr"] = str("{:.4f}").format(record["all_score"]["spearmanr"])
+            info["kendalltau"] = str("{:.4f}").format(record["all_score"]["kendalltau"])
 
         info["img"] = list()
         cv = len(record["y_info"]["y_true_indexes"])

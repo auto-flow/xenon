@@ -8,6 +8,8 @@
 import os
 import sys
 
+from xenon.ensemble.stack.base import StackEstimator
+
 sys.path.insert(0, os.getcwd())
 
 ###################################
@@ -71,8 +73,9 @@ xenon.estimator = xenon.fit_ensemble(
     trials_fetcher_params={"trial_ids": list(trial_ids)}
 )
 # 满足集成学习可视化的需求
-display(resource_manager, task_id, 100, savedpath, trial_ids=trial_ids, # 感觉输出csv的代码有点问题，就不输出了
-        ensemble_estimator=xenon.ensemble_estimator, file_name="ensemble_records", output_csv=False)
+if hasattr(xenon, "ensemble_estimator") and isinstance(xenon.ensemble_estimator, StackEstimator):
+    display(resource_manager, task_id, 100, savedpath, trial_ids=trial_ids,  # 感觉输出csv的代码有点问题，就不输出了
+            ensemble_estimator=xenon.ensemble_estimator, file_name="ensemble_records", output_csv=False)
 # 保存各种ID
 save_info_json(
     xenon.experiment_id,

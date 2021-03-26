@@ -266,7 +266,16 @@ def display(
                 ensemble_record[k] = 0
             else:
                 ensemble_record[k] = ''
+        all_score = ensemble_estimator.all_score
         ensemble_record['all_score'] = ensemble_estimator.all_score
+        ensemble_record['additional_info'] = {"confusion_matrices": [ensemble_estimator.confusion_matrix]}
+        ensemble_record['estimator'] = 'stacking'  # fixme: 浮点精度截断
+        ensemble_record['estimating'] = str(
+            dict(zip(trial_ids, [float(f"{w:.3f}") for w in ensemble_estimator.weights])))
+        if 'mcc' in all_score:
+            ensemble_record['loss'] = 1 - all_score['mcc']
+        else:
+            ensemble_record['loss'] = 1 - all_score['r2']  # fixme: 应该没写错吧
         y_true_indexes = processed_records[0]['y_info']['y_true_indexes']
         y_preds = []
         for ix in y_true_indexes:

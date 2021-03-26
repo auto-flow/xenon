@@ -289,8 +289,8 @@ class ResourceManager(StrSignatureMixin):
         y_true_indexes_list = []
         y_preds_list = []
         performance_list = []
-        scores_list = []
-        default_metric = "accuracy" if ml_task.mainTask == "classification" else "r2"
+        scores_list = [] # 之前出了个bug，因为评价指标改为
+        default_metric = "mcc" if ml_task.mainTask == "classification" else "r2"
 
         for record in records:
             exists = True
@@ -314,7 +314,6 @@ class ResourceManager(StrSignatureMixin):
         self.is_master = is_master
 
     # ----------runhistory------------------------------------------------------------------
-
     @property
     def runhistory_db_params(self):
         self.init_record_db()

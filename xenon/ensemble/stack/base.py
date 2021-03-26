@@ -5,17 +5,15 @@ import numpy as np
 from xenon.lazy_import import fmin, tpe, hp, space_eval
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression, ElasticNet
-from sklearn.metrics import accuracy_score, r2_score
+from sklearn.metrics import accuracy_score, r2_score, matthews_corrcoef
 from sklearn.utils._testing import ignore_warnings
-
 from xenon.ensemble.base import EnsembleEstimator
-from xenon.metrics import calculate_score
+from xenon.metrics import calculate_score, calculate_confusion_matrix
 from xenon.utils import typing_
 from xenon.utils.logging_ import get_logger
 
 
 class StackEstimator(EnsembleEstimator):
-
     def __init__(
             self,
             meta_learner=None,
@@ -70,10 +68,15 @@ class StackEstimator(EnsembleEstimator):
         meta_features = self.predict_meta_features(None, True)
 
         def objective(point):
-            return -self.meta_cls(**point).fit(meta_features, self.stacked_y_true). \
-                score(meta_features, self.stacked_y_true)
+            estimator = self.meta_cls(**point).fit(meta_features, self.stacked_y_true)
+            if self.mainTask == "classification":
+                y_pred = estimator.predict(meta_features)
+                return 1 - matthews_corrcoef(self.stacked_y_true, y_pred)
+            else:
+                y_pred = estimator.predict(meta_features)
+                return 1 - r2_score(self.stacked_y_true, y_pred)
 
-        max_evals = int(os.getenv("AUTO_ENSEMBLE_TRIALS", 50))
+        max_evals = int(os.getenv("AUTO_ENSEMBLE_TRIALS", 200))
         best = fmin(objective, self.meta_hps, algo=tpe.suggest, max_evals=max_evals, show_progressbar=False, verbose=0)
         best_point = space_eval(self.meta_hps, best)
         self.logger.info(f"meta_learner's hyper-parameters: ")
@@ -81,15 +84,18 @@ class StackEstimator(EnsembleEstimator):
             self.logger.info(f"\t{k}\t=\t{v}")
         self.meta_learner = self.meta_cls(**best_point)
         self.meta_learner.fit(meta_features, self.stacked_y_true)
+        # fixme: 默认分类用mcc，回归用r2
         if self.mainTask == "classification":
             self.stacked_y_pred = self.meta_learner.predict_proba(meta_features)
-            score = accuracy_score(self.stacked_y_true, self.stacked_y_pred.argmax(axis=1))
+            score = matthews_corrcoef(self.stacked_y_true, self.stacked_y_pred.argmax(axis=1))
         else:
             self.stacked_y_pred = self.meta_learner.predict(meta_features)
             score = r2_score(self.stacked_y_true, self.stacked_y_pred)
         _, self.all_score = calculate_score(
             self.stacked_y_true, self.stacked_y_pred, self.mainTask,
             should_calc_all_metric=True)
+        # 除了算all_score，还要算混淆矩阵
+        self.confusion_matrix = calculate_confusion_matrix(self.stacked_y_true, self.stacked_y_pred)
         self.ensemble_score = score
         self.logger.info(f"meta_learner's performance : {score}")
         self.logger.info(f"meta_learner's coefficient : {self.meta_learner.coef_}")
