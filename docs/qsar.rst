@@ -361,6 +361,8 @@ Ensemble Stage
 
 可视化结果如图：
 
+.. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/26.png
+
 :download:`Download example script for Ensemble-Stage <nitrogen_example_temp/ensemble.json>`.
 
 .. literalinclude:: nitrogen_example_temp/ensemble.json
