@@ -76,11 +76,11 @@
             "_select_percent": {"_type": "quniform", "_value": [1, 80, 0.1], "_default": 40}
         },
         "selected->target": [
-//          "adaboost",
+          "adaboost",
           "bayesian_ridge",
-//          "elasticnet",
-//          "extra_trees",
-//          "random_forest",
+          "elasticnet",
+          "extra_trees",
+          "random_forest",
           "lightgbm"
         ]
     },
