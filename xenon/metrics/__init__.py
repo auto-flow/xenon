@@ -300,6 +300,13 @@ for name, metric in [
         CLASSIFICATION_METRICS[qualified_name] = globals()[qualified_name]
 
 
+def convert_nan_to_0(dict_: dict):
+    for k, v in dict_.items():
+        if pd.isna(v):
+            dict_[k] = 0
+    return dict_
+
+
 def calculate_score(solution, prediction, mainTask, metric=None,
                     should_calc_all_metric=False):
     if isinstance(solution, (pd.Series, pd.DataFrame)):
@@ -344,8 +351,6 @@ def calculate_score(solution, prediction, mainTask, metric=None,
                                       "average='binary'. Please choose another average " \
                                       "setting, one of [None, 'micro', 'macro', 'weighted'].":
                         continue
-                    # else:
-                    #     raise e
 
     else:
         if mainTask == "regression":
@@ -355,7 +360,8 @@ def calculate_score(solution, prediction, mainTask, metric=None,
         else:
             score = metric(solution, prediction)
 
-    return score, true_score
+    ret = convert_nan_to_0(score), convert_nan_to_0(true_score)
+    return ret
 
 
 def calculate_confusion_matrix(y_true, y_pred) -> List[List[int]]:
