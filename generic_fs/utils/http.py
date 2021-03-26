@@ -3,7 +3,7 @@
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
 import datetime
-import json
+import simplejson as json
 import logging
 # from requests.packages.urllib3.util.retry import Retry
 import os
@@ -104,8 +104,9 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
                 sv = v
             params[k] = sv
         kwargs["params"] = params
+    # fixme: 在这里处理nan值的问题
     if json_data is not None:
-        json_data = json.dumps(json_data, cls=CustomJsonEncoder)
+        json_data = json.dumps(json_data, cls=CustomJsonEncoder, ignore_nan=True, encoding="utf-8")
         kwargs.update({"data": json_data})
     kwargs.update(verify=False)
     # default values
