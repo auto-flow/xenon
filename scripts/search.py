@@ -8,6 +8,8 @@
 import os
 import sys
 
+from xenon.ensemble.stack.base import StackEstimator
+
 sys.path.insert(0, os.getcwd())
 
 ###################################
@@ -298,6 +300,10 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
             xenon.hdl_id,
             savedpath
         )
+    # 满足集成学习可视化的需求
+    if hasattr(xenon, "ensemble_estimator") and isinstance(xenon.ensemble_estimator, StackEstimator):
+        display(resource_manager, xenon.task_id, 100, savedpath, trial_ids=xenon.trial_ids,  # 感觉输出csv的代码有点问题，就不输出了
+                ensemble_estimator=xenon.ensemble_estimator, file_name="ensemble_records", output_csv=False)
     ######################################
     # 实验完成，保存最好的模型到SAVEDPATH  #
     ######################################

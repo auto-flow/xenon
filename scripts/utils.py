@@ -268,7 +268,8 @@ def display(
                 ensemble_record[k] = ''
         all_score = ensemble_estimator.all_score
         ensemble_record['all_score'] = ensemble_estimator.all_score
-        ensemble_record['additional_info'] = {"confusion_matrices": [ensemble_estimator.confusion_matrix]}
+        if ensemble_estimator.confusion_matrix:
+            ensemble_record['additional_info'] = {"confusion_matrices": [ensemble_estimator.confusion_matrix]}
         ensemble_record['estimator'] = 'stacking'  # fixme: 浮点精度截断
         ensemble_record['estimating'] = str(
             dict(zip(trial_ids, [float(f"{w:.3f}") for w in ensemble_estimator.weights])))

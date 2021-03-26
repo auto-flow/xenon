@@ -313,6 +313,17 @@ Demo of Advanced Usage
    :language: json
 
 
+User Defined Train-Validation Set
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+如果您想自定义数据集的【训练集-验证集】的划分方式，您可以在数据集中增加一列 ``SPLIT`` 列，训练集为 ``TRAIN`` ，验证集为 ``VALID`` ，如图所示
+
+
+
+.. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/25.png
+
+
+
 Display Stage
 ----------------------------------
 
@@ -336,6 +347,19 @@ Display Stage
 Ensemble Stage
 ----------------------------------
 
+如果 ``Stacking 模型`` 的表现比基模型（即用户传入的 ``TRIAL_ID`` 指定的模型）要好，那么会使用 ``Stacking 模型`` ，
+否则使用表现最好的基模型
+
+如果 ``Stacking 模型`` 脱颖而出，Xenon会对Stacking结果进行可视化，其样式与 ``Display Stage`` 产生的 ``search_records.html`` 类似，
+但为N+1行，N表示 ``TRIAL_ID`` 指定的 ``基模型`` 个数，即拿所有的 ``基模型`` 和 ``Stacking模型`` 进行比较
+
+.. note::
+在一些场景下，如 ``BAYES_RUNS`` 较大，最优模型已经收敛，或者基模型之间的方差不够大，无法做到“ **好而不同** ”的情况下，
+``Stacking 模型`` 的表现可能不如 ``基模型`` ，这是正常现象。
+
+.. note:: 注意，这里的评价指标，对于分类任务是 ``mcc`` ，回归任务是 ``r2`` ，目前不支持自定义
+
+可视化结果如图：
 
 :download:`Download example script for Ensemble-Stage <nitrogen_example_temp/ensemble.json>`.
 

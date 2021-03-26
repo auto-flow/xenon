@@ -49,12 +49,6 @@ class StackEstimator(EnsembleEstimator):
         self.meta_hps = meta_hps
         self.logger = get_logger(self)
 
-    # def fit(self, X, y):
-    #     # fixme: 2020-4-9 更新后， 此方法弃用
-    #     # todo ： 验证所有的 y_true_indexes 合法
-    #     meta_features = self.predict_meta_features(X, True)
-    #     self.meta_learner.fit(meta_features, y)
-
     @ignore_warnings(category=ConvergenceWarning)
     @ignore_warnings(category=FutureWarning)
     def fit_trained_data(
@@ -95,7 +89,10 @@ class StackEstimator(EnsembleEstimator):
             self.stacked_y_true, self.stacked_y_pred, self.mainTask,
             should_calc_all_metric=True)
         # 除了算all_score，还要算混淆矩阵
-        self.confusion_matrix = calculate_confusion_matrix(self.stacked_y_true, self.stacked_y_pred)
+        if self.mainTask == "classification":
+            self.confusion_matrix = calculate_confusion_matrix(self.stacked_y_true, self.stacked_y_pred)
+        else:
+            self.confusion_matrix = None
         self.ensemble_score = score
         self.logger.info(f"meta_learner's performance : {score}")
         self.logger.info(f"meta_learner's coefficient : {self.meta_learner.coef_}")
