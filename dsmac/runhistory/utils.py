@@ -19,3 +19,4 @@ def get_id_of_config(config: Configuration):
     # m.update(str(seed).encode())
     hash_value = m.hexdigest()
     return hash_value
+

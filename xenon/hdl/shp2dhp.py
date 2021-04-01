@@ -37,7 +37,10 @@ class SHP2DHP(StrSignatureMixin):
         return result
 
     def __call__(self, shp):
-        dict_ = shp.get_dictionary()
+        if isinstance(shp, dict):
+            dict_ = shp
+        else:
+            dict_ = shp.get_dictionary()
         result = {}
         for k, v in dict_.items():
             if isinstance(v, str):

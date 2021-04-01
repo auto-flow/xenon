@@ -24,13 +24,12 @@ from xenon.utils.packages import get_class_object_in_pipeline_components
 from xenon.utils.pipeline import concat_pipeline
 from xenon.utils.sys_ import get_trance_back_msg
 from xenon.workflow.ml_workflow import ML_Workflow
-
+from xenon.utils.hash import get_hash_of_config
 # lazy import dsmac
 try:
     from dsmac.runhistory.runhistory_db import RunHistoryDB
-    from dsmac.runhistory.utils import get_id_of_config
 except Exception:
-    RunHistoryDB = get_id_of_config = None
+    RunHistoryDB  = None
 
 
 class TrainEvaluator(BaseEvaluator):
@@ -249,7 +248,7 @@ class TrainEvaluator(BaseEvaluator):
 
     def __call__(self, shp: Configuration):
         # 1. 将php变成model
-        config_id = get_id_of_config(shp)
+        config_id = get_hash_of_config(shp)
         start = time()
         dhp, model = self.shp2model(shp)
         # 2. 获取数据
@@ -270,10 +269,7 @@ class TrainEvaluator(BaseEvaluator):
             "config_origin": getattr(shp, "origin", "unk")
         })
         self.resource_manager.insert_trial_record(info)
-        return {
-            "loss": info["loss"],
-            "status": info["status"],
-        }
+        return info['loss']
 
     def shp2model(self, shp):
         shp2dhp = SHP2DHP()

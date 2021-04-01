@@ -1,7 +1,9 @@
 import hashlib
 from copy import deepcopy
+
+from ConfigSpace import Configuration
 from math import ceil
-from typing import Union
+from typing import Union, Dict, Any
 
 import numpy as np
 import pandas as pd
@@ -131,3 +133,15 @@ def get_hash_of_str(s: Union[str, bytes], m=None):
         s = s.encode("utf-8")
     m.update(s)
     return m.hexdigest()
+
+
+def get_hash_of_config(config: Union[Configuration, Dict[str, Any]], m=None):
+    if m is None:
+        m = hashlib.md5()
+    if isinstance(config, Configuration):
+        X: np.ndarray = config.get_array()
+        return get_hash_of_array(X, m)
+    elif isinstance(config, dict):
+        return get_hash_of_dict(config, m)
+    else:
+        raise NotImplementedError

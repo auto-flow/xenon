@@ -200,41 +200,6 @@ class Tuner(StrSignatureMixin):
         else:
             return 0
 
-    def prepare_beam_search_configs(self, config_space: ConfigurationSpace,
-                                    cs_keys: List[str], search_ranges: List[List[Any]]):
-        configs = []
-        for values in product(*search_ranges):
-            # todo: 超出范围的异常检测？
-            for cs_key, value in zip(cs_keys, values):
-                config_space.get_hyperparameter(cs_key).default_value = value
-            configs.append(config_space.get_default_configuration())
-        return configs
-
-    def match_cs_key(self, step_name: str, config: Union[Configuration, ConfigurationSpace]):
-        candidate_result = []
-        if isinstance(config, Configuration):
-            config_ = config.get_dictionary()
-        elif isinstance(config, ConfigurationSpace):
-            config_ = [x.name for x in config.get_hyperparameters()]
-        else:
-            raise NotImplementedError
-        for key in config_:
-            if re.match(rf".*{step_name}.*", key):
-                candidate_result.append(key)
-        assert len(candidate_result) > 0
-        lens = [len(result) for result in candidate_result]
-        result = candidate_result[int(np.argmin(lens))]
-        self.logger.info(f"Original beam_search step name '{step_name}' is parsed as '{result}'")
-        return result
-
-    def set_beam_search_result_to_cs_default(self, config_space: ConfigurationSpace, beam_result: dict):
-        config_space = deepcopy(config_space)
-        for cs_key, best_value in beam_result.items():
-            hp = config_space.get_hyperparameter(cs_key)
-            # if isinstance(hp, CategoricalHyperparameter):
-            hp.default_value = best_value
-        return config_space
-
     def run(
             self,
             initial_configs,
@@ -270,87 +235,22 @@ class Tuner(StrSignatureMixin):
             anneal_func=self.search_method_params.get("anneal_func"),
             use_pynisher=self.limit_resource
         )
-        # todo 将 file_system 传入，或者给file_system添加 runtime 参数
-        if self.search_method == "beam":
-            beam_steps: List[Dict[str, Any]] = self.search_method_params["beam_steps"]
-            beam_result = OrderedDict()
-            # for step_name, search_range in beam_steps.items():
-            for step in beam_steps:
-                # 根据历史最好配置
-                shps_ = self.set_beam_search_result_to_cs_default(self.shps, beam_result)
-                default_config = shps_.get_default_configuration()
-                sampled_configs = []
-                cs_keys = []
-                search_ranges = []
-                for step_name, search_range in step.items():
-                    cs_key = self.match_cs_key(step_name, default_config)
-                    cs_keys.append(cs_key)
-                    search_ranges.append(search_range)
-                sampled_configs += self.prepare_beam_search_configs(shps_, cs_keys, search_ranges)
-                smac = SMAC4HPO(
-                    scenario=self.scenario,
-                    rng=np.random.RandomState(self.random_state),
-                    tae_runner=self.evaluator,
-                    initial_configurations=sampled_configs
-                )
-                smac.solver.initial_configurations = sampled_configs
-                incumbent = smac.solver.start_(warm_start=False)
-                for cs_key in cs_keys:
-                    best_value = incumbent.get(cs_key)
-                    beam_result[cs_key] = best_value
-        elif self.search_method == "random":
-            specific_allocate: Dict[Tuple[str, str], int] = self.search_method_params.get("specific_allocate")
-            if specific_allocate is not None:
-                raw_key2cs_key = {}
-                processed_specific_allocate = {}
-                for raw_key, value in specific_allocate.keys():
-                    if raw_key not in raw_key2cs_key:
-                        cs_key = self.match_cs_key(raw_key, self.shps)
-                        raw_key2cs_key[raw_key] = cs_key
-                # todo: 把这两个for循环整合一下
-                for (raw_key, value), times in specific_allocate.items():
-                    cs_key = raw_key2cs_key[raw_key]
-                    processed_specific_allocate[(cs_key, value)] = times
-                configs = []
-                for sample in self.shps.sample_configuration(10000):
-                    empty_bins = 0
-                    for (cs_key, value), times in processed_specific_allocate.items():
-                        if times > 0:
-                            if sample.get(cs_key) == value:
-                                configs.append(sample)
-                                processed_specific_allocate[cs_key, value] -= 1
-                                break
-                        else:
-                            empty_bins += 1
-                    if empty_bins >= len(processed_specific_allocate):
-                        break
-                initial_configs = configs
-
-            smac = SMAC4HPO(
-                scenario=self.scenario,
-                rng=np.random.RandomState(self.random_state),
-                tae_runner=self.evaluator,
-                initial_configurations=initial_configs
-            )
+        smac = SMAC4HPO(
+            scenario=self.scenario,
+            rng=np.random.RandomState(self.random_state),
+            tae_runner=self.evaluator,
+            initial_configurations=initial_configs
+        )
+        self.logger.info(f"Starting {min(self.initial_runs, len(initial_configs))} times initial runs for SMAC.")
+        if self.initial_runs:
             smac.solver.initial_configurations = initial_configs
             smac.solver.start_()
         else:
-            smac = SMAC4HPO(
-                scenario=self.scenario,
-                rng=np.random.RandomState(self.random_state),
-                tae_runner=self.evaluator,
-                initial_configurations=initial_configs
-            )
-            self.logger.info(f"Starting {min(self.initial_runs, len(initial_configs))} times initial runs for SMAC.")
-            if self.initial_runs:
-                smac.solver.initial_configurations = initial_configs
-                smac.solver.start_()
-            else:
-                smac.solver.start_(only_timing=True)
-            run_limit = self.get_run_limit()
-            for i in range(run_limit):
-                smac.solver.run_()
-                should_continue = self.evaluator.resource_manager.delete_models()
-                if not should_continue:
-                    self.logger.info(f"PID = {os.getpid()} is exiting.")
-                    break
+            smac.solver.start_(only_timing=True)
+        run_limit = self.get_run_limit()
+        for i in range(run_limit):
+            smac.solver.run_()
+            should_continue = self.evaluator.resource_manager.delete_models()
+            if not should_continue:
+                self.logger.info(f"PID = {os.getpid()} is exiting.")
+                break

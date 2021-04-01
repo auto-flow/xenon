@@ -49,6 +49,7 @@ class XenonEstimator(BaseEstimator):
             should_finally_fit=False,
             should_calc_all_metrics=True,
             should_stack_X=True,
+            use_BOHB=False,
             **kwargs
     ):
         '''
@@ -104,6 +105,7 @@ class XenonEstimator(BaseEstimator):
             hdl_bank={'classification': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
             included_classifiers=('adaboost', 'catboost', 'decision_tree', 'extra_trees', 'gaussian_nb', 'k_nearest_neighbors', 'liblinear_svc', 'lib...
         '''
+        self.use_BOHB = use_BOHB
         self.should_stack_X = should_stack_X
         self.consider_ordinal_as_cat = consider_ordinal_as_cat
         if model_registry is None:
@@ -317,6 +319,33 @@ class XenonEstimator(BaseEstimator):
         return is_manual
 
     def run_tuner(self, tuner: Tuner):
+        if self.use_BOHB:
+            from ultraopt import fmin
+            from ultraopt.optimizer import ForestOptimizer
+            tuner.evaluator.init_data(**self.get_evaluator_params(self.random_state, self.resource_manager))
+            # 贝叶斯代理模型为SMAC
+            # todo:  multi_fidelity_iter_generator
+            optimizer = ForestOptimizer(min_points_in_model=tuner.initial_runs)
+            fmin(  # todo: n_jobs_in_algorithm
+                tuner.evaluator, tuner.shps, optimizer=optimizer,
+                n_jobs=tuner.n_jobs,
+                n_iterations=tuner.run_limit,
+                random_state=self.random_state,
+                limit_resource=True,
+                time_limit=tuner.per_run_time_limit,
+                memory_limit=tuner.per_run_memory_limit,
+                verbose=1
+                # todo: BAYES_RUNS 等参数
+                # tuner = Tuner(
+                #     initial_runs=env_utils.RANDOM_RUNS,
+                #     run_limit=env_utils.BAYES_RUNS,
+                #     n_jobs=search_thread_num,
+                #     per_run_time_limit=per_run_time_limit,
+                #     per_run_memory_limit=per_run_memory_limit,
+                #     n_jobs_in_algorithm=n_jobs_in_algorithm
+                # )
+            )
+            return
         n_jobs = tuner.n_jobs
         # run_limits = [math.ceil(tuner.run_limit / n_jobs)] * n_jobs
         run_limits = [len(chunk) for chunk in get_chunks([0] * tuner.run_limit, n_jobs)]
