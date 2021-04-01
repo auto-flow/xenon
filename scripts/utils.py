@@ -103,7 +103,9 @@ class EnvUtils:
                 func(v)
                 func("-" * 50)
         env_s = ";".join(
-            [f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None] and not k.endswith("WORKFLOW")])
+            [f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None] and not k.endswith("WORKFLOW")]+
+            ["SAVEDPATH=savedpath"]
+        )
         func("env string for debug in pycharm:")
         func(env_s)
 
