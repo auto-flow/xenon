@@ -22,17 +22,17 @@ clf_workflow={
             "_select_percent": {"_type": "quniform", "_value": [1, 80, 0.1], "_default": 40}
         },
         "selected->target": [
-          "adaboost",
-          "extra_trees",
-          "random_forest",
-          "liblinear_svc",
-          "libsvm_svc",
+          # "adaboost",
+          # "extra_trees",
+          # "random_forest",
+          # "liblinear_svc",
+          # "libsvm_svc",
           "lightgbm",
-          "logistic_regression"
+          # "logistic_regression"
         ]
     }
 hdl_constructor=HDL_Constructor(DAG_workflow=clf_workflow)
 X, y = load_digits(return_X_y=True)
-xenon = XenonClassifier(use_BOHB=True,n_jobs=6,hdl_constructor=hdl_constructor)
+xenon = XenonClassifier(use_BOHB=True,n_jobs=6,hdl_constructor=hdl_constructor,per_run_memory_limit=30720)
 xenon.fit(X, y,)
 print(xenon)

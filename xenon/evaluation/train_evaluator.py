@@ -4,7 +4,7 @@ from collections import defaultdict
 from contextlib import redirect_stderr
 from io import StringIO
 from time import time
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Union
 
 import numpy as np
 from xenon.lazy_import import Configuration
@@ -25,11 +25,12 @@ from xenon.utils.pipeline import concat_pipeline
 from xenon.utils.sys_ import get_trance_back_msg
 from xenon.workflow.ml_workflow import ML_Workflow
 from xenon.utils.hash import get_hash_of_config
+
 # lazy import dsmac
 try:
     from dsmac.runhistory.runhistory_db import RunHistoryDB
 except Exception:
-    RunHistoryDB  = None
+    RunHistoryDB = None
 
 
 class TrainEvaluator(BaseEvaluator):
@@ -246,8 +247,9 @@ class TrainEvaluator(BaseEvaluator):
         info["warning_info"] = warning_info.getvalue()
         return info
 
-    def __call__(self, shp: Configuration):
+    def __call__(self, shp: Union[Configuration, Dict], budget=1,**kwargs):
         # 1. 将php变成model
+        config = shp if isinstance(shp, dict) else shp.get_dictionary()
         config_id = get_hash_of_config(shp)
         start = time()
         dhp, model = self.shp2model(shp)
@@ -265,9 +267,10 @@ class TrainEvaluator(BaseEvaluator):
         estimator = list(dhp.get(PHASE2, {"unk": ""}).keys())[0]
         info["estimator"] = estimator
         info["cost_time"] = cost_time
-        info["additional_info"].update({
-            "config_origin": getattr(shp, "origin", "unk")
-        })
+        # info["additional_info"].update({ # fixme: 用BOHB就没这个逻辑了
+        #     "config_origin": getattr(shp, "origin", "unk")
+        # })
+        info["additional_info"].update({"config": config, "budget": budget})
         self.resource_manager.insert_trial_record(info)
         return info['loss']
 

@@ -1,6 +1,7 @@
 import inspect
 import multiprocessing
 import os
+from collections import defaultdict
 from copy import deepcopy
 from importlib import import_module
 from pathlib import Path
@@ -320,13 +321,36 @@ class XenonEstimator(BaseEstimator):
 
     def run_tuner(self, tuner: Tuner):
         if self.use_BOHB:
-            from ultraopt import fmin
+            from ultraopt import fmin, FMinResult
             from ultraopt.optimizer import ForestOptimizer
+            from xenon.hdl.shp2dhp import SHP2DHP
+            shp2dhp = SHP2DHP()
+            self.resource_manager.init_trial_table()
+            # fixme: 新接口
+            trial_records = self.resource_manager._get_sorted_trial_records(
+                self.task_id, self.resource_manager.user_id, 1000)
             tuner.evaluator.init_data(**self.get_evaluator_params(self.random_state, self.resource_manager))
             # 贝叶斯代理模型为SMAC
             # todo:  multi_fidelity_iter_generator
             optimizer = ForestOptimizer(min_points_in_model=tuner.initial_runs)
-            fmin(  # todo: n_jobs_in_algorithm
+            budget2obvs = defaultdict(lambda: {"losses": [], "configs": []})
+            for trial_record in trial_records:
+                hdl_id = trial_record['hdl_id']  # fixme
+                if hdl_id != self.hdl_id:
+                    continue
+                config = trial_record['additional_info'].get('config')
+                if config is None:
+                    continue
+                budget = trial_record['additional_info'].get('budget', 1)
+                loss = trial_record['loss']
+                budget2obvs[budget]["configs"].append(config)
+                budget2obvs[budget]["losses"].append(loss)
+            if len(budget2obvs) == 0:
+                dummy_result = None
+            else:
+                dummy_result = FMinResult()
+                dummy_result.budget2obvs = budget2obvs
+            result = fmin(  # todo: n_jobs_in_algorithm
                 tuner.evaluator, tuner.shps, optimizer=optimizer,
                 n_jobs=tuner.n_jobs,
                 n_iterations=tuner.run_limit,
@@ -334,7 +358,11 @@ class XenonEstimator(BaseEstimator):
                 limit_resource=True,
                 time_limit=tuner.per_run_time_limit,
                 memory_limit=tuner.per_run_memory_limit,
-                verbose=1
+                verbose=1,
+                initial_points=None,
+                warm_start_strategy="resume",
+                previous_result=dummy_result,  # 用于热启动
+                # todo: 定期存储优化器，用于事后分析
                 # todo: BAYES_RUNS 等参数
                 # tuner = Tuner(
                 #     initial_runs=env_utils.RANDOM_RUNS,
@@ -345,6 +373,7 @@ class XenonEstimator(BaseEstimator):
                 #     n_jobs_in_algorithm=n_jobs_in_algorithm
                 # )
             )
+            print(result)
             return
         n_jobs = tuner.n_jobs
         # run_limits = [math.ceil(tuner.run_limit / n_jobs)] * n_jobs
