@@ -43,6 +43,8 @@ class XenonEstimator(BaseEstimator):
             random_state=42,
             log_path: str = "xenon.log",
             log_config: Optional[dict] = None,
+            min_budget=0.125,
+            eta=4,
             highR_nan_threshold=0.5,
             highR_cat_threshold=0.5,
             consider_ordinal_as_cat=False,
@@ -106,6 +108,8 @@ class XenonEstimator(BaseEstimator):
             hdl_bank={'classification': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
             included_classifiers=('adaboost', 'catboost', 'decision_tree', 'extra_trees', 'gaussian_nb', 'k_nearest_neighbors', 'liblinear_svc', 'lib...
         '''
+        self.eta = eta
+        self.min_budget = min_budget
         self.use_BOHB = use_BOHB
         self.should_stack_X = should_stack_X
         self.consider_ordinal_as_cat = consider_ordinal_as_cat
@@ -323,15 +327,15 @@ class XenonEstimator(BaseEstimator):
         if self.use_BOHB:
             from ultraopt import fmin, FMinResult
             from ultraopt.optimizer import ForestOptimizer
-            from xenon.hdl.shp2dhp import SHP2DHP
-            shp2dhp = SHP2DHP()
+            from ultraopt.multi_fidelity import HyperBandIterGenerator
             self.resource_manager.init_trial_table()
-            # fixme: 新接口
+            # todo: 新接口
             trial_records = self.resource_manager._get_sorted_trial_records(
                 self.task_id, self.resource_manager.user_id, 1000)
             tuner.evaluator.init_data(**self.get_evaluator_params(self.random_state, self.resource_manager))
             # 贝叶斯代理模型为SMAC
-            # todo:  multi_fidelity_iter_generator
+            multi_fidelity_iter_generator = HyperBandIterGenerator(
+                min_budget=self.min_budget, max_budget=1, eta=self.eta)
             optimizer = ForestOptimizer(min_points_in_model=tuner.initial_runs)
             budget2obvs = defaultdict(lambda: {"losses": [], "configs": []})
             for trial_record in trial_records:
@@ -355,6 +359,7 @@ class XenonEstimator(BaseEstimator):
                 n_jobs=tuner.n_jobs,
                 n_iterations=tuner.run_limit,
                 random_state=self.random_state,
+                multi_fidelity_iter_generator=multi_fidelity_iter_generator,
                 limit_resource=True,
                 time_limit=tuner.per_run_time_limit,
                 memory_limit=tuner.per_run_memory_limit,

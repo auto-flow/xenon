@@ -270,6 +270,7 @@ class TrainEvaluator(BaseEvaluator):
         # info["additional_info"].update({ # fixme: 用BOHB就没这个逻辑了
         #     "config_origin": getattr(shp, "origin", "unk")
         # })
+        # 加BOHB后的逻辑
         info["additional_info"].update({"config": config, "budget": budget})
         self.resource_manager.insert_trial_record(info)
         return info['loss']
