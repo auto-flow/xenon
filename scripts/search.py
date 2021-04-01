@@ -10,8 +10,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.getcwd())
-from xenon.ensemble.stack.base import StackEstimator
-
 ###################################
 from typing import Union, Optional
 
@@ -21,6 +19,7 @@ from sklearn.model_selection import KFold, StratifiedKFold, LeaveOneOut, Shuffle
 import logging
 import multiprocessing as mp
 import numpy as np
+from xenon.ensemble.stack.base import StackEstimator
 from xenon.utils.logging_ import setup_logger
 from xenon import XenonClassifier, XenonRegressor
 from xenon.hdl.hdl_constructor import HDL_Constructor
