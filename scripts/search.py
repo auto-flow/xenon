@@ -7,7 +7,7 @@
 ###################################
 import os
 import sys
-
+from pathlib import Path
 
 sys.path.insert(0, os.getcwd())
 from xenon.ensemble.stack.base import StackEstimator
@@ -58,6 +58,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     if datapath is None:
         datapath = os.getenv("DATAPATH")
     savedpath = os.getenv("SAVEDPATH", ".")
+    Path(savedpath).mkdir(parents=True, exist_ok=True)
     assert bool(datapath), ValueError(f"Search Stage must has a dataset!")
     setup_logger(
         f"{savedpath}/xenon.log"
@@ -192,7 +193,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         balanced_accuracy, f1, precision, recall, pac_score
     # multi-class clf metrics
     from xenon.metrics import roc_auc_ovo_macro, roc_auc_ovo_weighted, roc_auc_ovr_macro, roc_auc_ovr_weighted, \
-            f1_macro, f1_micro, f1_weighted
+        f1_macro, f1_micro, f1_weighted
     #  { 'roc_auc_ovo_macro': 1.0,
     # 'roc_auc_ovo_weighted': 1.0,
     # 'roc_auc_ovr_macro': 1.0,

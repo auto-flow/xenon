@@ -384,7 +384,9 @@ class DataManager(StrSignatureMixin):
     def process_X(self, X: DataFrameContainer, X_origin):
         if X is None:
             return None
-        assert X.shape[1] == len(self.columns)
+        if X.shape[1] != len(self.columns):
+            savedpath=os.getenv('SAVEDPATH')
+
         if isinstance(X_origin, np.ndarray):
             X.columns = self.columns
         elif isinstance(X_origin, pd.DataFrame):

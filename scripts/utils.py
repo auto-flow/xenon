@@ -103,7 +103,7 @@ class EnvUtils:
                 func(v)
                 func("-" * 50)
         env_s = ";".join(
-            [f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None] and not k.endswith("WORKFLOW")]+
+            [f"{k}={v}" for k, v in self.variables.items() if v not in ["None", None] and not k.endswith("WORKFLOW")] +
             ["SAVEDPATH=savedpath"]
         )
         func("env string for debug in pycharm:")
@@ -170,11 +170,12 @@ def load_data_from_datapath(
             "id": name_col_name
         }
     else:
+        data = pd.read_csv(datapath)
         if "target" not in column_descriptions:
             column_descriptions["target"] = train_target_column_name
-        if "id" not in column_descriptions and id_column_name is not None:
+        if "id" not in column_descriptions and id_column_name is not None \
+                and id_column_name in data.columns:
             column_descriptions["id"] = id_column_name
-        data = pd.read_csv(datapath)
         if train_target_column_name is not None:
             assert train_target_column_name in data.columns, ValueError(
                 f"TRAIN_TARGET_COLUMN_NAME {train_target_column_name} do not exist in data.csv")
@@ -280,9 +281,14 @@ def display(
         else:
             ensemble_record['loss'] = 1 - all_score['r2']  # fixme: 应该没写错吧
         y_true_indexes = processed_records[0]['y_info']['y_true_indexes']
-        y_preds = []
-        for ix in y_true_indexes:
-            y_preds.append(ensemble_estimator.stacked_y_pred[ix])
+        # hold-out
+        if len(y_true_indexes) == 1:
+            y_preds = [ensemble_estimator.stacked_y_pred]
+        # 交叉验证
+        else:
+            y_preds = []
+            for ix in y_true_indexes:
+                y_preds.append(ensemble_estimator.stacked_y_pred[ix])
         y_info = {"y_true_indexes": y_true_indexes, "y_preds": y_preds}
         ensemble_record["y_info"] = y_info
         ensemble_record["trial_id"] = "stacking"
@@ -306,10 +312,10 @@ def display(
     search_records_html_path = f"{savedpath}/{file_name}.html"
     if output_csv:
         search_records_df.to_csv(search_records_csv_path, index=False)
-    # try:
-    Path(search_records_html_path).write_text(lib_display.display(data))
-    # except Exception as e:
-    #     util_logger.error(e)
+    try:
+        Path(search_records_html_path).write_text(lib_display.display(data))
+    except Exception as e:
+        util_logger.error(e)
 
 
 def save_info_json(experiment_id, task_id, hdl_id, savedpath):

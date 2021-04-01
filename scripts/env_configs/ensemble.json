@@ -6,7 +6,7 @@
   },
   {
     "name": "TRIAL_ID",
-    "default": "[92, 61]",
+    "default": [92, 61],
     "description": "你需要集成的试验ID， 可通过上次任务( `search` 或 `display` )的 `search_records.csv` 或 `search_records.html` 查看"
   }
 ]
