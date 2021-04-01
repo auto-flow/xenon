@@ -8,9 +8,9 @@
 import os
 import sys
 
-from xenon.ensemble.stack.base import StackEstimator
 
 sys.path.insert(0, os.getcwd())
+from xenon.ensemble.stack.base import StackEstimator
 
 ###################################
 from typing import Union, Optional
