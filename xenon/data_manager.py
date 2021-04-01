@@ -1,7 +1,9 @@
 # -*- encoding: utf-8 -*-
+import json
 import os
 from collections import defaultdict
 from copy import deepcopy
+from pathlib import Path
 from typing import Union, Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -385,8 +387,12 @@ class DataManager(StrSignatureMixin):
         if X is None:
             return None
         if X.shape[1] != len(self.columns):
-            savedpath=os.getenv('SAVEDPATH')
-
+            savedpath = os.getenv('SAVEDPATH')
+            Path(f"{savedpath}/train_columns.json").write_text(
+                json.dumps(self.columns.tolist(), indent=4))
+            Path(f"{savedpath}/test_columns.json").write_text(
+                json.dumps(X.columns.tolist(), indent=4))
+            raise ValueError('feature length dont match')
         if isinstance(X_origin, np.ndarray):
             X.columns = self.columns
         elif isinstance(X_origin, pd.DataFrame):

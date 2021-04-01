@@ -121,7 +121,7 @@ def load_data_from_datapath(
         model_type,
         feature_name_list,
         column_descriptions
-) -> Tuple[pd.DataFrame, dict, Optional[pd.Series]]:
+) -> Tuple[pd.DataFrame, dict, Optional[pd.Series], Optional[pd.Series]]:
     if traditional_qsar_mode:
         # 情况一 ： DATAPATH = job_xxx_result/
         # job_xxx_result/ (DATAPATH)
@@ -142,6 +142,9 @@ def load_data_from_datapath(
             datapath = f"{datapath}/data"
         # 情况二不满足判断条件
         data = pd.read_csv(f"{datapath}/data.csv")
+        SMILES = None
+        if "SMILES" in data:
+            SMILES = data.pop("SMILES")
         for name_col_name in ("Name", "NAME", "ID", None):
             assert name_col_name is not None, ValueError("Name col name no found!")
             if name_col_name in data.columns:
@@ -171,6 +174,9 @@ def load_data_from_datapath(
         }
     else:
         data = pd.read_csv(datapath)
+        SMILES = None
+        if "SMILES" in data:
+            SMILES = data.pop("SMILES")
         if "target" not in column_descriptions:
             column_descriptions["target"] = train_target_column_name
         if "id" not in column_descriptions and id_column_name is not None \
@@ -185,7 +191,7 @@ def load_data_from_datapath(
         logger.info("Train Data using custom data split method.")
         logger.info(f"SPLIT statistics: {Counter(SPLIT)}")
     logger.info(f"Data Loading successfully. Data Shape: {data.shape}")
-    return data, column_descriptions, SPLIT
+    return data, column_descriptions, SPLIT, SMILES
 
 
 def save_current_expriment_model(savedpath, experiment_id, logger, xenon):

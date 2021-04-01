@@ -155,7 +155,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
     id_column_name = env_utils.ID_COLUMN_NAME
     # 公用的数据加载部分（SPLIT表示自定义切分）
-    data, column_descriptions, SPLIT = load_data_from_datapath(
+    data, column_descriptions, SPLIT, _ = load_data_from_datapath(
         datapath,
         train_target_column_name,
         id_column_name,

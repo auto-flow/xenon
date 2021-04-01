@@ -93,7 +93,7 @@
   },
   {
     "name": "ID_COLUMN_NAME",
-    "default": null,
+    "default": "NAME",
     "description": "主键列， 如 ``NAME`` 。仅在用户自定义特征文件时使用，QSAR流程不用管这个参数。"
   },
   {
