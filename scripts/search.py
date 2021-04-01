@@ -245,7 +245,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     if SPLIT is not None:
         logger.info("User specific SPLIT, using SPLIT instead of KFOLD")
         logger.info("indicator 'TRAIN' is the train-set samples, other are validation-set samples.")
-        mask = (SPLIT != "TRAIN")
+        mask = (SPLIT == "VALID")
         valid_indices = np.arange(data.shape[0])[mask]
         n_valids = valid_indices.size
         logger.info(f"{n_valids} train-set samples, {data.shape[0] - n_valids} valid-set samples")
