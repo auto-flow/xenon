@@ -154,10 +154,11 @@ def complex_predict(data, SMILES, saved_dir, saved_filename="prediction", suffix
     result = xenon.predict(data)
     # 把ID与result拼在一起
     test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
+    ID_COLUMN_NAME = xenon.data_manager.column_descriptions.get('id')
     df = {}
-    if test_id_seq is not None:
+    if test_id_seq is not None and ID_COLUMN_NAME is not None:
         df.update({
-            "NAME": test_id_seq,
+            ID_COLUMN_NAME: test_id_seq,
         })
     if SMILES is not None:
         df.update({
