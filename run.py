@@ -26,19 +26,21 @@ clf_workflow = {
         # "adaboost",
         # "extra_trees",
         # "random_forest",
-        # "liblinear_svc",
-        # "libsvm_svc",
-        "lightgbm",
+        "liblinear_svc",
+        "libsvm_svc",
+        # "lightgbm",
         # "logistic_regression"
-    ]
+    ],
 }
-hdl_constructor = HDL_Constructor(DAG_workflow=clf_workflow)
+hdl_constructor = HDL_Constructor(
+    DAG_workflow=clf_workflow, balance_strategies=["weight"])
 X, y = load_digits(return_X_y=True)
 xenon = XenonClassifier(
     use_BOHB=True, n_jobs=1,
     hdl_constructor=hdl_constructor,
     per_run_memory_limit=30720,
-    n_jobs_in_algorithm=3
+    n_jobs_in_algorithm=3,
+    imbalance_threshold=0.9
 )
 xenon.fit(X, y, )
 print(xenon)

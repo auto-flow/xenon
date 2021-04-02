@@ -47,6 +47,7 @@ class XenonEstimator(BaseEstimator):
             log_config: Optional[dict] = None,
             min_budget=1 / 16,
             eta=4,
+            imbalance_threshold=2,
             highR_nan_threshold=0.5,
             highR_cat_threshold=0.5,
             consider_ordinal_as_cat=False,
@@ -110,6 +111,7 @@ class XenonEstimator(BaseEstimator):
             hdl_bank={'classification': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
             included_classifiers=('adaboost', 'catboost', 'decision_tree', 'extra_trees', 'gaussian_nb', 'k_nearest_neighbors', 'liblinear_svc', 'lib...
         '''
+        self.imbalance_threshold = imbalance_threshold
         self.eta = eta
         self.min_budget = min_budget
         self.use_BOHB = use_BOHB
@@ -252,9 +254,11 @@ class XenonEstimator(BaseEstimator):
         self.resource_manager.close_task_table()
         # store other params
         setup_logger(self.log_path, self.log_config)
-        hdl_constructor=self.hdl_constructor
-        tuner=self.tuner
-        hdl_constructor.run(self.data_manager, self.model_registry)
+        hdl_constructor = self.hdl_constructor
+        tuner = self.tuner
+        hdl_constructor.run(
+            self.data_manager,
+            self.model_registry, imbalance_threshold=self.imbalance_threshold)
         hdl = hdl_constructor.get_hdl()
         self.hdl = hdl
         if is_not_realy_run:
@@ -289,7 +293,7 @@ class XenonEstimator(BaseEstimator):
         self.logger.info(f"task_id:\t{self.task_id}")
         self.logger.info(f"hdl_id:\t{self.hdl_id}")
         self.logger.info(f"experiment_id:\t{self.experiment_id}")
-        if is_manual: # fixme: 原型设计中，可以支持手动建模，但是产品经理认为没有这个需求
+        if is_manual:  # fixme: 原型设计中，可以支持手动建模，但是产品经理认为没有这个需求
             tuner.evaluator.init_data(**self.get_evaluator_params())
             # dhp, self.estimator = tuner.evaluator.shp2model(tuner.shps.sample_configuration())
             tuner.evaluator(tuner.shps.sample_configuration())

@@ -59,7 +59,11 @@ class ML_Workflow(Pipeline):
         else:
             result[name] = None
 
-    def fit(self, X_train, y_train, X_valid=None, y_valid=None, X_test=None, y_test=None, fit_final_estimator=True):
+    def fit(
+            self, X_train, y_train, X_valid=None, y_valid=None,
+            X_test=None, y_test=None, fit_final_estimator=True,
+            sample_weight=None
+    ):
         # set default `self.last_data` to prevent exception in only classifier cases
         self.last_data = {
             "X_train": X_train,
@@ -140,7 +144,7 @@ class ML_Workflow(Pipeline):
             self.steps[step_idx] = (step_name, fitted_transformer)
         if fit_final_estimator and self.is_estimator:
             # self._final_estimator.resource_manager = self.resource_manager
-            self._final_estimator.fit(X_train, y_train, X_valid, y_valid, X_test, y_test)
+            self._final_estimator.fit(X_train, y_train, X_valid, y_valid, X_test, y_test, sample_weight=sample_weight)
             # self._final_estimator.resource_manager = None
         return self
 
@@ -148,8 +152,11 @@ class ML_Workflow(Pipeline):
         return self.fit(X_train, y_train, X_valid, y_valid, X_test, y_test). \
             transform(X_train, X_valid, X_test, y_train)
 
-    def procedure(self, ml_task: MLTask, X_train, y_train, X_valid=None, y_valid=None, X_test=None, y_test=None):
-        self.fit(X_train, y_train, X_valid, y_valid, X_test, y_test)
+    def procedure(
+            self, ml_task: MLTask, X_train, y_train, X_valid=None, y_valid=None,
+            X_test=None, y_test=None, sample_weight=None
+    ):
+        self.fit(X_train, y_train, X_valid, y_valid, X_test, y_test, sample_weight=sample_weight)
         X_train = self.last_data["X_train"]
         y_train = self.last_data["y_train"]
         X_valid = self.last_data.get("X_valid")

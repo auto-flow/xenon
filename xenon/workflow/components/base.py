@@ -52,6 +52,17 @@ class XenonComponent(BaseEstimator):
             raise NotImplementedError()
         return self.module__
 
+    def set_inside_dict(self, dict_: dict):
+        for key, value in dict_.items():
+            setattr(self, key, value)
+
+    def update_hyperparams(self, kwargs):
+        self.hyperparams.update(kwargs)
+        self.set_inside_dict(kwargs)
+        if self.component is not None:
+            for k, v in kwargs.items():
+                setattr(self.component, k, v)
+
     def get_estimator_class(self):
         M = import_module(self.module_)
         return getattr(M, self.class_)
@@ -124,9 +135,13 @@ class XenonComponent(BaseEstimator):
             **self.processed_params
         )
 
-    def fit(self, X_train, y_train=None,
+    def fit(
+            self, X_train, y_train=None,
             X_valid=None, y_valid=None,
-            X_test=None, y_test=None):
+            X_test=None, y_test=None,
+            **kwargs
+    ):
+        self.sample_weight = kwargs.get("sample_weight")
         # 只选择当前需要的feature_groups
         assert isinstance(X_train, DataFrameContainer)
         X_train = self.filter_feature_groups(X_train)
@@ -143,8 +158,9 @@ class XenonComponent(BaseEstimator):
         X_valid_ = self.before_fit_X(X_valid)
         y_valid_ = self.before_fit_y(y_valid)
         # 对代理的estimator进行预处理
-        self.component = self.after_process_estimator(self.component, X_train_, y_train_, X_valid_,
-                                                      y_valid_, X_test_, y_test_)
+        self.component = self.after_process_estimator(
+            self.component, X_train_, y_train_, X_valid_,
+            y_valid_, X_test_, y_test_)
         # todo: 测试特征全部删除的情况
         if len(X_train.shape) > 1 and X_train.shape[1] > 0:
             self.component = self._fit(self.component, X_train_, y_train_, X_valid_,
@@ -167,6 +183,8 @@ class XenonComponent(BaseEstimator):
 
     def core_fit(self, estimator, X, y, X_valid=None, y_valid=None, X_test=None,
                  y_test=None, feature_groups=None):
+        if self.sample_weight is not None:
+            return estimator.fit(X, y, self.sample_weight)
         return estimator.fit(X, y)
 
     def set_addition_info(self, dict_: dict):
@@ -241,7 +259,10 @@ class XenonIterComponent(XenonComponent):
     @ignore_warnings(category=ConvergenceWarning)
     def iterative_fit(self, X, y, X_valid, y_valid, iter_inc):
         s = time()
-        self.component.fit(X, y)
+        if self.sample_weight is not None:
+            self.component.fit(X, y, sample_weight=self.sample_weight)
+        else:
+            self.component.fit(X, y)
         self.fit_times += time() - s
         early_stopping_tol = getattr(self, "early_stopping_tol", 0.001)
         N = len(self.performance_history)
@@ -275,6 +296,8 @@ class XenonIterComponent(XenonComponent):
             self.iteration_ += iter_inc
             self.iteration_ = min(self.iteration_, self.max_iterations)
             setattr(self.component, self.iterations_name, self.iteration_)
+
+
 
     def core_fit(self, estimator, X, y, X_valid=None, y_valid=None, X_test=None,
                  y_test=None, feature_groups=None):

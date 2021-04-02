@@ -17,6 +17,7 @@ class LGBMClassifier(XenonClassificationAlgorithm):
         categorical_features_indices = "auto"  # todo: 配合 OrdinalEncoder
         component = self.component.fit(
             X, y, X_valid, y_valid, categorical_feature=categorical_features_indices,
+            sample_weight=self.sample_weight
         )
         self.best_iteration_ = component.model.best_iteration
         return component

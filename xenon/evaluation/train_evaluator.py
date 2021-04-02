@@ -1,8 +1,10 @@
 import datetime
+import json5 as json
 import sys
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from contextlib import redirect_stderr
 from io import StringIO
+from pathlib import Path
 from time import time
 from typing import Dict, Optional, List, Union
 
@@ -11,7 +13,7 @@ import numpy as np
 from xenon.evaluation.budget import implement_subsample_budget
 from xenon.lazy_import import Configuration
 
-from xenon.constants import PHASE2, PHASE1, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN
+from xenon.constants import PHASE2, PHASE1, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN, JOBLIB_CACHE
 from xenon.data_container import DataFrameContainer
 from xenon.data_manager import DataManager
 from xenon.ensemble.utils import vote_predicts, mean_predicts
@@ -27,6 +29,7 @@ from xenon.utils.pipeline import concat_pipeline
 from xenon.utils.sys_ import get_trance_back_msg
 from xenon.workflow.ml_workflow import ML_Workflow
 from xenon.utils.hash import get_hash_of_config
+from joblib import Memory
 
 # lazy import dsmac
 try:
@@ -34,11 +37,21 @@ try:
 except Exception:
     RunHistoryDB = None
 
+memory = Memory(JOBLIB_CACHE, verbose=1)
+
+
+def _get_default_algo2weight_mode():
+    return json.loads((Path(__file__).parent / "algo2weight_mode.json").read_text())
+
+
+get_default_algo2weight_mode = memory.cache(_get_default_algo2weight_mode)
+
 
 class TrainEvaluator(BaseEvaluator):
     def __init__(self):
         # ---member variable----
         self.debug = False
+        self.algo2weight_mode = get_default_algo2weight_mode()
 
     def init_data(
             self,
@@ -121,7 +134,39 @@ class TrainEvaluator(BaseEvaluator):
         return (self.X_train), (self.y_train), (self.X_test), (self.y_test)
         # return deepcopy(self.X_train), deepcopy(self.y_train), deepcopy(self.X_test), deepcopy(self.y_test)
 
-    def evaluate(self, model: ML_Workflow, X, y, X_test, y_test, budget):
+    def calc_balanced_sample_weight(self, y_train: np.ndarray):
+
+        unique, counts = np.unique(y_train, return_counts=True)
+        # This will result in an average weight of 1!
+        cw = 1 / (counts / np.sum(counts)) / len(unique)
+
+        sample_weights = np.ones(y_train.shape)
+
+        for i, ue in enumerate(unique):
+            mask = y_train == ue
+            sample_weights[mask] *= cw[i]
+        return sample_weights
+
+    def evaluate(self, model: ML_Workflow, X, y, X_test, y_test, budget, dhp):
+        # --------------------------------------------------------------------
+        balance_strategy: Optional[dict] = dhp.get("strategies", {}).get("balance")
+        if isinstance(balance_strategy, dict):
+            balance_strategy_name: str = list(balance_strategy.keys())[0]
+            balance_strategy_params: dict = balance_strategy[balance_strategy_name]
+        else:
+            balance_strategy_name: str = "None"
+            balance_strategy_params: dict = {}
+        if balance_strategy_name == "weight":
+            algo_name = model[-1].__class__.__name__
+            if algo_name not in self.algo2weight_mode:
+                self.logger.warning(f"Algorithm '{algo_name}' not in self.algo2weight_mode !")
+            weight_mode = self.algo2weight_mode.get(algo_name)
+        else:
+            weight_mode = None
+        if weight_mode == "class_weight":
+            model[-1].update_hyperparams({"class_weight": "balanced"})
+        # --------------------------------------------------------------------
+        # fixme: sample weight
         assert self.resource_manager is not None
         warning_info = StringIO()
         additional_info = {}
@@ -151,11 +196,15 @@ class TrainEvaluator(BaseEvaluator):
                 # 不固定每次采样相同，增加随机性
                 X_train, y_train = implement_subsample_budget(
                     X_train, y_train, budget, random_state=np.random.randint(0, 1000))
-                # fixme: 如果budget<1，则对训练数据进行相应的下采样
+                # sample_weight
+                if weight_mode == "sample_weight":
+                    sample_weight = self.calc_balanced_sample_weight(y_train.data)
+                else:
+                    sample_weight = None
                 try:
                     procedure_result = cloned_model.procedure(
                         self.ml_task, X_train, y_train, X_valid, y_valid, X_test,
-                        y_test
+                        y_test, sample_weight
                     )
                 except Exception as e:
                     failed_info = get_trance_back_msg()
@@ -266,7 +315,7 @@ class TrainEvaluator(BaseEvaluator):
         # 2. 获取数据
         X_train, y_train, X_test, y_test = self.get_Xy()
         # 3. 进行评价
-        info = self.evaluate(model, X_train, y_train, X_test, y_test, budget)
+        info = self.evaluate(model, X_train, y_train, X_test, y_test, budget, dhp)
         # 4. 持久化
         cost_time = time() - start
         info["config_id"] = config_id
@@ -289,33 +338,18 @@ class TrainEvaluator(BaseEvaluator):
         shp2dhp = SHP2DHP()
         dhp = shp2dhp(shp)
         # todo : 引入一个参数，描述运行模式。一共有3种模式：普通，深度学习，大数据。对以下三个翻译的步骤进行重构
+        preprocessing = dhp.pop("preprocessing")
+        sorted_preprocessing = OrderedDict()
+        process_sequence = dhp["process_sequence"].split(";")
+        for key in process_sequence:
+            sorted_preprocessing[key] = preprocessing[key]
+        dhp["preprocessing"] = dict(sorted_preprocessing)
         preprocessor = self.create_preprocessor(dhp)
         estimator = self.create_estimator(dhp)
         pipeline = concat_pipeline(preprocessor, estimator)
         return dhp, pipeline
 
     def parse_key(self, key: str):
-        cnt = ""
-        ix = 0
-        for i, c in enumerate(key):
-            if c.isdigit():
-                cnt += c
-            else:
-                ix = i
-                break
-        cnt = int(cnt)
-        key = key[ix:]
-        # pattern = re.compile(r"(\{.*\})")
-        # match = pattern.search(key)
-        # additional_info = {}
-        # if match:
-        #     braces_content = match.group(1)
-        #     _to = braces_content[1:-1]
-        #     param_kvs = _to.split(",")
-        #     for param_kv in param_kvs:
-        #         k, v = param_kv.split("=")
-        #         additional_info[k] = v
-        #     key = pattern.sub("", key)
         # todo: 支持多结点的输入输出，与dataframe.py耦合
         if "->" in key:
             _from, _to = key.split("->")

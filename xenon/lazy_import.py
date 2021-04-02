@@ -9,7 +9,8 @@ name2components = {
         "CategoricalHyperparameter", "Constant", "ConfigurationSpace",
         "ForbiddenInClause", "ForbiddenEqualsClause", "ForbiddenAndConjunction",
         "InCondition", "EqualsCondition", "UniformFloatHyperparameter",
-        "UniformIntegerHyperparameter", "OrdinalHyperparameter", "Configuration"
+        "UniformIntegerHyperparameter", "OrdinalHyperparameter", "Configuration",
+        "OrdinalHyperparameter"
     ),
     "hyperopt": ("fmin", "tpe", "hp", "space_eval")
 }

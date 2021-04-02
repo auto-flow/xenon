@@ -162,7 +162,6 @@ class Tuner(StrSignatureMixin):
 
     def hdl2shps(self, hdl: Dict):
         hdl2shps = HDL2SHPS()
-        hdl2shps.set_task(self.ml_task)
         return hdl2shps(hdl)
 
     def set_hdl(self, hdl: Dict):

@@ -2,7 +2,8 @@ import math
 from typing import Any, List
 
 from xenon.lazy_import import CategoricalHyperparameter, \
-    UniformFloatHyperparameter, UniformIntegerHyperparameter, Constant
+    UniformFloatHyperparameter, UniformIntegerHyperparameter, Constant, \
+    OrdinalHyperparameter
 
 from xenon.utils.math_ import float_gcd
 
@@ -26,6 +27,19 @@ def _decode(str_value: str) -> Any:
             return eval(value_)
         except Exception:
             return str_value
+
+
+def ordinal(label: str, sequence: List, default=None):
+    if len(sequence) == 1:
+        return Constant(label, _encode(sequence[0]))
+    choices = []
+    for option in sequence:
+        choices.append(_encode(option))
+    kwargs = {}
+    if default:
+        kwargs.update({'default_value': _encode(default)})
+    hp = OrdinalHyperparameter(label, choices, **kwargs)
+    return hp
 
 
 def choice(label: str, options: List, default=None):
@@ -65,7 +79,7 @@ def choice(label: str, options: List, default=None):
     kwargs = {}
     if default:
         kwargs.update({'default_value': _encode(default)})
-    hp=CategoricalHyperparameter(label, choices, weights=proba_list, **kwargs)
+    hp = CategoricalHyperparameter(label, choices, weights=proba_list, **kwargs)
     # hp.probabilities=proba_list  # fixme: don't make sense
     return hp
 

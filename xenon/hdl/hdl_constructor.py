@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from copy import deepcopy
 from typing import Union, Tuple, List, Any, Dict
 
@@ -37,6 +37,7 @@ class HDL_Constructor(StrSignatureMixin):
             hdl_bank_path=None,
             hdl_bank=None,
             hdl_metadata=frozendict(),
+            balance_strategies=("weight", "None"),
             included_classifiers=(
                     "adaboost", "catboost", "decision_tree", "extra_trees", "gaussian_nb", "k_nearest_neighbors",
                     "liblinear_svc", "libsvm_svc", "lightgbm", "logistic_regression", "random_forest", "sgd"),
@@ -185,6 +186,7 @@ class HDL_Constructor(StrSignatureMixin):
         {'preprocessing': {}, 'estimating(choice)': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
 
         '''
+        self.balance_strategies = balance_strategies
         self.date2purified_workflow = date2purified_workflow
         self.text2purified_workflow = text2purified_workflow
         self.purified2final_workflow = purified2final_workflow
@@ -490,7 +492,7 @@ class HDL_Constructor(StrSignatureMixin):
         display(self.draw_workflow_space())
         display(self.get_hdl_dataframe())
 
-    def run(self, data_manager, model_registry=None):
+    def run(self, data_manager, model_registry=None, imbalance_threshold=2):
         '''
 
         Parameters
@@ -500,7 +502,7 @@ class HDL_Constructor(StrSignatureMixin):
 
         '''
         if model_registry is None:
-            model_registry={}
+            model_registry = {}
         self.data_manager = data_manager
         self.ml_task = data_manager.ml_task
         self.highR_cat_threshold = data_manager.highR_cat_threshold
@@ -538,11 +540,11 @@ class HDL_Constructor(StrSignatureMixin):
         n_steps = len(DAG_workflow)
         int_len = get_int_length(n_steps)
         for i, (step, values) in enumerate(DAG_workflow.items()):
-            formed_key = f"{i:0{int_len}d}{step}(choice)"
+            formed_key = f"{step}(choice)"
             sub_dict = {}
             for value in values:
                 packages, addition_dict, is_vanilla = self.parse_item(value)
-                assert get_class_object_in_pipeline_components("preprocessing", packages, model_registry) is not None,\
+                assert get_class_object_in_pipeline_components("preprocessing", packages, model_registry) is not None, \
                     f"In step '{step}', user defined packege : '{packages}' does not exist!"
                 # todo: 适配用户自定义模型
                 params = {} if is_vanilla else self.get_params_in_dict(hdl_bank, packages, PHASE1, mainTask)
@@ -553,7 +555,8 @@ class HDL_Constructor(StrSignatureMixin):
         estimator_dict = {}
         for estimator_value in estimator_values:
             packages, addition_dict, is_vanilla = self.parse_item(estimator_value)
-            assert get_class_object_in_pipeline_components(data_manager.ml_task.mainTask, packages, model_registry) is not None, \
+            assert get_class_object_in_pipeline_components(data_manager.ml_task.mainTask, packages,
+                                                           model_registry) is not None, \
                 f"In step '{target_key}', user defined packege : '{packages}' does not exist!"
             params = {} if is_vanilla else self.get_params_in_dict(hdl_bank, packages, PHASE2, mainTask)
             estimator_dict[packages] = params
@@ -562,6 +565,15 @@ class HDL_Constructor(StrSignatureMixin):
             PHASE1: preprocessing_dict,
             f"{PHASE2}(choice)": estimator_dict
         }
+        if self.ml_task.mainTask == "classification":
+            y_train = self.data_manager.y_train.data
+            most_common = Counter(y_train).most_common()
+            imbalance = most_common[0][1] / most_common[-1][1]
+            if imbalance > imbalance_threshold:
+                final_dict["strategies"] = {
+                    "balance(choice)": {k: {} for k in self.balance_strategies}
+                }
+        final_dict["process_sequence"] = ";".join(DAG_workflow.keys())
         self.hdl = final_dict
 
     def get_hdl(self) -> Dict[str, Any]:
