@@ -1,3 +1,4 @@
+from joblib import dump
 import inspect
 import multiprocessing
 import os
@@ -9,6 +10,7 @@ from typing import Union, Optional, Dict, List, Any
 
 import numpy as np
 import pandas as pd
+from ConfigSpace import Configuration
 from frozendict import frozendict
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -25,7 +27,7 @@ from xenon.resource_manager.base import ResourceManager
 from xenon.tuner import Tuner
 from xenon.utils.concurrence import get_chunks
 from xenon.utils.config_space import estimate_config_space_numbers
-from xenon.utils.dict_ import update_mask_from_other_dict
+from xenon.utils.dict_ import update_mask_from_other_dict, replace_dict_by_key_suffix
 from xenon.utils.klass import instancing, sequencing, get_valid_params_in_kwargs
 from xenon.utils.logging_ import get_logger, setup_logger
 from xenon.utils.packages import get_class_name_of_module
@@ -43,7 +45,7 @@ class XenonEstimator(BaseEstimator):
             random_state=42,
             log_path: str = "xenon.log",
             log_config: Optional[dict] = None,
-            min_budget=0.125,
+            min_budget=1 / 16,
             eta=4,
             highR_nan_threshold=0.5,
             highR_cat_threshold=0.5,
@@ -133,14 +135,10 @@ class XenonEstimator(BaseEstimator):
         self.random_state = random_state
         # ---tuner-----------------------------------
         tuner = instancing(tuner, Tuner, kwargs)
-        # ---tuners-----------------------------------
-        self.tuners = sequencing(tuner, Tuner)
-        self.tuner = self.tuners[0]
+        self.tuner = tuner
         # ---hdl_constructor--------------------------
         hdl_constructor = instancing(hdl_constructor, HDL_Constructor, kwargs)
-        # ---hdl_constructors-------------------------
-        self.hdl_constructors = sequencing(hdl_constructor, HDL_Constructor)
-        self.hdl_constructor = self.hdl_constructors[0]
+        self.hdl_constructor = hdl_constructor
         # ---resource_manager-----------------------------------
         self.resource_manager: ResourceManager = instancing(resource_manager, ResourceManager, kwargs)
         # ---member_variable------------------------------------
@@ -253,62 +251,54 @@ class XenonEstimator(BaseEstimator):
             sub_sample_indexes=sub_sample_indexes, sub_feature_indexes=sub_feature_indexes)
         self.resource_manager.close_task_table()
         # store other params
-        assert len(self.hdl_constructors) == len(self.tuners)
-        n_step = len(self.hdl_constructors)
-        for step, (hdl_constructor, tuner) in enumerate(zip(self.hdl_constructors, self.tuners)):
-            setup_logger(self.log_path, self.log_config)
-            hdl_constructor.run(self.data_manager, self.model_registry)
-            raw_hdl = hdl_constructor.get_hdl()
-            if step != 0:
-                last_best_dhp = self.resource_manager.load_best_dhp()
-                hdl = update_mask_from_other_dict(raw_hdl, last_best_dhp)
-                self.logger.debug(f"Updated HDL(Hyperparams Descriptions Language) in step {step}:\n{hdl}")
-            else:
-                hdl = raw_hdl
-            self.hdl = hdl
-            if is_not_realy_run:
-                break
-            # get hdl_id, and insert record into "{task_id}.hdls" database
-            self.resource_manager.insert_hdl_record(hdl, hdl_constructor.hdl_metadata)
-            self.resource_manager.close_hdl_table()
-            # now we get task_id and hdl_id, we can insert current runtime information into "experiments.experiments" database
-            experiment_config = {
-                "should_stack_X": self.should_stack_X,
-                "should_finally_fit": self.should_finally_fit,
-                "should_calc_all_metric": self.should_calc_all_metrics,
-                "should_store_intermediate_result": self.should_store_intermediate_result,
-                "fit_ensemble_params": str(fit_ensemble_params),
-                "highR_nan_threshold": self.highR_nan_threshold,
-                "highR_cat_threshold": self.highR_cat_threshold,
-                "consider_ordinal_as_cat": self.consider_ordinal_as_cat,
-                "random_state": self.random_state,
-                "log_path": self.log_path,
-                "log_config": self.log_config,
-            }
-            is_manual = self.start_tuner(tuner, hdl)
-            if is_manual:
-                experiment_type = ExperimentType.MANUAL
-            else:
-                experiment_type = ExperimentType.AUTO
-            self.resource_manager.insert_experiment_record(experiment_type, experiment_config, additional_info)
-            self.resource_manager.close_experiment_table()
-            self.task_id = self.resource_manager.task_id
-            self.hdl_id = self.resource_manager.hdl_id
-            self.experiment_id = self.resource_manager.experiment_id
-            self.logger.info(f"task_id:\t{self.task_id}")
-            self.logger.info(f"hdl_id:\t{self.hdl_id}")
-            self.logger.info(f"experiment_id:\t{self.experiment_id}")
-            if is_manual:
-                tuner.evaluator.init_data(**self.get_evaluator_params())
-                # dhp, self.estimator = tuner.evaluator.shp2model(tuner.shps.sample_configuration())
-                tuner.evaluator(tuner.shps.sample_configuration())
-                self.start_final_step(False)
-                self.resource_manager.finish_experiment(self.log_path, self)
-                break
-            self.run_tuner(tuner)
-            if step == n_step - 1:
-                self.start_final_step(fit_ensemble_params)
+        setup_logger(self.log_path, self.log_config)
+        hdl_constructor=self.hdl_constructor
+        tuner=self.tuner
+        hdl_constructor.run(self.data_manager, self.model_registry)
+        hdl = hdl_constructor.get_hdl()
+        self.hdl = hdl
+        if is_not_realy_run:
+            return
+        # get hdl_id, and insert record into "{task_id}.hdls" database
+        self.resource_manager.insert_hdl_record(hdl, hdl_constructor.hdl_metadata)
+        self.resource_manager.close_hdl_table()
+        # now we get task_id and hdl_id, we can insert current runtime information into "experiments.experiments" database
+        experiment_config = {
+            "should_stack_X": self.should_stack_X,
+            "should_finally_fit": self.should_finally_fit,
+            "should_calc_all_metric": self.should_calc_all_metrics,
+            "should_store_intermediate_result": self.should_store_intermediate_result,
+            "fit_ensemble_params": str(fit_ensemble_params),
+            "highR_nan_threshold": self.highR_nan_threshold,
+            "highR_cat_threshold": self.highR_cat_threshold,
+            "consider_ordinal_as_cat": self.consider_ordinal_as_cat,
+            "random_state": self.random_state,
+            "log_path": self.log_path,
+            "log_config": self.log_config,
+        }
+        is_manual = self.start_tuner(tuner, hdl)
+        if is_manual:
+            experiment_type = ExperimentType.MANUAL
+        else:
+            experiment_type = ExperimentType.AUTO
+        self.resource_manager.insert_experiment_record(experiment_type, experiment_config, additional_info)
+        self.resource_manager.close_experiment_table()
+        self.task_id = self.resource_manager.task_id
+        self.hdl_id = self.resource_manager.hdl_id
+        self.experiment_id = self.resource_manager.experiment_id
+        self.logger.info(f"task_id:\t{self.task_id}")
+        self.logger.info(f"hdl_id:\t{self.hdl_id}")
+        self.logger.info(f"experiment_id:\t{self.experiment_id}")
+        if is_manual: # fixme: 原型设计中，可以支持手动建模，但是产品经理认为没有这个需求
+            tuner.evaluator.init_data(**self.get_evaluator_params())
+            # dhp, self.estimator = tuner.evaluator.shp2model(tuner.shps.sample_configuration())
+            tuner.evaluator(tuner.shps.sample_configuration())
+            self.start_final_step(False)
             self.resource_manager.finish_experiment(self.log_path, self)
+            return
+        self.run_tuner(tuner)
+        self.start_final_step(fit_ensemble_params)
+        self.resource_manager.finish_experiment(self.log_path, self)
         return self
 
     def start_tuner(self, tuner: Tuner, hdl: dict):
@@ -339,13 +329,18 @@ class XenonEstimator(BaseEstimator):
             optimizer = ForestOptimizer(min_points_in_model=tuner.initial_runs)
             budget2obvs = defaultdict(lambda: {"losses": [], "configs": []})
             for trial_record in trial_records:
-                hdl_id = trial_record['hdl_id']  # fixme
-                if hdl_id != self.hdl_id:
-                    continue
                 config = trial_record['additional_info'].get('config')
                 if config is None:
                     continue
-                budget = trial_record['additional_info'].get('budget', 1)
+                # 对config的n_jobs后缀进行替换
+                config = replace_dict_by_key_suffix(
+                    config, ":n_jobs", f"{tuner.n_jobs_in_algorithm}:int")
+                # 然后判断是否适合这个超参空间
+                try:
+                    Configuration(tuner.shps, config)
+                except:
+                    continue
+                budget = trial_record.get('additional_info', {}).get('budget', 1)
                 loss = trial_record['loss']
                 budget2obvs[budget]["configs"].append(config)
                 budget2obvs[budget]["losses"].append(loss)
@@ -354,7 +349,7 @@ class XenonEstimator(BaseEstimator):
             else:
                 dummy_result = FMinResult()
                 dummy_result.budget2obvs = budget2obvs
-            result = fmin(  # todo: n_jobs_in_algorithm
+            result = fmin(  # 此时已经对 shps 设置过 n_jobs_in_algorithm
                 tuner.evaluator, tuner.shps, optimizer=optimizer,
                 n_jobs=tuner.n_jobs,
                 n_iterations=tuner.run_limit,
@@ -379,6 +374,8 @@ class XenonEstimator(BaseEstimator):
                 # )
             )
             print(result)
+            savedpath = os.getenv("SAVEDPATH")
+            dump(result, f"{savedpath}/optimization_result.pkl")
             return
         n_jobs = tuner.n_jobs
         # run_limits = [math.ceil(tuner.run_limit / n_jobs)] * n_jobs

@@ -7,6 +7,8 @@ from time import time
 from typing import Dict, Optional, List, Union
 
 import numpy as np
+
+from xenon.evaluation.budget import implement_subsample_budget
 from xenon.lazy_import import Configuration
 
 from xenon.constants import PHASE2, PHASE1, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN
@@ -119,7 +121,7 @@ class TrainEvaluator(BaseEvaluator):
         return (self.X_train), (self.y_train), (self.X_test), (self.y_test)
         # return deepcopy(self.X_train), deepcopy(self.y_train), deepcopy(self.X_test), deepcopy(self.y_test)
 
-    def evaluate(self, model: ML_Workflow, X, y, X_test, y_test):
+    def evaluate(self, model: ML_Workflow, X, y, X_test, y_test, budget):
         assert self.resource_manager is not None
         warning_info = StringIO()
         additional_info = {}
@@ -146,9 +148,15 @@ class TrainEvaluator(BaseEvaluator):
                 X_valid = X.sub_sample(valid_index)
                 y_train = y.sub_sample(train_index)
                 y_valid = y.sub_sample(valid_index)
+                # 不固定每次采样相同，增加随机性
+                X_train, y_train = implement_subsample_budget(
+                    X_train, y_train, budget, random_state=np.random.randint(0, 1000))
+                # fixme: 如果budget<1，则对训练数据进行相应的下采样
                 try:
-                    procedure_result = cloned_model.procedure(self.ml_task, X_train, y_train, X_valid, y_valid, X_test,
-                                                              y_test)
+                    procedure_result = cloned_model.procedure(
+                        self.ml_task, X_train, y_train, X_valid, y_valid, X_test,
+                        y_test
+                    )
                 except Exception as e:
                     failed_info = get_trance_back_msg()
                     status = "FAILED"
@@ -244,10 +252,12 @@ class TrainEvaluator(BaseEvaluator):
                     # "y_test_true": y_test,
                     "y_test_pred": y_test_pred
                 })
-        info["warning_info"] = warning_info.getvalue()
+        # info["warning_info"] = warning_info.getvalue()
+        # 存这玩意好像没什么用，不存了
+        info["warning_info"] = ""
         return info
 
-    def __call__(self, shp: Union[Configuration, Dict], budget=1,**kwargs):
+    def __call__(self, shp: Union[Configuration, Dict], budget=1, **kwargs):
         # 1. 将php变成model
         config = shp if isinstance(shp, dict) else shp.get_dictionary()
         config_id = get_hash_of_config(shp)
@@ -256,7 +266,7 @@ class TrainEvaluator(BaseEvaluator):
         # 2. 获取数据
         X_train, y_train, X_test, y_test = self.get_Xy()
         # 3. 进行评价
-        info = self.evaluate(model, X_train, y_train, X_test, y_test)
+        info = self.evaluate(model, X_train, y_train, X_test, y_test, budget)
         # 4. 持久化
         cost_time = time() - start
         info["config_id"] = config_id

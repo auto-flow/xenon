@@ -86,6 +86,7 @@ class LGBMEstimator(BaseEstimator):
                 self.objective = "regression"
         param = dict(
             verbose=-1,
+            # silent=True,
             boosting_type=self.boosting_type,
             objective=self.objective,
             learning_rate=self.learning_rate,

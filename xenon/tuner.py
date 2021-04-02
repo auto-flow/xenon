@@ -43,7 +43,7 @@ class Tuner(StrSignatureMixin):
             n_jobs: int = 1,
             exit_processes: Optional[int] = None,
             limit_resource: bool = True,
-            per_run_time_limit: float = 60,
+            per_run_time_limit: float = 1800,
             per_run_memory_limit: float = 3072,
             time_left_for_this_task: float = None,
             n_jobs_in_algorithm=1,
