@@ -319,9 +319,9 @@ class XenonEstimator(BaseEstimator):
 
     def run_tuner(self, tuner: Tuner):
         if self.use_BOHB:
-            from ultraopt import fmin, FMinResult
-            from ultraopt.optimizer import ForestOptimizer
-            from ultraopt.multi_fidelity import HyperBandIterGenerator
+            from xenon_opt import fmin, FMinResult
+            from xenon_opt.optimizer import SMACOptimizer
+            from xenon_opt.multi_fidelity import HyperBandIterGenerator
             self.resource_manager.init_trial_table()
             # todo: 新接口
             trial_records = self.resource_manager._get_sorted_trial_records(
@@ -330,7 +330,7 @@ class XenonEstimator(BaseEstimator):
             # 贝叶斯代理模型为SMAC
             multi_fidelity_iter_generator = HyperBandIterGenerator(
                 min_budget=self.min_budget, max_budget=1, eta=self.eta)
-            optimizer = ForestOptimizer(min_points_in_model=tuner.initial_runs)
+            optimizer = SMACOptimizer(min_points_in_model=tuner.initial_runs)
             budget2obvs = defaultdict(lambda: {"losses": [], "configs": []})
             for trial_record in trial_records:
                 config = trial_record['additional_info'].get('config')
