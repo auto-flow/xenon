@@ -24,6 +24,12 @@ Xenon : Automatic machine learning platform for XARC.
    algo
    transplant
 
+.. toctree::
+   :maxdepth: 3
+   :caption: Release Note
+
+   release_note
+
 
 
 

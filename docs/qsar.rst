@@ -319,9 +319,11 @@ User Defined Train-Validation Set
 如果您想自定义数据集的【训练集-验证集】的划分方式，您可以在数据集中增加一列 ``SPLIT`` 列，训练集为 ``TRAIN`` ，验证集为 ``VALID`` ，如图所示
 
 
-
 .. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/25.png
 
+Xenon的处理机制是将标记为 ``VALID`` 的部分识别为【验证集】，其他的为【训练集】。所以你只标记【VALID】，其他部分不标记。如图所示：
+
+.. image:: https://gitee.com/TQCAI/xenon_iamge/raw/master/27.png
 
 
 Display Stage
