@@ -8,7 +8,7 @@ __all__ = ["LibLinear_SVC"]
 class LibLinear_SVC(XenonClassificationAlgorithm):
     class__ = "LinearSVC"
     module__ = "sklearn.svm"
-    OVR__ = True
+    # OVR__ = True
 
     def predict_proba(self, X: DataFrameContainer):
         df = self.component.decision_function(X.data)

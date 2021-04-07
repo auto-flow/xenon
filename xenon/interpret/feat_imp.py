@@ -24,12 +24,16 @@ def get_feature_importances_in_workflow(ml_workflow: ML_Workflow, columns) -> Tu
     for i, (name, wrap_component) in enumerate(ml_workflow.steps[:-1]):
         component = wrap_component.component
         if hasattr(component, "get_support"):
-            mask = component.get_support()
-            feature_importances_ = component.estimator_.feature_importances_
-            df.loc[selected_columns, name] = feature_importances_
-            selected_columns = selected_columns[mask]
+            try:
+                mask = component.get_support()
+                feature_importances_ = component.estimator_.feature_importances_
+                df.loc[selected_columns, name] = feature_importances_
+                selected_columns = selected_columns[mask]
+            except:
+                pass
     estimator = ml_workflow[-1].component
     name = ml_workflow.steps[-1][0]
+    # 先判断lightgbm（重叠条件优先判断）
     if hasattr(estimator, "model") and hasattr(estimator.model, "feature_importance"):
         feat_imp = estimator.model.feature_importance('gain')
         feat_imp /= feat_imp.sum()

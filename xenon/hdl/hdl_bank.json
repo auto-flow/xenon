@@ -36,8 +36,8 @@
       "random_state": 42
     },
     "extra_trees": {
-      "n_estimators": 1000,
-      "early_stopping_rounds": 10,
+      "n_estimators": 500,
+      "early_stopping_rounds": 4,
       "early_stopping_tol": 0.0,
       "iter_inc": 25,
       "criterion": {"_type": "choice","_value": ["gini", "entropy"],"_default": "gini"},
@@ -81,18 +81,15 @@
       "_n_components__sp1_ratio": {"_type": "quniform", "_value": [0.1,0.9],"_default": 0.5}
     },
     "liblinear_svc": {
-      "max_iter": {"_type": "int_quniform","_value": [300, 3000, 100], "_default": 600},
-      "penalty":  {"_type": "choice", "_value": ["l1", "l2"],"_default": "l2"},
+      "max_iter": {"_type": "int_quniform","_value": [600, 3000, 100], "_default": 1000},
+      "penalty":  "l2",
       "dual": {"_type": "choice", "_value": [true,false],"_default": false},
       "loss":  {"_type": "choice", "_value": ["hinge", "squared_hinge"],"_default": "squared_hinge"},
       "C": {"_type": "loguniform", "_value": [0.01, 10000],"_default": 1.0},
       "multi_class": "ovr",
       "random_state": 42,
       "__forbidden": [
-          {"penalty": "l1","loss": "hinge"},
-          {"penalty": "l2","dual": false,"loss": "hinge"},
-          {"penalty": "l1","dual": false},
-          {"penalty": "l1","dual": true,"loss": "squared_hinge"},
+          {"penalty": "l2", "dual": false, "loss": "hinge"},
       ]
     },
     "libsvm_svc": {
@@ -115,7 +112,7 @@
       "random_state": 42
     },
     "lightgbm": {
-      "n_estimators": 2000,
+      "n_estimators": 500,
       "boosting_type":  "gbdt",
       "num_leaves":  {"_type": "int_quniform", "_value": [10,150],"_default": 31},
       "max_depth": {"_type": "int_quniform", "_value": [1,100],"_default": 31},
@@ -128,7 +125,7 @@
       "min_child_weight": {"_type": "loguniform","_value": [1e-7,10], "_default": 1e-3}, //aliases to min_sum_hessian
       "bagging_freq": {"_type": "int_loguniform","_value": [1, 10], "_default": 1},
       "use_categorical_feature": {"_type": "choice", "_value": [true, false],"_default": false},
-      "early_stopping_rounds": 250,
+      "early_stopping_rounds": 100,
       "n_jobs": 1,
       "random_state": 42
     },
@@ -152,8 +149,8 @@
       "reg_param": {"_type": "quniform", "_value": [0.0,1.0],"_default": 0}
     },
     "random_forest": {
-      "n_estimators": 1000,
-      "early_stopping_rounds": 10,
+      "n_estimators": 500,
+      "early_stopping_rounds": 4,
       "early_stopping_tol": 0.0,
       "iter_inc": 25,
       "criterion": {"_type": "choice","_value": ["gini", "entropy"],"_default": "gini"},
@@ -259,8 +256,8 @@
       "random_state": 42
     },
     "extra_trees": {
-      "n_estimators": 1000,
-      "early_stopping_rounds": 10,
+      "n_estimators": 500,
+      "early_stopping_rounds": 4,
       "early_stopping_tol": 0.0,
       "iter_inc": 25,
       "criterion": {"_type": "choice","_value": ["mse", "friedman_mse"],"_default": "friedman_mse"},//delete "mae"
@@ -348,7 +345,7 @@
       "random_state": 42
     },
     "lightgbm": {
-      "n_estimators": 2000,
+      "n_estimators": 500,
       "boosting_type":  "gbdt",
       "num_leaves":  {"_type": "int_quniform", "_value": [10,150],"_default": 31},
       "max_depth": {"_type": "int_quniform", "_value": [1,100],"_default": 31},
@@ -361,13 +358,13 @@
       "min_child_weight": {"_type": "loguniform","_value": [1e-7,10], "_default": 1e-3}, //aliases to min_sum_hessian
       "bagging_freq": {"_type": "int_loguniform","_value": [1, 10], "_default": 1},
       "use_categorical_feature": {"_type": "choice", "_value": [true, false],"_default": false},
-      "early_stopping_rounds": 250,
+      "early_stopping_rounds": 100,
       "n_jobs": 1,
       "random_state": 42
     },
     "random_forest": {
-      "n_estimators": 1000,
-      "early_stopping_rounds": 10,
+      "n_estimators": 500,
+      "early_stopping_rounds": 4,
       "early_stopping_tol": 0.0,
       "iter_inc": 25,
       "criterion": {"_type": "choice","_value": ["mse", "friedman_mse"],"_default": "friedman_mse"},
