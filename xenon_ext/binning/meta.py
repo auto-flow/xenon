@@ -35,6 +35,7 @@ class MetaDiscretizer(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         columns = get_columns(X)
+        # todo: 加n_jobs开并行
         for col in columns:
             vec = get_col_vec(X, col)
             self.bin_edges_.append(self.binning_func(vec, y))
@@ -51,10 +52,10 @@ class MetaDiscretizer(BaseEstimator, TransformerMixin):
         bin_edges = self.bin_edges_
         columns = get_columns(X)
         Xt = np.zeros_like(X, dtype="int32")
-        for col, bin_edge in zip(columns, bin_edges):
+        for i,(col, bin_edge) in enumerate(zip(columns, bin_edges)):
             vec = get_col_vec(X, col)
             discrete = np.digitize(vec, bin_edge)
-            Xt[:, col] = discrete
+            Xt[:, i] = discrete
         Xt = self._encoder.transform(Xt)
         # return Xt
         if isinstance(X, pd.DataFrame):

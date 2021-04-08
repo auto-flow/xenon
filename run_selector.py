@@ -4,7 +4,7 @@
 # @Date    : 2021-04-04
 # @Contact    : qichun.tang@bupt.edu.cn
 # from .meta import MetaDiscretizer
-from xenon_ext.feature_selection import FlexibleFeatureSelector
+from xenon_ext.feature_selection import FlexibleFeatureSelector, VarianceThreshold
 
 if __name__ == '__main__':
     import pandas as pd
@@ -13,13 +13,16 @@ if __name__ == '__main__':
     from sklearn.linear_model import LogisticRegression
     from sklearn.pipeline import Pipeline
 
-    selector=FlexibleFeatureSelector(
+    selector = FlexibleFeatureSelector(
         strategy="rf",
         rf_type="extra_trees",
         should_select_percent=False
         # select_percent=50
     )
+    selector2=VarianceThreshold(threshold=0.1)
     X, y = load_boston(True)
     X = pd.DataFrame(X)
-    Xt=selector.fit_transform(X,y)
+    Xt = selector.fit_transform(X, y)
+    Xt2 = selector2.fit_transform(X, y)
     print(Xt)
+    print(Xt2)

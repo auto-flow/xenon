@@ -3,7 +3,7 @@
 # @Author  : qichun tang
 # @Date    : 2021-04-07
 # @Contact    : qichun.tang@bupt.edu.cn
-# boruta算法：# https://www.google.com.hk/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwj7mN7k2uvvAhV06nMBHTjgB4EQFjAAegQIBRAD&url=https%3A%2F%2Fwww.jstatsoft.org%2Fv36%2Fi11%2Fpaper%2F&usg=AOvVaw2qnt0VVYz0sfb7QqoUczmz
+# boruta算法： https://www.google.com.hk/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwj7mN7k2uvvAhV06nMBHTjgB4EQFjAAegQIBRAD&url=https%3A%2F%2Fwww.jstatsoft.org%2Fv36%2Fi11%2Fpaper%2F&usg=AOvVaw2qnt0VVYz0sfb7QqoUczmz
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.multiclass import type_of_target
 from sklearn.linear_model import LogisticRegression, Lasso
@@ -108,6 +108,8 @@ class FlexibleFeatureSelector(BaseEstimator, TransformerMixin):
         return self
 
     def get_support(self):
+        if self.strategy == "none":
+            raise NotImplementedError
         return self.support_
 
     def transform(self, X):

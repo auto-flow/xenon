@@ -194,8 +194,9 @@ class TrainEvaluator(BaseEvaluator):
                 y_train = y.sub_sample(train_index)
                 y_valid = y.sub_sample(valid_index)
                 # 不固定每次采样相同，增加随机性
-                X_train, y_train = implement_subsample_budget(
-                    X_train, y_train, budget, random_state=np.random.randint(0, 1000))
+                if budget < 1:
+                    X_train, y_train = implement_subsample_budget(
+                        X_train, y_train, budget, random_state=np.random.randint(0, 1000))
                 # sample_weight
                 if weight_mode == "sample_weight":
                     sample_weight = self.calc_balanced_sample_weight(y_train.data)

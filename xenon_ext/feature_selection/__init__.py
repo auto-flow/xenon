@@ -4,3 +4,4 @@
 # @Date    : 2021-04-07
 # @Contact    : qichun.tang@bupt.edu.cn
 from .flexible_feature_selector import FlexibleFeatureSelector
+from .variance_threshold import VarianceThreshold

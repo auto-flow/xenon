@@ -10,7 +10,7 @@ from functools import partial
 
 
 class DecisionTreeDiscretizer(MetaDiscretizer):
-    def __init__(self, max_leaf_nodes=6, min_samples_leaf=0.05):
+    def __init__(self, max_leaf_nodes=6, min_samples_leaf=0.05, min_max_bound=False):
         super(DecisionTreeDiscretizer, self).__init__()
         self.min_samples_leaf = min_samples_leaf
         self.max_leaf_nodes = max_leaf_nodes
@@ -18,6 +18,7 @@ class DecisionTreeDiscretizer(MetaDiscretizer):
             get_decision_tree_binning_boundary,
             min_samples_leaf=min_samples_leaf,
             max_leaf_nodes=max_leaf_nodes,
+            min_max_bound=min_max_bound,
         )
 
 

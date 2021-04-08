@@ -21,16 +21,27 @@ logger = get_logger(__name__)
 def get_feature_importances_in_workflow(ml_workflow: ML_Workflow, columns) -> Tuple[pd.DataFrame, pd.Index]:
     selected_columns = deepcopy(columns)
     df = pd.DataFrame(index=columns)
+    # 处理特征工程部分
     for i, (name, wrap_component) in enumerate(ml_workflow.steps[:-1]):
         component = wrap_component.component
         if hasattr(component, "get_support"):
+            # 这里为什么try-except ？
+            # 因为xenon_ext.feature_selection.flexible_feature_selector.FlexibleFeatureSelector#get_support
+            # 可能raise Exception
             try:
                 mask = component.get_support()
-                feature_importances_ = component.estimator_.feature_importances_
+                # 这里为什么try-except ？
+                # 因为 FlexibleFeatureSelector 和 自研的 VarianceThreshold 只有 feature_importances_
+                # 没有 estimator_.feature_importances_
+                try:
+                    feature_importances_ = component.estimator_.feature_importances_
+                except:
+                    feature_importances_ = component.feature_importances_
                 df.loc[selected_columns, name] = feature_importances_
                 selected_columns = selected_columns[mask]
             except:
                 pass
+    # 处理模型部分
     estimator = ml_workflow[-1].component
     name = ml_workflow.steps[-1][0]
     # 先判断lightgbm（重叠条件优先判断）

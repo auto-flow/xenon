@@ -270,7 +270,7 @@ class DataFrameContainer(DataContainer):
 
     def sub_sample(self, index):
         new_df = self.copy()
-        new_df.data = deepcopy(new_df.data.iloc[index, :])
+        new_df.data = new_df.data.iloc[index, :].copy()
         return new_df
 
     @property

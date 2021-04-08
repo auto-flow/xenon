@@ -6,6 +6,7 @@
 # from .meta import MetaDiscretizer
 from xenon_ext.binning.decision_tree import get_decision_tree_binning_boundary
 from xenon_ext.binning import DecisionTreeDiscretizer
+from joblib import load
 
 if __name__ == '__main__':
     import pandas as pd
@@ -14,17 +15,8 @@ if __name__ == '__main__':
     from sklearn.model_selection import StratifiedKFold, cross_val_score
     from sklearn.linear_model import LogisticRegression
     from sklearn.pipeline import Pipeline
+    X_train,y_train=load("/data/1-4/data.bz2")
+    transformer=DecisionTreeDiscretizer()
+    X_train_bin=transformer.fit_transform(X_train,y_train)
+    print(X_train_bin)
 
-    discretizer = DecisionTreeDiscretizer()
-    X, y = load_iris(True)
-    X = pd.DataFrame(X)
-    X['dummy'] = np.random.randint(0, 2, [150])
-    lr = LogisticRegression()
-    Xt = discretizer.fit_transform(X, y)
-    pipeline = Pipeline([
-        ("discretizer", discretizer),
-        ("lr", lr),
-    ])
-    cv = StratifiedKFold(5, True, 42)
-    scores = cross_val_score(pipeline, X, y, cv=cv)
-    print(scores.mean())

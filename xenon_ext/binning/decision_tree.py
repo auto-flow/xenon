@@ -7,11 +7,16 @@ from sklearn.tree import DecisionTreeClassifier
 import numpy as np
 
 
-def get_decision_tree_binning_boundary(x: np.ndarray, y: np.ndarray, max_leaf_nodes=6,
-                                       min_samples_leaf=0.05) -> np.ndarray:
+def get_decision_tree_binning_boundary(
+        x: np.ndarray, y: np.ndarray,
+        max_leaf_nodes=6,
+        min_samples_leaf=0.05,
+        min_max_bound=False
+) -> np.ndarray:
     '''
         利用决策树获得最优分箱的边界值列表
     '''
+    assert y is not None, ValueError
     boundary = []  # 待return的分箱边界值列表
 
     # x = x.fillna(nan).values  # 填充缺失值
@@ -36,8 +41,8 @@ def get_decision_tree_binning_boundary(x: np.ndarray, y: np.ndarray, max_leaf_no
 
     min_x = x.min()
     max_x = x.max() + 0.1  # +0.1是为了考虑后续groupby操作时，能包含特征最大值的样本
-    boundary = [min_x] + boundary + [max_x]
-
+    if min_max_bound:
+        boundary = [min_x] + boundary + [max_x]
     return np.array(boundary)
 
 

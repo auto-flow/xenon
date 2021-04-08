@@ -56,6 +56,8 @@ class XenonEstimator(BaseEstimator):
             should_calc_all_metrics=True,
             should_stack_X=True,
             use_BOHB=False,
+            opt_early_stopping_rounds=64, # small: 32; middle: 64; big: 128
+            total_time_limit=3600 * 5,    # 5 小时
             **kwargs
     ):
         '''
@@ -111,6 +113,8 @@ class XenonEstimator(BaseEstimator):
             hdl_bank={'classification': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
             included_classifiers=('adaboost', 'catboost', 'decision_tree', 'extra_trees', 'gaussian_nb', 'k_nearest_neighbors', 'liblinear_svc', 'lib...
         '''
+        self.total_time_limit = total_time_limit
+        self.opt_early_stopping_rounds = opt_early_stopping_rounds
         self.imbalance_threshold = imbalance_threshold
         self.eta = eta
         self.min_budget = min_budget
@@ -332,6 +336,7 @@ class XenonEstimator(BaseEstimator):
                 min_budget=self.min_budget, max_budget=1, eta=self.eta)
             optimizer = SMACOptimizer(min_points_in_model=tuner.initial_runs)
             budget2obvs = defaultdict(lambda: {"losses": [], "configs": []})
+            cnt = 0
             for trial_record in trial_records:
                 config = trial_record['additional_info'].get('config')
                 if config is None:
@@ -348,6 +353,8 @@ class XenonEstimator(BaseEstimator):
                 loss = trial_record['loss']
                 budget2obvs[budget]["configs"].append(config)
                 budget2obvs[budget]["losses"].append(loss)
+                cnt += 1
+            self.logger.info(f"warm start {cnt} records from trial table.")
             if len(budget2obvs) == 0:
                 dummy_result = None
             else:
@@ -366,6 +373,8 @@ class XenonEstimator(BaseEstimator):
                 initial_points=None,
                 warm_start_strategy="resume",
                 previous_result=dummy_result,  # 用于热启动
+                total_time_limit=self.total_time_limit,
+                early_stopping_rounds=self.opt_early_stopping_rounds
                 # todo: 定期存储优化器，用于事后分析
                 # todo: BAYES_RUNS 等参数
                 # tuner = Tuner(
@@ -377,9 +386,10 @@ class XenonEstimator(BaseEstimator):
                 #     n_jobs_in_algorithm=n_jobs_in_algorithm
                 # )
             )
-            print(result)
+            # print(result)
             savedpath = os.getenv("SAVEDPATH")
-            dump(result, f"{savedpath}/optimization_result.pkl")
+            if savedpath and os.path.exists(savedpath):
+                dump(result, f"{savedpath}/optimization_result.pkl")
             return
         n_jobs = tuner.n_jobs
         # run_limits = [math.ceil(tuner.run_limit / n_jobs)] * n_jobs
