@@ -11,7 +11,7 @@ from joblib import load
 clf_workflow = {
     "num->select_by_var": "select.variance",
     "select_by_var->scale": ["scale.minmax", "scale.standardize",
-                             "operate.keep_going"],
+                             "operate.none"],
     "scale->select_by_model": "select.flexible",
     "select_by_model->target": [
         # "adaboost",
@@ -28,7 +28,7 @@ hdl_constructor = HDL_Constructor(
 X, y = load("/data/1-4/data.bz2")
 y = y.values
 xenon = XenonClassifier(
-    use_BOHB=True, n_jobs=3,
+    use_xenon_opt=True, n_jobs=3,
     hdl_constructor=hdl_constructor,
     per_run_memory_limit=30720,
     n_jobs_in_algorithm=4,

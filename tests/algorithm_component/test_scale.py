@@ -13,7 +13,7 @@ from sklearn.metrics import r2_score
 from xenon import XenonRegressor
 from xenon.hdl.utils import get_default_hp_of_cls
 from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.preprocessing.operate.keep_going import KeepGoing
+from xenon.workflow.components.preprocessing.operate.none import NoneOperator
 from xenon.workflow.components.preprocessing.scale.minmax import MinMaxScaler
 from xenon.workflow.components.preprocessing.scale.normalize import Normalizer
 from xenon.workflow.components.preprocessing.scale.quantile import QuantileTransformer
@@ -60,7 +60,7 @@ class TestScaler(LocalResourceTestCase):
             Normalizer,
             QuantileTransformer,
             RobustScaler,
-            KeepGoing,
+            NoneOperator,
         ]:
             encoder = cls(
                 **get_default_hp_of_cls(cls)
@@ -79,13 +79,13 @@ class TestScaler(LocalResourceTestCase):
             Normalizer,
             QuantileTransformer,
             RobustScaler,
-            KeepGoing,
+            NoneOperator,
             # WOEEncoder,  # 不支持回归
         ]:
             print("=========================")
             print(cls.__name__)
             print("=========================")
-            if cls == KeepGoing:
+            if cls == NoneOperator:
                 hp = {}
             else:
                 hp = get_default_hp_of_cls(cls)

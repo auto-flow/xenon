@@ -55,7 +55,7 @@ class XenonEstimator(BaseEstimator):
             should_finally_fit=False,
             should_calc_all_metrics=True,
             should_stack_X=True,
-            use_BOHB=False,
+            use_xenon_opt=False,
             opt_early_stopping_rounds=64, # small: 32; middle: 64; big: 128
             total_time_limit=3600 * 5,    # 5 小时
             **kwargs
@@ -118,7 +118,7 @@ class XenonEstimator(BaseEstimator):
         self.imbalance_threshold = imbalance_threshold
         self.eta = eta
         self.min_budget = min_budget
-        self.use_BOHB = use_BOHB
+        self.use_xenon_opt = use_xenon_opt
         self.should_stack_X = should_stack_X
         self.consider_ordinal_as_cat = consider_ordinal_as_cat
         if model_registry is None:
@@ -322,7 +322,7 @@ class XenonEstimator(BaseEstimator):
         return is_manual
 
     def run_tuner(self, tuner: Tuner):
-        if self.use_BOHB:
+        if self.use_xenon_opt:
             from xenon_opt import fmin, FMinResult
             from xenon_opt.optimizer import SMACOptimizer
             from xenon_opt.multi_fidelity import HyperBandIterGenerator

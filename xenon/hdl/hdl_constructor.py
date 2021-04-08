@@ -45,14 +45,14 @@ class HDL_Constructor(StrSignatureMixin):
                     "adaboost", "bayesian_ridge", "catboost", "decision_tree", "elasticnet", "extra_trees",
                     "gaussian_process", "k_nearest_neighbors", "kernel_ridge",
                     "liblinear_svr", "lightgbm", "random_forest", "sgd"),
-            included_highR_nan_imputers=("operate.drop", "operate.keep_going"),
+            included_highR_nan_imputers=("operate.drop", "operate.none"),
             included_nan_imputers=(
                     "impute.adaptive_fill",),
             included_highR_cat_encoders=("operate.drop", "encode.ordinal", "encode.cat_boost"),
             included_cat_encoders=("encode.one_hot", "encode.ordinal", "encode.cat_boost"),
             num2purified_workflow=frozendict({
-                "num->scaled": ["scale.standardize", "operate.keep_going"],
-                "scaled->purified": ["operate.keep_going", "transform.power"]
+                "num->scaled": ["scale.standardize", "operate.none"],
+                "scaled->purified": ["operate.none", "transform.power"]
             }),
             text2purified_workflow=frozendict({
                 "text->tokenized": "text.tokenize.simple",
@@ -65,7 +65,7 @@ class HDL_Constructor(StrSignatureMixin):
             date2purified_workflow=frozendict({
             }),
             purified2final_workflow=frozendict({
-                "purified->final": ["operate.keep_going"]
+                "purified->final": ["operate.none"]
             })
 
     ):
@@ -295,7 +295,7 @@ class HDL_Constructor(StrSignatureMixin):
                                                                            sorted_nan_column2essential_fg)}
             elif len(nan_fg_set) == 1:
                 elem = list(nan_fg_set)[0]
-                DAG_workflow[f"imputed->{elem}"] = "operate.keep_going"
+                DAG_workflow[f"imputed->{elem}"] = "operate.none"
             else:
                 raise NotImplementedError
         # --------Start encoding categorical(cat) value --------------------

@@ -20,7 +20,7 @@ trained_pipeline = XenonClassifier(
         "num->compressed": {"_name": "compress.f1score", "threshold": 0.9, "n_jobs": 12,
                             # "cache_intermediate":False
                             },
-        "compressed->purified": ["scale.standardize", "operate.keep_going"],
+        "compressed->purified": ["scale.standardize", "operate.none"],
     }
     # should_store_intermediate_result=True,  # 测试对中间结果存储的正确性
 )

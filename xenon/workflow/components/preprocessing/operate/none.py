@@ -3,10 +3,10 @@ from typing import Optional
 from xenon.data_container import DataFrameContainer
 from xenon.workflow.components.feature_engineer_base import XenonFeatureEngineerAlgorithm
 
-__all__ = ["KeepGoing"]
+__all__ = ["NoneOperator"]
 
 
-class KeepGoing(XenonFeatureEngineerAlgorithm):
+class NoneOperator(XenonFeatureEngineerAlgorithm):
 
     def fit(self, X_train: DataFrameContainer, y_train=None,
             X_valid=None, y_valid=None,

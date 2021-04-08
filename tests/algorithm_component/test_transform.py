@@ -13,7 +13,7 @@ from sklearn.metrics import r2_score
 from xenon import XenonRegressor
 from xenon.hdl.utils import get_default_hp_of_cls
 from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.preprocessing.operate.keep_going import KeepGoing
+from xenon.workflow.components.preprocessing.operate.none import NoneOperator
 from xenon.workflow.components.preprocessing.transform.quantile import QuantileTransformer
 from xenon.workflow.components.preprocessing.transform.power import PowerTransformer
 
@@ -55,7 +55,7 @@ class TestTransformer(LocalResourceTestCase):
         for cls in [
             PowerTransformer,
             QuantileTransformer,
-            KeepGoing,
+            NoneOperator,
         ]:
             encoder = cls(
                 **get_default_hp_of_cls(cls)
@@ -71,13 +71,13 @@ class TestTransformer(LocalResourceTestCase):
         for cls in [
             PowerTransformer,
             QuantileTransformer,
-            KeepGoing,
+            NoneOperator,
             # WOEEncoder,  # 不支持回归
         ]:
             print("=========================")
             print(cls.__name__)
             print("=========================")
-            if cls == KeepGoing:
+            if cls == NoneOperator:
                 hp = {}
             else:
                 hp = get_default_hp_of_cls(cls)
