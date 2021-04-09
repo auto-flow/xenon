@@ -7,11 +7,9 @@
 ###################################
 import os
 import sys
-
-from xenon.ensemble.stack.base import StackEstimator
+from pathlib import Path
 
 sys.path.insert(0, os.getcwd())
-
 ###################################
 from typing import Union, Optional
 
@@ -21,6 +19,7 @@ from sklearn.model_selection import KFold, StratifiedKFold, LeaveOneOut, Shuffle
 import logging
 import multiprocessing as mp
 import numpy as np
+from xenon.ensemble.stack.base import StackEstimator
 from xenon.utils.logging_ import setup_logger
 from xenon import XenonClassifier, XenonRegressor
 from xenon.hdl.hdl_constructor import HDL_Constructor
@@ -58,6 +57,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     if datapath is None:
         datapath = os.getenv("DATAPATH")
     savedpath = os.getenv("SAVEDPATH", ".")
+    Path(savedpath).mkdir(parents=True, exist_ok=True)
     assert bool(datapath), ValueError(f"Search Stage must has a dataset!")
     setup_logger(
         f"{savedpath}/xenon.log"
@@ -185,7 +185,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
     id_column_name = env_utils.ID_COLUMN_NAME
     # 公用的数据加载部分（SPLIT表示自定义切分）
-    data, column_descriptions, SPLIT = load_data_from_datapath(
+    data, column_descriptions, SPLIT, _ = load_data_from_datapath(
         datapath,
         train_target_column_name,
         id_column_name,
@@ -276,7 +276,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     if SPLIT is not None:
         logger.info("User specific SPLIT, using SPLIT instead of KFOLD")
         logger.info("indicator 'TRAIN' is the train-set samples, other are validation-set samples.")
-        mask = (SPLIT != "TRAIN")
+        mask = (SPLIT == "VALID")
         valid_indices = np.arange(data.shape[0])[mask]
         n_valids = valid_indices.size
         logger.info(f"{n_valids} train-set samples, {data.shape[0] - n_valids} valid-set samples")

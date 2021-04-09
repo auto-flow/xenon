@@ -129,7 +129,7 @@ class DataFrameContainer(DataContainer):
             df = self.resource_manager.download_df_from_table(dataset_id, columns, self.columns_mapper)
         else:
             if dataset_path:
-                df = self.resource_manager.download_df_from_fs(dataset_path, columns)
+                df = self.resource_manager.download_df_from_fs(dataset_path)
             else:
                 df = pd.DataFrame(columns=columns)
         # inverse_columns_mapper = inverse_dict(self.columns_mapper)

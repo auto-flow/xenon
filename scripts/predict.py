@@ -9,7 +9,6 @@ import os
 import sys
 
 sys.path.insert(0, os.getcwd())
-
 ###################################
 import logging
 import os
@@ -108,7 +107,7 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
     train_target_column_name = None
     id_column_name = None
     model_type = None
-    data, *_ = load_data_from_datapath(
+    data, _, _, SMILES = load_data_from_datapath(
         data_path,
         train_target_column_name,
         id_column_name,
@@ -123,13 +122,12 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
     ###############################
     if xenon.estimator is None:
         xenon.estimator = xenon.ensemble_estimator
-
     # baseline
     # 多文件夹版本
     if saved_in_dir:
-        complex_predict(data, saved_dir=f"{saved_dir}/prediction", saved_filename=sub_datapath.name)
+        complex_predict(data, SMILES, saved_dir=f"{saved_dir}/prediction", saved_filename=sub_datapath.name)
     else:
-        complex_predict(data, saved_dir)
+        complex_predict(data, SMILES, saved_dir)
     # 花架子
     if predict_base_model:
         logger.info("current model is a stacking model, will use every base-model to do prediction.")
@@ -145,20 +143,26 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
             xenon.estimator = new_ensemble
             # 多文件夹版本
             if saved_in_dir:
-                complex_predict(data, saved_dir=f"{saved_dir}/prediction_{trial_id}", saved_filename=sub_datapath.name)
+                complex_predict(data, SMILES, saved_dir=f"{saved_dir}/prediction_{trial_id}",
+                                saved_filename=sub_datapath.name)
             else:
-                complex_predict(data, saved_dir, suffix=f"_{trial_id}")
+                complex_predict(data, SMILES, saved_dir, suffix=f"_{trial_id}")
         xenon.estimator = pre_estimator
 
 
-def complex_predict(data, saved_dir, saved_filename="prediction", suffix=""):
+def complex_predict(data, SMILES, saved_dir, saved_filename="prediction", suffix=""):
     result = xenon.predict(data)
     # 把ID与result拼在一起
     test_id_seq = getattr(xenon.data_manager, "test_id_seq", None)
+    ID_COLUMN_NAME = xenon.data_manager.column_descriptions.get('id')
     df = {}
-    if test_id_seq is not None:
+    if test_id_seq is not None and ID_COLUMN_NAME is not None:
         df.update({
-            "ID": test_id_seq,
+            ID_COLUMN_NAME: test_id_seq,
+        })
+    if SMILES is not None:
+        df.update({
+            "SMILES": SMILES,
         })
     df["RESULT"] = result
     df = pd.DataFrame(df)

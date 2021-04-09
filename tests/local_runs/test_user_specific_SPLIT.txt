@@ -1,2 +1,13 @@
+iris
+--------
 search.py
-PYTHONUNBUFFERED=1;USER_ID=2;USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;MODEL_TYPE=clf;TRAIN_TARGET_COLUMN_NAME=target;METRIC=f1_micro;KFOLD=5;DATAPATH=data/iris.csv;SAVEDPATH=savedpath/iris_test
+USER_ID=2;USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;MODEL_TYPE=clf;TRAIN_TARGET_COLUMN_NAME=target;METRIC=f1_micro;KFOLD=5;DATAPATH=data/iris.csv;SAVEDPATH=savedpath/iris_test;BAYES_RUNS=1;RANDOM_RUNS=1
+predict.py
+USER_ID=2;USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;EXPERIMENT_ID=1141;SAVEDPATH=savedpath/iris_test_pred;DATAPATH=data/iris.csv
+
+data/job_33483_result
+-----------------------
+search.py
+USER_ID=2;USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;MODEL_TYPE=clf;TRAIN_TARGET_COLUMN_NAME=active;KFOLD=5;FEATURE_NAME_LIST=['AP2D'];DATAPATH=data/job_33483_result;SAVEDPATH=savedpath/test_split_train;BAYES_RUNS=1;RANDOM_RUNS=1
+predict.py
+USER_ID=2;USER_TOKEN=8v$NdlCVujOey#&194fK%7OwYc8FNsMY;EXPERIMENT_ID=1207;FEATURE_NAME_LIST=['AP2D'];SAVEDPATH=savedpath/test_split_pred;DATAPATH=data/job_33483_result

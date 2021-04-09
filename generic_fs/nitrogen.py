@@ -82,6 +82,7 @@ class NitrogenFS(FileSystem):
             assert "message" in json_response, ValueError("Bad Request")
             message = json_response["message"]
             assert isinstance(message, list) and len(message) >= 2, ValueError("Bad Request")
+            logger.warning(f"path {path} already exist in nitrogen.")
             return str(message[0])
         s3_header = {'Content-Type': 'multipart/form-data'}
         with open(local_path, 'rb') as f:

@@ -8,20 +8,18 @@
 import os
 import sys
 
-from xenon.ensemble.stack.base import StackEstimator
-
 sys.path.insert(0, os.getcwd())
-
 ###################################
 import logging
 import os
 
-from xenon.utils.logging_ import setup_logger
 from xenon import XenonClassifier, XenonRegressor
-from xenon.resource_manager.http import HttpResourceManager
-from xenon.utils.ml_task import MLTask
 from scripts.utils import EnvUtils, save_current_expriment_model, save_info_json, process_previous_result_dataset, \
     print_xenon_path, display
+from xenon.utils.ml_task import MLTask
+from xenon.utils.logging_ import setup_logger
+from xenon.ensemble.stack.base import StackEstimator
+from xenon.resource_manager.http import HttpResourceManager
 
 savedpath = os.getenv("SAVEDPATH", ".")
 setup_logger(
