@@ -46,6 +46,7 @@ class XenonEstimator(BaseEstimator):
             log_path: str = "xenon.log",
             log_config: Optional[dict] = None,
             min_budget=1 / 16,
+            use_BOHB=False,
             eta=4,
             imbalance_threshold=2,
             highR_nan_threshold=0.5,
@@ -56,8 +57,9 @@ class XenonEstimator(BaseEstimator):
             should_calc_all_metrics=True,
             should_stack_X=True,
             use_xenon_opt=False,
-            opt_early_stopping_rounds=64, # small: 32; middle: 64; big: 128
-            total_time_limit=3600 * 5,    # 5 小时
+            opt_early_stopping_rounds=64,  # small: 32; middle: 64; big: 128
+            total_time_limit=3600 * 5,  # 5 小时
+            n_iterations=500,
             **kwargs
     ):
         '''
@@ -113,6 +115,8 @@ class XenonEstimator(BaseEstimator):
             hdl_bank={'classification': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
             included_classifiers=('adaboost', 'catboost', 'decision_tree', 'extra_trees', 'gaussian_nb', 'k_nearest_neighbors', 'liblinear_svc', 'lib...
         '''
+        self.n_iterations = n_iterations
+        self.use_BOHB = use_BOHB
         self.total_time_limit = total_time_limit
         self.opt_early_stopping_rounds = opt_early_stopping_rounds
         self.imbalance_threshold = imbalance_threshold
@@ -331,9 +335,13 @@ class XenonEstimator(BaseEstimator):
             trial_records = self.resource_manager._get_sorted_trial_records(
                 self.task_id, self.resource_manager.user_id, 1000)
             tuner.evaluator.init_data(**self.get_evaluator_params(self.random_state, self.resource_manager))
+            # 是否启用BOHB
+            if self.use_BOHB:
+                multi_fidelity_iter_generator = HyperBandIterGenerator(
+                    min_budget=self.min_budget, max_budget=1, eta=self.eta)
+            else:
+                multi_fidelity_iter_generator = None
             # 贝叶斯代理模型为SMAC
-            multi_fidelity_iter_generator = HyperBandIterGenerator(
-                min_budget=self.min_budget, max_budget=1, eta=self.eta)
             optimizer = SMACOptimizer(min_points_in_model=tuner.initial_runs)
             budget2obvs = defaultdict(lambda: {"losses": [], "configs": []})
             cnt = 0
@@ -363,7 +371,7 @@ class XenonEstimator(BaseEstimator):
             result = fmin(  # 此时已经对 shps 设置过 n_jobs_in_algorithm
                 tuner.evaluator, tuner.shps, optimizer=optimizer,
                 n_jobs=tuner.n_jobs,
-                n_iterations=tuner.run_limit,
+                n_iterations=self.n_iterations,
                 random_state=self.random_state,
                 multi_fidelity_iter_generator=multi_fidelity_iter_generator,
                 limit_resource=True,

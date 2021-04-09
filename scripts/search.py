@@ -120,17 +120,40 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     # 实例化hdl_constructor（超参描述语言构造器） #
     ############################################
     model_type = env_utils.MODEL_TYPE
-    if model_type == "clf":
-        DAG_workflow = env_utils.CLF_WORKFLOW
-    else:
-        DAG_workflow = env_utils.REG_WORKFLOW
+    use_var_feature_selector = env_utils.USE_VAR_FEATURE_SELECTOR
+    scaler = env_utils.SCALER
+    processed_scaler = []
+    for item in scaler:
+        if item == "none":
+            item = "operator." + item
+        else:
+            item = "scale." + item
+        processed_scaler.append(item)
+    feature_selector = env_utils.FEATURE_SELECTOR
+    classifier = env_utils.CLASSIFIER
+    regressor = env_utils.REGRESSOR
+    DAG_workflow = {
+        "num->select_by_var": "select.variance" if use_var_feature_selector else "operator.none",
+        "select_by_var->scale": processed_scaler,
+        "scale->select_by_model": {
+            "_name": "select.flexible",
+            "strategy": {"_type": "choice", "_value": feature_selector}
+        },
+        "select_by_model->target": classifier if model_type == "clf" else regressor
+    }
     hdl_constructor = HDL_Constructor(
         DAG_workflow=DAG_workflow
     )
     #####################
     # 实例化Xenon对象 #
     #####################
+    use_BOHB = env_utils.USE_BOHB
+    imbalance_threshold = env_utils.IMBALANCE_THRESHOLD
     random_state = env_utils.RANDOM_STATE
+    opt_framework = env_utils.OPT_FRAMEWORK
+    total_time_limit = env_utils.TOTAL_TIME_LIMIT
+    opt_early_stop_rounds = env_utils.OPT_EARLY_STOP_ROUNDS
+    n_iterations = env_utils.N_ITERATIONS
     if random_state is None:
         logger.info("RANDOM_STATE is None, will choose a random_state between 0 and 10000.")
         random_state = np.random.randint(0, 10000)
@@ -140,8 +163,15 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         "hdl_constructor": hdl_constructor,
         "resource_manager": resource_manager,
         "log_path": f"{savedpath}/xenon.log",
-        "random_state": random_state
+        "random_state": random_state,
+        "imbalance_threshold": imbalance_threshold,
+        "use_xenon_opt": opt_framework == "xenon_opt",
+        "total_time_limit": total_time_limit,
+        "opt_early_stopping_rounds": opt_early_stop_rounds,
+        "n_iterations": n_iterations,
     }
+    if use_BOHB:
+        kwargs["use_BOHB"] = True
     if model_type == "clf":
         xenon = XenonClassifier(**kwargs)
     else:
@@ -150,7 +180,8 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     # 从DATAPATH中加载数据 #
     ######################
     feature_name_list = env_utils.FEATURE_NAME_LIST
-    column_descriptions = env_utils.COLUMN_DESCRIPTIONS
+    # column_descriptions = env_utils.COLUMN_DESCRIPTIONS
+    ignore_columns = env_utils.IGNORE_COLUMNS
     train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
     id_column_name = env_utils.ID_COLUMN_NAME
     # 公用的数据加载部分（SPLIT表示自定义切分）
@@ -162,7 +193,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         traditional_qsar_mode,
         model_type,
         feature_name_list,
-        column_descriptions
+        ignore_columns
     )
     #######################################
     # 调用Xenon对象的fit函数启动搜索过程  #
@@ -192,7 +223,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         balanced_accuracy, f1, precision, recall, pac_score
     # multi-class clf metrics
     from xenon.metrics import roc_auc_ovo_macro, roc_auc_ovo_weighted, roc_auc_ovr_macro, roc_auc_ovr_weighted, \
-            f1_macro, f1_micro, f1_weighted
+        f1_macro, f1_micro, f1_weighted
     #  { 'roc_auc_ovo_macro': 1.0,
     # 'roc_auc_ovo_weighted': 1.0,
     # 'roc_auc_ovr_macro': 1.0,

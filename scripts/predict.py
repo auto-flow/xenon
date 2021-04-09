@@ -104,7 +104,7 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
     # 加载数据 #
     ###########
     feature_name_list = env_utils.FEATURE_NAME_LIST
-    column_descriptions = {}
+    # column_descriptions = {}
     train_target_column_name = None
     id_column_name = None
     model_type = None
@@ -116,7 +116,7 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
         traditional_qsar_mode,
         model_type,
         feature_name_list,
-        column_descriptions
+        []
     )
     ###############################
     # 调用predict方法对数据进行预测 #

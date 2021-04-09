@@ -25,44 +25,55 @@
     "description": "分类问题: ``clf`` ，回归问题： ``reg`` "
   },
   {
-    "name": "COLUMN_DESCRIPTIONS",
-    "default": {},
-    "description": "列描述，为一字典。 ``id`` 为主键， ``target`` 为拟合目标， ``ignore`` 为无关列。\n\n如： ``{'id' : 'NAME' ,'target' : 'pIC50','ignore' : ['SMILES']}`` "
+    "name": "IGNORE_COLUMNS",   // 【new】
+    "default": ["SMILES"],
+    "description": "一个列表，填写你想忽略的列"
+  },
+//  {
+//    "name": "COLUMN_DESCRIPTIONS",
+//    "default": {},
+//    "description": "列描述，为一字典。 ``id`` 为主键， ``target`` 为拟合目标， ``ignore`` 为无关列。\n\n如： ``{'id' : 'NAME' ,'target' : 'pIC50','ignore' : ['SMILES']}`` "
+//  },
+  {
+    "name": "USE_BOHB",       // 【new】ok
+    "default": "auto",
+    "description": "【仅用于xenon_opt框架】默认为'auto'，即自动判断：如果样本数>10000，启用BOHB，否则为SMAC"
   },
   {
-    "name": "IMBALANCE_THRESHOLD",       // 【new】
+    "name": "IMBALANCE_THRESHOLD",       // 【new】ok
     "default": 20,
     "description": "当多数类样本数 / 少数类样本数 > 这个阈值时， 添加【少数类样本加权策略】候选集"
   },
   {
-    "name": "USE_VAR_FEATURE_SELECTOR",       // 【new】
+    "name": "USE_VAR_FEATURE_SELECTOR",       // 【new】ok
     "default": true,
     "description": "是否使用基于方差的特征筛选器"
   },
   {
-    "name": "SCALER",                          // 【new】
+    "name": "SCALER",                          // 【new】ok
     "default": ["none", "minmax", "standardize"],
     "description": "尺度变换器 候选集"
   },
   {
-    "name": "FEATURE_SELECTOR",                // 【new】
+    "name": "FEATURE_SELECTOR",                // 【new】ok
     "default": ["none", "rf", "gbdt", "l1_linear"],
     "description": "特征筛选器 候选集"
   },
   {
-    "name": "CLASSIFIER",                      // 【new】
+    "name": "CLASSIFIER",                      // 【new】ok
     "default": [
         // "adaboost",
         // "extra_trees",
         "random_forest",
         "liblinear_svc",
         "lightgbm",
-        "logistic_regression"
+        "logistic_regression",
+        "gbdt_lr",
     ],
     "description": "分类器 候选集"
   },
   {
-    "name": "REGRESSOR",                        // 【new】
+    "name": "REGRESSOR",                        // 【new】ok
     "default": [
         // "adaboost",
         // "extra_trees",
@@ -80,7 +91,7 @@
   },
   {
     "name": "ID_COLUMN_NAME",
-    "default": "None",
+    "default": "NAME",
     "description": "主键列， 如 ``NAME`` 。仅在用户自定义特征文件时使用，QSAR流程不用管这个参数。"
   },
   {
@@ -99,7 +110,7 @@
     "description": "不想让相同的任务关联到一个 ``task_id`` 时，设置这个参数"
   },
   {
-    "name": "OPT_FRAMEWORK", // 【new】
+    "name": "OPT_FRAMEWORK", // 【new】ok
     "default": "xenon_opt",
     "description": "优化框架，可选【dsmac】或【xenon_opt】。在xenonv2.1的更新后，可使用xenon_opt"
   },
@@ -114,7 +125,7 @@
     "description": "限制每次尝试(trial)的运行时间，单位为秒(second)，默认为1800秒，即30分钟。"
   },
   {
-    "name": "TOTAL_TIME_LIMIT", // 【new】
+    "name": "TOTAL_TIME_LIMIT", // 【new】ok
     "default": 18000,
     "description": "【仅用于xenon_opt框架】限制总的运行时间，单位为秒(second)，默认为18000秒，即5小时。"
   },
@@ -134,12 +145,12 @@
     "description": "冷启动随机搜索次数。，随机搜索是贝叶斯搜索的启动过程，建议设置为20-60"
   },
   {
-    "name": "N_ITERATIONS", // 【new】
+    "name": "N_ITERATIONS", // 【new】ok
     "default": 500,
     "description": "【仅用于xenon_opt框架】总的迭代次数"
   },
   {
-    "name": "OPT_EARLY_STOP_ROUNDS", // 【new】
+    "name": "OPT_EARLY_STOP_ROUNDS", // 【new】ok
     "default": 64,
     "description": "【仅用于xenon_opt框架】优化器早停轮数。\n\n建议根据你想搜索次数的多少进行设置：【SMALL:32】【MIDDLE:64】【LARGE:128】 "
   },

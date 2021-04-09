@@ -16,10 +16,11 @@ clf_workflow = {
     "select_by_model->target": [
         # "adaboost",
         # "extra_trees",
-        "random_forest",
-        "liblinear_svc",
-        "lightgbm",
-        "logistic_regression"
+        # "random_forest",
+        # "liblinear_svc",
+        # "lightgbm",
+        # "logistic_regression",
+        "gbdt_lr",
     ],
 }
 hdl_constructor = HDL_Constructor(

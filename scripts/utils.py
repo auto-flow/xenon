@@ -118,7 +118,7 @@ def load_data_from_datapath(
         traditional_qsar_mode,
         model_type,
         feature_name_list,
-        column_descriptions
+        ignore_columns
 ) -> Tuple[pd.DataFrame, dict, Optional[pd.Series]]:
     if traditional_qsar_mode:
         # 情况一 ： DATAPATH = job_xxx_result/
@@ -168,14 +168,15 @@ def load_data_from_datapath(
             "id": name_col_name
         }
     else:
-        if "target" not in column_descriptions:
-            column_descriptions["target"] = train_target_column_name
-        if "id" not in column_descriptions and id_column_name is not None:
+        column_descriptions = {}
+        column_descriptions["target"] = train_target_column_name
+        if id_column_name is not None:
             column_descriptions["id"] = id_column_name
         data = pd.read_csv(datapath)
         if train_target_column_name is not None:
             assert train_target_column_name in data.columns, ValueError(
                 f"TRAIN_TARGET_COLUMN_NAME {train_target_column_name} do not exist in data.csv")
+    column_descriptions['ignore'] = ignore_columns
     SPLIT = None
     if "SPLIT" in data.columns:
         SPLIT = data.pop("SPLIT")
