@@ -142,7 +142,7 @@ def fmin(
             checkpoint_file=checkpoint_file, checkpoint_freq=checkpoint_freq,
             nameserver=ns_host, nameserver_port=ns_port, host=ns_host,
             early_stopping_rounds=early_stopping_rounds,
-            time_left_for_this_task=total_time_limit
+            time_left_for_this_task=total_time_limit, workers_refer=workers
         )
         result = master.run(n_iterations)
         master.shutdown(True)

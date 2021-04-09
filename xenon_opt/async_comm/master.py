@@ -1,7 +1,10 @@
+import cgitb
 import copy
 import os
+import sys
 import threading
 import time
+import traceback
 from collections import defaultdict
 from typing import Dict
 
@@ -39,7 +42,8 @@ class Master(object):
                  previous_result=None,
                  incumbents: Dict[float, dict] = None,
                  incumbent_performances: Dict[float, float] = None,
-                 early_stopping_rounds=32
+                 early_stopping_rounds=32,
+                 workers_refer=None
                  ):
         """The Master class is responsible for the book keeping and to decide what to run next. Optimizers are
                 instantiations of Master, that handle the important steps of deciding what configurations to run on what
@@ -88,6 +92,7 @@ class Master(object):
         previous_result:
             previous run to warmstart the run
         """
+        self.workers_refer = workers_refer
         self.early_stopping_rounds = early_stopping_rounds
         self.checkpoint_freq = checkpoint_freq
         self.checkpoint_file = checkpoint_file
@@ -153,9 +158,21 @@ class Master(object):
         self.dispatcher_thread = threading.Thread(target=self.dispatcher.run)
         self.dispatcher_thread.start()
 
-    def shutdown(self, shutdown_workers=False):
-        self.logger.info('HBMASTER: shutdown initiated, shutdown_workers = %s' % (str(shutdown_workers)))
+    def shutdown(self, shutdown_workers=True):
+        self.logger.warning('HBMASTER: shutdown initiated, shutdown_workers = %s' % (str(shutdown_workers)))
         self.dispatcher.shutdown(shutdown_workers)
+        if shutdown_workers and self.workers_refer is not None and isinstance(self.workers_refer, list):
+            for i, worker in enumerate(self.workers_refer):
+                try:
+                    try: # fixme: 太莽了
+                        worker.thread._tstate_lock.release()
+                    except:
+                        pass
+                    worker.thread._stop()
+                    self.logger.info(f"worker thread-{i} is_alive: {worker.thread.is_alive()}")
+                    # worker.thread.raise_exception()
+                except Exception as e:
+                    self.logger.warning(traceback.format_exc())
         self.dispatcher_thread.join()
 
     def wait_for_workers(self, min_n_workers=1):
@@ -302,7 +319,7 @@ class Master(object):
                 idx = self.budget2idx[budget]
                 size = self.budget2esw[budget].size
                 # todo: 设置一个参数，可以不早停 比窗口中最差的还差
-                if  (challenger_performance >= self.budget2esw[budget].max()):
+                if (challenger_performance >= self.budget2esw[budget].max()):
                     self.should_es = True
                     self.logger.info(f"The early stop condition is triggered in budget = {budget}.")
                     self.logger.info(f"budget2esw[budget] = {list(self.budget2esw[budget])}")

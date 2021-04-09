@@ -57,7 +57,7 @@ class XenonEstimator(BaseEstimator):
             should_calc_all_metrics=True,
             should_stack_X=True,
             use_xenon_opt=False,
-            opt_early_stopping_rounds=64,  # small: 32; middle: 64; big: 128
+            opt_early_stop_rounds=64,  # small: 32; middle: 64; big: 128
             total_time_limit=3600 * 5,  # 5 小时
             n_iterations=500,
             **kwargs
@@ -118,7 +118,7 @@ class XenonEstimator(BaseEstimator):
         self.n_iterations = n_iterations
         self.use_BOHB = use_BOHB
         self.total_time_limit = total_time_limit
-        self.opt_early_stopping_rounds = opt_early_stopping_rounds
+        self.opt_early_stop_rounds = opt_early_stop_rounds
         self.imbalance_threshold = imbalance_threshold
         self.eta = eta
         self.min_budget = min_budget
@@ -376,13 +376,13 @@ class XenonEstimator(BaseEstimator):
                 multi_fidelity_iter_generator=multi_fidelity_iter_generator,
                 limit_resource=True,
                 time_limit=tuner.per_run_time_limit,
-                memory_limit=tuner.per_run_memory_limit,
+                memory_limit=None, # tuner.per_run_memory_limit
                 verbose=1,
                 initial_points=None,
                 warm_start_strategy="resume",
                 previous_result=dummy_result,  # 用于热启动
                 total_time_limit=self.total_time_limit,
-                early_stopping_rounds=self.opt_early_stopping_rounds
+                early_stopping_rounds=self.opt_early_stop_rounds
                 # todo: 定期存储优化器，用于事后分析
                 # todo: BAYES_RUNS 等参数
                 # tuner = Tuner(

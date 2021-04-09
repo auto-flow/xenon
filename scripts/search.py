@@ -125,7 +125,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     processed_scaler = []
     for item in scaler:
         if item == "none":
-            item = "operator." + item
+            item = "operate." + item
         else:
             item = "scale." + item
         processed_scaler.append(item)
@@ -188,7 +188,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         "imbalance_threshold": imbalance_threshold,
         "use_xenon_opt": opt_framework == "xenon_opt",
         "total_time_limit": total_time_limit,
-        "opt_early_stopping_rounds": opt_early_stop_rounds,
+        "opt_early_stop_rounds": opt_early_stop_rounds,
         "n_iterations": n_iterations,
     }
     if use_BOHB:

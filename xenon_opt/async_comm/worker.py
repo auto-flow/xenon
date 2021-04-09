@@ -9,13 +9,30 @@ import sys
 import threading
 import time
 from uuid import uuid4
-
+import ctypes
 import Pyro4
 
-# from autoflow.utils.sys_ import get_trance_back_msg
 import pynisher
 
 from xenon_opt.utils.logging_ import get_logger
+
+
+class TheadWithExeption(threading.Thread):
+    def get_id(self):
+        # returns id of the respective thread
+        if hasattr(self, '_thread_id'):
+            return self._thread_id
+        for id, thread in threading._active.items():
+            if thread is self:
+                return id
+
+    def raise_exception(self):
+        thread_id = self.get_id()
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
+                                                         ctypes.py_object(SystemExit))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            print('Exception raise failure')
 
 
 class Worker(object):
@@ -144,6 +161,7 @@ class Worker(object):
             elif concurrent_type == "thread":
                 # maybe in a same thread
                 self.worker_id += f"_{threading.get_ident()}"
+                # threading.Thread
                 self.thread = threading.Thread(target=self._run, name='worker %s thread' % self.worker_id)
                 self.thread.daemon = True
                 self.thread.start()
@@ -244,9 +262,9 @@ class Worker(object):
                 self.logger.warning(f"status = StatusType.CRASHED\nconfig = \n{config}")
             # 失败了，就取一个损失的最大值
             if loss is None:
-                loss=65535
+                loss = 65535
         else:
-            loss = self.eval_func(config, **kwargs) # todo: 支持返回更多信息
+            loss = self.eval_func(config, **kwargs)  # todo: 支持返回更多信息
         return {
             "loss": loss
         }

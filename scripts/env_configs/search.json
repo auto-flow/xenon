@@ -65,7 +65,7 @@
         // "adaboost",
         // "extra_trees",
         "random_forest",
-        "liblinear_svc",
+//        "liblinear_svc",
         "lightgbm",
         "logistic_regression",
         "gbdt_lr",
@@ -178,5 +178,10 @@
     "name": "DISPLAY_SIZE",
     "default": 50,
     "description": "默认只展示最好的 ``50`` 次试验"
+  },
+  {
+    "name": "EXTERNAL_DELIVERY",
+    "default": false,
+    "description": "是否生成对外交付模型"
   }
 ]

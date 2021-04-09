@@ -310,6 +310,7 @@ def display(
 
     output_records = deepcopy(records)
     for output_record in output_records:
+        output_record['budget'] = output_record['additional_info']['budget']
         output_record.pop("all_scores")
         output_record.pop("intermediate_results")
         output_record.pop("test_all_score")

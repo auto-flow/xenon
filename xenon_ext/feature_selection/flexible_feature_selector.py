@@ -30,7 +30,9 @@ class FlexibleFeatureSelector(BaseEstimator, TransformerMixin):
             gbdt_n_estimators=50,
             threshold=0,
             rf_type="random_forest",
+            n_jobs=1
     ):
+        self.n_jobs = n_jobs
         self.threshold = threshold
         assert strategy in [
             "none",
@@ -73,11 +75,15 @@ class FlexibleFeatureSelector(BaseEstimator, TransformerMixin):
                 suffix = "Classifier"
             else:
                 suffix = "Regressor"
-            self.model = eval(prefix + suffix)(n_estimators=self.rf_n_estimators)
+            self.model = eval(prefix + suffix)(
+                n_estimators=self.rf_n_estimators,
+                n_jobs=self.n_jobs
+            )
         elif self.strategy == "gbdt":
             gbdt_params = dict(
                 n_estimators=self.gbdt_n_estimators,
-                importance_type="gain"
+                importance_type="gain",
+                n_jobs=self.n_jobs
             )
             if self.task == "classification":
                 self.model = LGBMClassifier(**gbdt_params)
