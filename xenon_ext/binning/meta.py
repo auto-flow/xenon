@@ -43,7 +43,8 @@ class MetaDiscretizer(BaseEstimator, TransformerMixin):
         self._encoder = OneHotEncoder(
             categories=[np.arange(i) for i in self.n_bins_],
             sparse=True,
-            dtype="int8"
+            dtype="int8",
+            drop="first"
         )
         self._encoder.fit(np.zeros((1, len(self.n_bins_))))
         return self
@@ -52,7 +53,7 @@ class MetaDiscretizer(BaseEstimator, TransformerMixin):
         bin_edges = self.bin_edges_
         columns = get_columns(X)
         Xt = np.zeros_like(X, dtype="int32")
-        for i,(col, bin_edge) in enumerate(zip(columns, bin_edges)):
+        for i, (col, bin_edge) in enumerate(zip(columns, bin_edges)):
             vec = get_col_vec(X, col)
             discrete = np.digitize(vec, bin_edge)
             Xt[:, i] = discrete
@@ -61,7 +62,7 @@ class MetaDiscretizer(BaseEstimator, TransformerMixin):
         if isinstance(X, pd.DataFrame):
             ret_columns = []
             for i, col in enumerate(columns):
-                for j in range(self.n_bins_[i]):
+                for j in range(self.n_bins_[i] - 1):
                     ret_columns.append(f"{col}-{j}")
             return pd.DataFrame.sparse.from_spmatrix(Xt, columns=ret_columns)
         else:
