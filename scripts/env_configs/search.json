@@ -26,7 +26,7 @@
   },
   {
     "name": "IGNORE_COLUMNS",   // 【new】
-    "default": ["SMILES"],
+    "default": ["SMILES", "Unnamed: 0"],
     "description": "一个列表，填写你想忽略的列"
   },
 //  {
@@ -37,7 +37,7 @@
   {
     "name": "USE_BOHB",       // 【new】ok
     "default": "auto",
-    "description": "【仅用于xenon_opt框架】默认为'auto'，即自动判断：如果样本数>10000，启用BOHB，否则为SMAC"
+    "description": "【仅用于xenon_opt框架】默认为'auto'，即自动判断：如果样本数>10000，启用BOHB，否则为SMAC\n\n ``True`` 为使用BOHB， ``False`` 为不适用BOHB而使用SMAC"
   },
   {
     "name": "IMBALANCE_THRESHOLD",       // 【new】ok

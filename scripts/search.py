@@ -144,10 +144,31 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     hdl_constructor = HDL_Constructor(
         DAG_workflow=DAG_workflow
     )
+    ######################
+    # 从DATAPATH中加载数据 #
+    ######################
+    feature_name_list = env_utils.FEATURE_NAME_LIST
+    # column_descriptions = env_utils.COLUMN_DESCRIPTIONS
+    ignore_columns = env_utils.IGNORE_COLUMNS
+    train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
+    id_column_name = env_utils.ID_COLUMN_NAME
+    # 公用的数据加载部分（SPLIT表示自定义切分）
+    data, column_descriptions, SPLIT, _ = load_data_from_datapath(
+        datapath,
+        train_target_column_name,
+        id_column_name,
+        logger,
+        traditional_qsar_mode,
+        model_type,
+        feature_name_list,
+        ignore_columns
+    )
     #####################
     # 实例化Xenon对象 #
     #####################
     use_BOHB = env_utils.USE_BOHB
+    if use_BOHB == "auto":
+        use_BOHB = data.shape[0] > 10000
     imbalance_threshold = env_utils.IMBALANCE_THRESHOLD
     random_state = env_utils.RANDOM_STATE
     opt_framework = env_utils.OPT_FRAMEWORK
@@ -176,25 +197,6 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         xenon = XenonClassifier(**kwargs)
     else:
         xenon = XenonRegressor(**kwargs)
-    ######################
-    # 从DATAPATH中加载数据 #
-    ######################
-    feature_name_list = env_utils.FEATURE_NAME_LIST
-    # column_descriptions = env_utils.COLUMN_DESCRIPTIONS
-    ignore_columns = env_utils.IGNORE_COLUMNS
-    train_target_column_name = env_utils.TRAIN_TARGET_COLUMN_NAME
-    id_column_name = env_utils.ID_COLUMN_NAME
-    # 公用的数据加载部分（SPLIT表示自定义切分）
-    data, column_descriptions, SPLIT, _ = load_data_from_datapath(
-        datapath,
-        train_target_column_name,
-        id_column_name,
-        logger,
-        traditional_qsar_mode,
-        model_type,
-        feature_name_list,
-        ignore_columns
-    )
     #######################################
     # 调用Xenon对象的fit函数启动搜索过程  #
     #######################################
