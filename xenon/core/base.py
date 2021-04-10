@@ -419,23 +419,13 @@ class XenonEstimator(BaseEstimator):
                 multi_fidelity_iter_generator=multi_fidelity_iter_generator,
                 limit_resource=True,
                 time_limit=tuner.per_run_time_limit,
-                memory_limit=None,  # tuner.per_run_memory_limit
+                memory_limit=tuner.per_run_memory_limit,  #
                 verbose=1,
                 initial_points=None,
                 warm_start_strategy="resume",
                 previous_result=dummy_result,  # 用于热启动
                 total_time_limit=self.total_time_limit,
                 early_stopping_rounds=self.opt_early_stop_rounds
-                # todo: 定期存储优化器，用于事后分析
-                # todo: BAYES_RUNS 等参数
-                # tuner = Tuner(
-                #     initial_runs=env_utils.RANDOM_RUNS,
-                #     run_limit=env_utils.BAYES_RUNS,
-                #     n_jobs=search_thread_num,
-                #     per_run_time_limit=per_run_time_limit,
-                #     per_run_memory_limit=per_run_memory_limit,
-                #     n_jobs_in_algorithm=n_jobs_in_algorithm
-                # )
             )
             # print(result)
             savedpath = os.getenv("SAVEDPATH")
