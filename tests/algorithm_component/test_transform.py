@@ -83,7 +83,7 @@ class TestTransformer(LocalResourceTestCase):
                 hp = get_default_hp_of_cls(cls)
             start = time()
             workflow = ML_Workflow(steps=[
-                ("scaler", cls(
+                ("decomposer", cls(
                     in_feature_groups="num",
                     out_feature_groups="scaled",
                     **hp

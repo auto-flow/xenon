@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class GBDTLRClassifier(LGBMClassifier):
     def __init__(
             self,
-            n_estimators=100, # [30, 300] 在测试中这个值越大越好
+            n_estimators=100,  # [30, 300] 在测试中这个值越大越好
             objective=None,
             boosting_type="gbdt",
             # learning_rate=0.1,
@@ -33,7 +33,7 @@ class GBDTLRClassifier(LGBMClassifier):
             lambda_l2=0.2,
             subsample_for_bin=40000,
             min_child_weight=0.01,
-            early_stopping_rounds=50, # 早停轮数， 设一个比较小的值
+            early_stopping_rounds=50,  # 早停轮数， 设一个比较小的值
             verbose=-1,
             n_jobs=1,
             # lr params
@@ -88,7 +88,10 @@ class GBDTLRClassifier(LGBMClassifier):
         gbt_end = time()
         leaf = self.model.predict(X, pred_leaf=True)
         ohe_start = time()
-        self.ohe = OneHotEncoder(dtype="int32", handle_unknown="ignore").fit(leaf)
+        self.ohe = OneHotEncoder(
+            dtype="int8",
+            # handle_unknown="ignore",
+            drop="first").fit(leaf)
         feature = self._transform_leaf(leaf)
         self.ohe_shape = feature.shape
         ohe_end = time()

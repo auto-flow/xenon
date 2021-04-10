@@ -60,6 +60,23 @@
     "description": "特征筛选器 候选集"
   },
   {
+    "name": "DECOMPOSER",                // 【new】ok
+    "default": [
+      "none",
+//      "PCA",
+//      "KernalPCA",
+    ],
+    "description": "分解器 候选集。PCA是一种线性变换的方法，可提取特征矩阵的主成分，用于降维。KernelPCA 在主成分的基础上做和变换，用于增维。"
+  },
+  {
+    "name": "DISCRETIZER",                // 【new】ok
+    "default": [
+      "none",
+//      "decision_tree" // 决策树分箱
+    ],
+    "description": "分箱器 候选集。分箱是一种对连续变量离散化的操作，一般后接线性模型，如 logistic_regression 。"
+  },
+  {
     "name": "CLASSIFIER",                      // 【new】ok
     "default": [
         // "adaboost",

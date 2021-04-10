@@ -5,6 +5,7 @@
 ###################################
 # Insert current path to sys path #
 ###################################
+import collections
 import os
 import sys
 from pathlib import Path
@@ -120,27 +121,50 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
     # 实例化hdl_constructor（超参描述语言构造器） #
     ############################################
     model_type = env_utils.MODEL_TYPE
+    # 基于方差的特征选择
     use_var_feature_selector = env_utils.USE_VAR_FEATURE_SELECTOR
+    # 特征变换器
     scaler = env_utils.SCALER
-    processed_scaler = []
-    for item in scaler:
-        if item == "none":
-            item = "operate." + item
-        else:
-            item = "scale." + item
-        processed_scaler.append(item)
+    # 基于模型的特征选择
     feature_selector = env_utils.FEATURE_SELECTOR
+    # 分解器（PCA降维或者KernelPCA增维）
+    decomposer = env_utils.DECOMPOSER
+    # 分箱器
+    discretizer = env_utils.DISCRETIZER
+    # 分类器
     classifier = env_utils.CLASSIFIER
+    # 回归器
     regressor = env_utils.REGRESSOR
-    DAG_workflow = {
-        "num->select_by_var": "select.variance" if use_var_feature_selector else "operator.none",
-        "select_by_var->scale": processed_scaler,
-        "scale->select_by_model": {
-            "_name": "select.flexible",
-            "strategy": {"_type": "choice", "_value": feature_selector}
-        },
-        "select_by_model->target": classifier if model_type == "clf" else regressor
-    }
+    # start parse
+    pre_feat_group = "num"
+    table = [
+        ["var_selected", use_var_feature_selector, "select.variance"],
+        ["scaled", scaler, "scale.flexible"],
+        ["model_selected", feature_selector, "select.flexible"],
+        ["decomposed", decomposer, "decompose.flexible"],
+        ["discretized", discretizer, "discretize.flexible"],
+    ]
+
+    DAG_workflow = collections.OrderedDict()
+    for feat_group, candidates, module in table:
+        assert isinstance(candidates, (bool, list, tuple)), ValueError
+        if candidates == False:
+            continue
+        if isinstance(candidates, (list, tuple)) and (
+                len(candidates) == 0 or (len(candidates) == 1 and candidates[0] == "none")):
+            continue
+        key = f"{pre_feat_group}->{feat_group}"
+        if candidates == True:
+            DAG_workflow[key] = module
+        else:
+            DAG_workflow[key] = {
+                "_name": module,
+                "strategy": {"_type": "choice", "_value": candidates}
+            }
+        pre_feat_group = feat_group
+    DAG_workflow[f"{pre_feat_group}->target"] = classifier if model_type == "clf" else regressor
+    DAG_workflow = dict(DAG_workflow)
+    # end parse
     hdl_constructor = HDL_Constructor(
         DAG_workflow=DAG_workflow
     )

@@ -3,3 +3,4 @@
 # @Author  : qichun tang
 # @Date    : 2021-04-10
 # @Contact    : qichun.tang@bupt.edu.cn
+from .flexible_decomposer import FlexibleDecomposer

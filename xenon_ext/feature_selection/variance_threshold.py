@@ -6,6 +6,9 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # get_support() 函数
@@ -21,6 +24,8 @@ class VarianceThreshold(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         self.feature_importances_ = np.array(np.nanvar(X, axis=0))
         self.support_ = (self.feature_importances_ > self.threshold)
+        logger.info(f"VarianceThreshold(threshold={self.threshold:.3f})"
+                    f" delete {np.count_nonzero(~self.support_)} features. ")
         return self
 
     def get_support(self):

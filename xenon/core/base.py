@@ -31,6 +31,11 @@ from xenon.utils.dict_ import update_mask_from_other_dict, replace_dict_by_key_s
 from xenon.utils.klass import instancing, sequencing, get_valid_params_in_kwargs
 from xenon.utils.logging_ import get_logger, setup_logger
 from xenon.utils.packages import get_class_name_of_module
+from xenon.lazy_import import (
+    CategoricalHyperparameter, Constant, ConfigurationSpace,
+    ForbiddenInClause, ForbiddenEqualsClause, ForbiddenAndConjunction,
+    InCondition, EqualsCondition, Configuration
+)
 
 
 class XenonEstimator(BaseEstimator):
@@ -326,6 +331,44 @@ class XenonEstimator(BaseEstimator):
         return is_manual
 
     def run_tuner(self, tuner: Tuner):
+        # 设置禁止策略，【非none discretizer】与【非线性模型】不能共存
+        # 预设的4个线性学习器
+        linear_model_names = ["logistic_regression", "liblinear_svc",
+                              "bayesian_ridge", "elasticnet"]
+        discretizer_strategy_suffix = "discretize.flexible:strategy"
+        estimator_hp_name="estimating:__choice__"
+        cs = tuner.shps
+        discretizer_strategy_hp_name=None
+        for name in cs.get_hyperparameter_names():
+            if name.endswith(discretizer_strategy_suffix):
+                discretizer_strategy_hp_name=name
+                break
+
+        if discretizer_strategy_hp_name is not None:
+            nonlinear_learner=[]
+            choices=cs.get_hyperparameter(estimator_hp_name).choices
+            for choice in choices:
+                if choice not in linear_model_names:
+                    nonlinear_learner.append(choice)
+            not_none_discretizer=[]
+            choices = cs.get_hyperparameter(discretizer_strategy_hp_name).choices
+            for choice in choices:
+                if choice !="none":
+                    not_none_discretizer.append(choice)
+            # 排除全是线性学习器的情况
+            if len(nonlinear_learner)>0 and len(not_none_discretizer)>0:
+                nonlinear_learner_forbid = ForbiddenInClause(
+                    cs.get_hyperparameter(estimator_hp_name),
+                    nonlinear_learner
+                )
+                discretizer_forbid = ForbiddenInClause(
+                    cs.get_hyperparameter(discretizer_strategy_hp_name),
+                    not_none_discretizer
+                )
+                cs.add_forbidden_clause(ForbiddenAndConjunction(
+                    nonlinear_learner_forbid,
+                    discretizer_forbid
+                ))
         if self.use_xenon_opt:
             from xenon_opt import fmin, FMinResult
             from xenon_opt.optimizer import SMACOptimizer
@@ -376,7 +419,7 @@ class XenonEstimator(BaseEstimator):
                 multi_fidelity_iter_generator=multi_fidelity_iter_generator,
                 limit_resource=True,
                 time_limit=tuner.per_run_time_limit,
-                memory_limit=None, # tuner.per_run_memory_limit
+                memory_limit=None,  # tuner.per_run_memory_limit
                 verbose=1,
                 initial_points=None,
                 warm_start_strategy="resume",

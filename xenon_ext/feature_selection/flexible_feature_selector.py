@@ -12,8 +12,10 @@ from lightgbm import LGBMClassifier, LGBMRegressor
 import numpy as np
 import pandas as pd
 import warnings
-
+import logging
+from time import time
 rf_classes = [RandomForestClassifier, RandomForestRegressor, ExtraTreesClassifier, ExtraTreesRegressor]
+logger = logging.getLogger(__name__)
 
 
 # get_support() 函数
@@ -54,6 +56,7 @@ class FlexibleFeatureSelector(BaseEstimator, TransformerMixin):
         self.task = None
 
     def fit(self, X, y):
+        start_time=time()
         if self.strategy == "none":
             return self
         if type_of_target(y) == "continuous":
@@ -111,6 +114,10 @@ class FlexibleFeatureSelector(BaseEstimator, TransformerMixin):
             if not np.any(self.support_):
                 warnings.warn("all feature_importances_ = 0")
                 self.support_[np.random.randint(0, X.shape[1])] = True
+        cost_time=time()-start_time
+        logger.info(
+            f"strategy = {self.strategy}, select_percent = {self.select_percent if self.should_select_percent else 0}"
+            f" delete {np.count_nonzero(~self.support_)} features, cost  {cost_time:.3f} s.")
         return self
 
     def get_support(self):

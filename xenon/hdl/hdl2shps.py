@@ -37,6 +37,7 @@ class HDL2SHPS():
             cond = EqualsCondition(child, parent, smac_hdl._encode(value))
         return cond
 
+
     def __forbidden(self, value: List, store: Dict, cs: ConfigurationSpace):
         assert isinstance(value, list)
         for item in value:

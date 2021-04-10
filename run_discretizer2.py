@@ -4,8 +4,8 @@
 # @Date    : 2021-04-04
 # @Contact    : qichun.tang@bupt.edu.cn
 # from .meta import MetaDiscretizer
-from xenon_ext.binning.decision_tree import get_decision_tree_binning_boundary
-from xenon_ext.binning import DecisionTreeDiscretizer
+from xenon_ext.discretize.decision_tree import get_decision_tree_boundary
+from xenon_ext.discretize import DecisionTreeDiscretizer
 from joblib import load
 
 if __name__ == '__main__':

@@ -269,10 +269,10 @@ class XenonIterComponent(XenonComponent):
         if X_valid is not None and y_valid is not None:
             s = time()
             test_performance = self.component.score(X_valid, y_valid)
-            train_performance = self.component.score(X, y)
+            # train_performance = self.component.score(X, y) # 没必要
             self.score_times += time() - s
             self.learning_curve[0].append(self.iteration)
-            self.learning_curve[1].append(train_performance)
+            self.learning_curve[1].append(0)
             self.learning_curve[2].append(test_performance)
             self.learning_curve[3].append(self.fit_times)
             self.learning_curve[4].append(self.score_times)
@@ -297,8 +297,6 @@ class XenonIterComponent(XenonComponent):
             self.iteration_ = min(self.iteration_, self.max_iterations)
             setattr(self.component, self.iterations_name, self.iteration_)
 
-
-
     def core_fit(self, estimator, X, y, X_valid=None, y_valid=None, X_test=None,
                  y_test=None, feature_groups=None):
         # 迭代式地训练，并引入早停机制
@@ -320,9 +318,12 @@ class XenonIterComponent(XenonComponent):
         self.best_estimators = np.zeros([N], dtype="object")
 
         self.iter_ix = 0
+        start_time = time()
         while not self.fully_fitted:
             self.iterative_fit(X, y, X_valid, y_valid, iter_inc)
             self.iter_ix += 1
+        cost_time = time() - start_time
+        self.logger.info(f"{self.__class__.__name__} cost {cost_time:.3f} s, iter = {self.iteration}")
         return self.component
 
     @property
