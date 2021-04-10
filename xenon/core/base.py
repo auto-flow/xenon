@@ -336,27 +336,27 @@ class XenonEstimator(BaseEstimator):
         linear_model_names = ["logistic_regression", "liblinear_svc",
                               "bayesian_ridge", "elasticnet"]
         discretizer_strategy_suffix = "discretize.flexible:strategy"
-        estimator_hp_name="estimating:__choice__"
+        estimator_hp_name = "estimating:__choice__"
         cs = tuner.shps
-        discretizer_strategy_hp_name=None
+        discretizer_strategy_hp_name = None
         for name in cs.get_hyperparameter_names():
             if name.endswith(discretizer_strategy_suffix):
-                discretizer_strategy_hp_name=name
+                discretizer_strategy_hp_name = name
                 break
 
         if discretizer_strategy_hp_name is not None:
-            nonlinear_learner=[]
-            choices=cs.get_hyperparameter(estimator_hp_name).choices
+            nonlinear_learner = []
+            choices = cs.get_hyperparameter(estimator_hp_name).choices
             for choice in choices:
                 if choice not in linear_model_names:
                     nonlinear_learner.append(choice)
-            not_none_discretizer=[]
+            not_none_discretizer = []
             choices = cs.get_hyperparameter(discretizer_strategy_hp_name).choices
             for choice in choices:
-                if choice !="none":
+                if choice != "none":
                     not_none_discretizer.append(choice)
             # 排除全是线性学习器的情况
-            if len(nonlinear_learner)>0 and len(not_none_discretizer)>0:
+            if len(nonlinear_learner) > 0 and len(not_none_discretizer) > 0:
                 nonlinear_learner_forbid = ForbiddenInClause(
                     cs.get_hyperparameter(estimator_hp_name),
                     nonlinear_learner
