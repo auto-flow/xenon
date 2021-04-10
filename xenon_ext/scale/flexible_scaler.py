@@ -34,6 +34,6 @@ class FlexibleScaler(BaseEstimator, TransformerMixin):
             return X
         Xt = self.scaler.transform(X)
         if isinstance(X, pd.DataFrame):
-            return pd.DataFrame(Xt, columns=X.columns, index=X.index)
+            return pd.DataFrame(Xt, columns=X.columns, index=X.index, dtype="float32")
         else:
             return Xt

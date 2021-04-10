@@ -27,6 +27,7 @@ from xenon.utils.hash import get_hash_of_str, get_hash_of_dict
 from xenon.utils.klass import StrSignatureMixin
 from xenon.utils.logging_ import get_logger
 from xenon.utils.ml_task import MLTask
+from uuid import uuid4
 
 
 def get_field_of_type(type_, df, column):
@@ -289,7 +290,7 @@ class ResourceManager(StrSignatureMixin):
         y_true_indexes_list = []
         y_preds_list = []
         performance_list = []
-        scores_list = [] # 之前出了个bug，因为评价指标改为
+        scores_list = []  # 之前出了个bug，因为评价指标改为
         default_metric = "mcc" if ml_task.mainTask == "classification" else "r2"
 
         for record in records:
@@ -536,7 +537,6 @@ class ResourceManager(StrSignatureMixin):
         self.is_init_dataset = False
         self.DatasetModel = None
 
-
     def upload_df_to_fs(self, df: pd.DataFrame, dataset_path):
         tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
         if os.path.exists(tmp_path):
@@ -664,11 +664,12 @@ class ResourceManager(StrSignatureMixin):
                                                      str(self.experiment_id))
         self.file_system.mkdir(self.experiment_path)
         experiment_log_path = self.file_system.join(self.experiment_path, "log_file.log")
-        experiment_model_path = self.file_system.join(self.experiment_path, "model.bz2")
+        experiment_model_path = self.file_system.join(self.experiment_path, f"model-{uuid4().hex[:8]}.bz2")
         # 实验结果模型序列化
         final_model = final_model.copy()
         assert final_model.data_manager.is_empty()
         self.start_safe_close()
+        #          这个操作将一个路径转化为一个ID
         experiment_model_path = self.file_system.dump_pickle(final_model, experiment_model_path)
         self.end_safe_close()
         # 日志上传
@@ -948,7 +949,7 @@ class ResourceManager(StrSignatureMixin):
         self.init_trial_table()
         config_id = info.get("config_id")
         models_path, finally_fit_model_path, y_info_path = \
-            self.persistent_evaluated_model(info, config_id)
+            self.persistent_evaluated_model(info, config_id + f"-{uuid4().hex[:8]}")
         info.update(
             models_path=models_path,
             finally_fit_model_path=finally_fit_model_path,

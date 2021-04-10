@@ -60,6 +60,6 @@ class FlexibleDecomposer(BaseEstimator, TransformerMixin):
             return pd.DataFrame(
                 Xt,
                 columns=[f"component-{i}" for i in range(Xt.shape[1])],
-                index=X.index)
+                index=X.index, dtype="float32")
         else:
             return Xt

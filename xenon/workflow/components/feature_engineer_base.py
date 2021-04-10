@@ -7,7 +7,7 @@ from xenon.workflow.components.utils import stack_Xs
 
 
 class XenonFeatureEngineerAlgorithm(XenonComponent, TransformerMixin):
-    need_y = False
+    need_y = True
 
     def fit_transform(self, X_train=None, y_train=None, X_valid=None, y_valid=None, X_test=None, y_test=None,
                       ):

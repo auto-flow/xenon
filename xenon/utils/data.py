@@ -8,6 +8,7 @@ import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils.multiclass import type_of_target
 
+
 def check_n_jobs(n_jobs):
     cpu_count = mp.cpu_count()
     if n_jobs == 0:
@@ -16,6 +17,7 @@ def check_n_jobs(n_jobs):
         return min(cpu_count, n_jobs)
     else:
         return max(1, cpu_count + 1 + n_jobs)
+
 
 def convert_to_num(Ybin):
     """
@@ -158,6 +160,18 @@ def is_text(s, cat_been_checked=False):
         s = s.apply(len)
         return np.all(s >= 2)
     return False
+
+
+def read_csv(path):
+    df_pre = pd.read_csv(path, nrows=3)
+    float_columns = df_pre.select_dtypes("float").columns
+    int_columns = df_pre.select_dtypes("int").columns
+    dtypes = dict(zip(float_columns, ["float32"] * len(float_columns)))
+    dtypes.update(zip(
+        int_columns,
+        ["int32"] * len(int_columns)
+    ))
+    return pd.read_csv(path, dtype=dtypes)
 
 
 def is_date(s, cat_been_checked=False):

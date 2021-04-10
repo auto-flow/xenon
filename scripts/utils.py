@@ -21,6 +21,7 @@ from tabulate import tabulate
 from scripts import lib_display
 from xenon.interpret.feat_imp import get_feature_importances_in_xenon
 from xenon.tools.external_delivery import transform_xenon
+from xenon.utils.data import read_csv
 from xenon.utils.logging_ import get_logger
 
 util_logger = get_logger(__name__)
@@ -141,7 +142,7 @@ def load_data_from_datapath(
             # 情况一 满足这个判断条件
             datapath = f"{datapath}/data"
         # 情况二不满足判断条件
-        data = pd.read_csv(f"{datapath}/data.csv")
+        data = read_csv(f"{datapath}/data.csv")
         SMILES = None
         if "SMILES" in data:
             SMILES = data.pop("SMILES")
@@ -166,7 +167,7 @@ def load_data_from_datapath(
                 continue
             feature_file_list.append(feature_file.as_posix())
         for feature_file in sorted(feature_file_list):
-            df = pd.read_csv(feature_file)
+            df = read_csv(feature_file)
             data = data.merge(df, on=name_col_name)
         column_descriptions = {
             "target": train_target_column_name,
@@ -175,7 +176,7 @@ def load_data_from_datapath(
     else:
         column_descriptions = {}
         column_descriptions["target"] = train_target_column_name
-        data = pd.read_csv(datapath)
+        data = read_csv(datapath)
         SMILES = None
         if "SMILES" in data:
             SMILES = data.pop("SMILES")

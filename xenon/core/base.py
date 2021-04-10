@@ -402,6 +402,8 @@ class XenonEstimator(BaseEstimator):
                     continue
                 budget = trial_record.get('additional_info', {}).get('budget', 1)
                 loss = trial_record['loss']
+                if loss >= 65535:
+                    continue
                 budget2obvs[budget]["configs"].append(config)
                 budget2obvs[budget]["losses"].append(loss)
                 cnt += 1
@@ -415,7 +417,7 @@ class XenonEstimator(BaseEstimator):
                 tuner.evaluator, tuner.shps, optimizer=optimizer,
                 n_jobs=tuner.n_jobs,
                 n_iterations=self.n_iterations,
-                random_state=self.random_state,
+                random_state=np.random.randint(0, 10000),
                 multi_fidelity_iter_generator=multi_fidelity_iter_generator,
                 limit_resource=True,
                 time_limit=tuner.per_run_time_limit,
@@ -425,7 +427,7 @@ class XenonEstimator(BaseEstimator):
                 warm_start_strategy="resume",
                 previous_result=dummy_result,  # 用于热启动
                 total_time_limit=self.total_time_limit,
-                early_stopping_rounds=self.opt_early_stop_rounds
+                early_stopping_rounds=self.opt_early_stop_rounds,
             )
             # print(result)
             savedpath = os.getenv("SAVEDPATH")
