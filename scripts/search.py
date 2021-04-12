@@ -150,8 +150,8 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
         assert isinstance(candidates, (bool, list, tuple)), ValueError
         if candidates == False:
             continue
-        if isinstance(candidates, (list, tuple)) and (
-                len(candidates) == 0 or (len(candidates) == 1 and candidates[0] == "none")):
+        if isinstance(candidates, (list, tuple)) and \
+                (len(candidates) == 0 or (len(candidates) == 1 and candidates[0] == "none")):
             continue
         key = f"{pre_feat_group}->{feat_group}"
         if candidates == True:
