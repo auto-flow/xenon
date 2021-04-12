@@ -304,6 +304,8 @@ def convert_nan_to_0(dict_: dict):
     for k, v in dict_.items():
         if pd.isna(v):
             dict_[k] = 0
+        else:
+            dict_[k] = float(v)
     return dict_
 
 
