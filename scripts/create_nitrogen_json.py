@@ -17,8 +17,8 @@ relations = {
 }
 
 pos2image = {
-    "local": "harbor.atompai.com/nitrogen/xenon:v3.0",
-    "xbcp": "477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v3.0",
+    "local": "harbor.atompai.com/nitrogen/xenon:v2.1",
+    "xbcp": "477093822308.dkr.ecr.us-east-2.amazonaws.com/nitrogen-1/xenon:v2.1",
 }
 docs_dir = Path(__file__).parent.parent / "docs"
 env_table_dir = docs_dir / "env_table"
@@ -70,7 +70,7 @@ for key, include_list in relations.items():
         "name": f"xenon_{key}_script",
         "description": f"xenon {key} script",
         "git_url": "git@bitbucket.org:xtalpi/xenon.git",
-        "git_branch": "v3.0",
+        "git_branch": "v2.1",
         "git_commit": "",
         "datasets": "",
         "command": f"python scripts/{key}.py",
