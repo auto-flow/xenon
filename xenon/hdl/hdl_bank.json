@@ -132,7 +132,7 @@
       "random_state": 42
     },
     "lightgbm": {
-      "n_estimators": 500,
+      "n_estimators": 2000,
       "boosting_type":  "gbdt",
       "num_leaves":  {"_type": "int_quniform", "_value": [10,150],"_default": 31},
       "max_depth": {"_type": "int_quniform", "_value": [1,100],"_default": 31},
@@ -145,7 +145,7 @@
       "min_child_weight": {"_type": "loguniform","_value": [1e-7,10], "_default": 1e-3}, //aliases to min_sum_hessian
       "bagging_freq": {"_type": "int_loguniform","_value": [1, 10], "_default": 1},
       "use_categorical_feature": {"_type": "choice", "_value": [true, false],"_default": false},
-      "early_stopping_rounds": 100,
+      "early_stopping_rounds": 250,
       "n_jobs": 1,
       "random_state": 42
     },
@@ -364,7 +364,7 @@
       "random_state": 42
     },
     "lightgbm": {
-      "n_estimators": 500,
+      "n_estimators": 2000,
       "boosting_type":  "gbdt",
       "num_leaves":  {"_type": "int_quniform", "_value": [10,150],"_default": 31},
       "max_depth": {"_type": "int_quniform", "_value": [1,100],"_default": 31},
@@ -377,7 +377,7 @@
       "min_child_weight": {"_type": "loguniform","_value": [1e-7,10], "_default": 1e-3}, //aliases to min_sum_hessian
       "bagging_freq": {"_type": "int_loguniform","_value": [1, 10], "_default": 1},
       "use_categorical_feature": {"_type": "choice", "_value": [true, false],"_default": false},
-      "early_stopping_rounds": 100,
+      "early_stopping_rounds": 250,
       "n_jobs": 1,
       "random_state": 42
     },
