@@ -187,6 +187,8 @@ def load_data_from_datapath(
         if train_target_column_name is not None:
             assert train_target_column_name in data.columns, ValueError(
                 f"TRAIN_TARGET_COLUMN_NAME {train_target_column_name} do not exist in data.csv")
+    for col in data.select_dtypes('object').columns:
+        data.pop(col)
     column_descriptions['ignore'] = ignore_columns
     SPLIT = None
     if "SPLIT" in data.columns:
