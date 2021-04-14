@@ -302,7 +302,28 @@ def display(
         ensemble_record["y_info"] = y_info
         ensemble_record["trial_id"] = "stacking"
         processed_records.append(ensemble_record)
-
+    # 用于输出xenon每折的预测结果
+    if len(processed_records) > 0:
+        hstack = np.hstack(processed_records[0]["y_info"]["y_true_indexes"])
+        pred_df = pd.DataFrame(index=list(range(hstack.max() + 1)))
+        for record in processed_records:
+            trial_id = record["trial_id"]
+            y_true_indexes = record["y_info"]["y_true_indexes"]
+            y_preds = record["y_info"]['y_preds']
+            n_folds = len(y_preds)
+            fold_col = f"{trial_id}_FOLD"
+            for fold_id in range(n_folds):
+                y_true_index = y_true_indexes[fold_id]
+                y_pred = y_preds[fold_id]
+                if ml_task.mainTask == "classification":
+                    for proba_id in range(y_pred.shape[1]):
+                        pred_df.loc[y_true_index, f"{trial_id}_PROBA_{proba_id}"] = y_pred[:, proba_id]
+                else:
+                    pred_df.loc[y_true_index, f"{trial_id}"] = y_pred
+                pred_df.loc[y_true_index, fold_col] = fold_id
+            # pred_df[fold_col] = pred_df[fold_col].astype('int32')
+        pred_df.to_csv(f"{savedpath}/{file_name}_predictions.csv", index=False)
+    # 结束输出xenon每折的预测结果
     data = {
         "mainTask": ml_task.mainTask,
         "records": processed_records,
