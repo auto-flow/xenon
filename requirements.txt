@@ -44,3 +44,6 @@ Pyro4==4.8.0
 sympy>=1.5.1
 hint>=1.0.4
 simplejson==3.16.0
+tabular_nn>=0.1.1
+hiplot
+xlearn
