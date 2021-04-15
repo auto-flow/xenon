@@ -17,7 +17,7 @@ import json5 as json
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
-
+from joblib import load
 from scripts import lib_display
 from xenon.interpret.feat_imp import get_feature_importances_in_xenon
 from xenon.tools.external_delivery import transform_xenon
@@ -308,6 +308,27 @@ def display(
     if len(processed_records) > 0:
         hstack = np.hstack(processed_records[0]["y_info"]["y_true_indexes"])
         pred_df = pd.DataFrame(index=list(range(hstack.max() + 1)))
+        # 产品要求输出主键名
+        experiment_id = os.getenv("EXPERIMENT_ID")
+        if experiment_id:
+            experiment_records = resource_manager._get_experiment_record(experiment_id)
+            assert len(experiment_records) > 0, ValueError(f"experiment_id {experiment_id} is invalid.")
+            experiment_record = experiment_records[0]
+            task_id = experiment_record.get("task_id", experiment_record.get("task"))
+            final_model_path = experiment_record["final_model_path"]
+            local_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
+            # 下载过了就不用了，直接load
+            if not os.path.exists(local_path):
+                # 判断非空
+                assert bool(final_model_path), ValueError(
+                    f"experiment {experiment_id}  was not completed normally, is invalid.")
+                resource_manager.file_system.download(final_model_path, local_path)
+            xenon = load(local_path)
+            train_id_seq = getattr(xenon.data_manager, "train_id_seq", None)
+            ID_COLUMN_NAME = xenon.data_manager.column_descriptions.get('id')
+            if train_id_seq is not None and ID_COLUMN_NAME is not None:
+                pred_df[ID_COLUMN_NAME] = train_id_seq
+        # 输出完毕
         for record in processed_records:
             trial_id = record["trial_id"]
             y_true_indexes = record["y_info"]["y_true_indexes"]
