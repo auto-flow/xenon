@@ -14,12 +14,16 @@ class EnsembleEstimator(BaseEstimator):
         prediction_list = []
         assert len(self.y_true_indexes_list) > 1
         # splitter 的 random_state都是相同的， 所以认为  y_true_indexes_list 的每个 y_true_indexes 都相同
-        assert not np.any(np.array([np.hstack(y_true_indexes) for y_true_indexes in  self.y_true_indexes_list]).var(axis=0))
-        for y_preds in self.y_preds_list:
-            prediction_list.append(np.concatenate(y_preds))  # concat in axis 0
+        assert not np.any(
+            np.array([np.hstack(y_true_indexes) for y_true_indexes in self.y_true_indexes_list]).var(axis=0))
+        for y_preds, y_true_indexes in zip(self.y_preds_list, self.y_true_indexes_list):
+            prediction = np.concatenate(y_preds)
+            for y_pred, y_true_index in zip(y_preds, y_true_indexes):
+                prediction[y_true_index] = y_pred
+            prediction_list.append(prediction)  # concat in axis 0
         self.prediction_list = prediction_list
-        y_true_indexes = self.y_true_indexes_list[0]
-        self.stacked_y_true = self.y_true[np.hstack(y_true_indexes)]
+        # y_true_indexes = self.y_true_indexes_list[0]
+        self.stacked_y_true = self.y_true #[np.hstack(y_true_indexes)]
         assert self.prediction_list[0].shape[0] == self.stacked_y_true.shape[0]
 
     def fit_trained_data(
