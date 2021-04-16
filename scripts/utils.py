@@ -144,13 +144,15 @@ def load_data_from_datapath(
         # 情况二不满足判断条件
         data = read_csv(f"{datapath}/data.csv")
         SMILES = None
-        if "SMILES" in data:
-            SMILES = data.pop("SMILES")
-        for name_col_name in ("Name", "NAME", "ID", None):
+        # if "SMILES" in data: # 理解错了
+        #     SMILES = data.pop("SMILES")
+        # 添加主键
+        for name_col_name in ("Name", "NAME", "ID",train_target_column_name, None):
             assert name_col_name is not None, ValueError("Name col name no found!")
             if name_col_name in data.columns:
                 break
         needed_columns = [name_col_name]
+        # 添加目标列
         if train_target_column_name is not None:
             logger.info(f"MODEL_TYPE = {model_type}")
             logger.info(f"TRAIN_TARGET_COLUMN_NAME = {train_target_column_name}")
@@ -178,8 +180,8 @@ def load_data_from_datapath(
         column_descriptions["target"] = train_target_column_name
         data = read_csv(datapath)
         SMILES = None
-        if "SMILES" in data:
-            SMILES = data.pop("SMILES")
+        # if "SMILES" in data: # 理解错了
+        #     SMILES = data.pop("SMILES")
         if "target" not in column_descriptions:
             column_descriptions["target"] = train_target_column_name
         if id_column_name is not None and id_column_name in data.columns:
