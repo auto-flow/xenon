@@ -146,8 +146,11 @@ def load_data_from_datapath(
         SMILES = None
         # if "SMILES" in data: # 理解错了
         #     SMILES = data.pop("SMILES")
+        other_id_column = None
+        if id_column_name is not None and id_column_name != "NAME" and id_column_name in data.columns:
+            other_id_column = data.pop(id_column_name)
         # 添加主键
-        for name_col_name in ("Name", "NAME", "ID",train_target_column_name, None):
+        for name_col_name in ("Name", "NAME", "ID", None):
             assert name_col_name is not None, ValueError("Name col name no found!")
             if name_col_name in data.columns:
                 break
@@ -171,6 +174,10 @@ def load_data_from_datapath(
         for feature_file in sorted(feature_file_list):
             df = read_csv(feature_file)
             data = data.merge(df, on=name_col_name)
+        if other_id_column is not None:
+            data[id_column_name] = other_id_column
+            data.pop(name_col_name)
+            name_col_name = id_column_name
         column_descriptions = {
             "target": train_target_column_name,
             "id": name_col_name
@@ -189,8 +196,6 @@ def load_data_from_datapath(
         if train_target_column_name is not None:
             assert train_target_column_name in data.columns, ValueError(
                 f"TRAIN_TARGET_COLUMN_NAME {train_target_column_name} do not exist in data.csv")
-    for col in data.select_dtypes('object').columns:
-        data.pop(col)
     column_descriptions['ignore'] = ignore_columns
     SPLIT = None
     if "SPLIT" in data.columns:

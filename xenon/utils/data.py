@@ -171,7 +171,10 @@ def read_csv(path):
         int_columns,
         ["int32"] * len(int_columns)
     ))
-    return pd.read_csv(path, dtype=dtypes)
+    try:
+        return pd.read_csv(path, dtype=dtypes)
+    except:
+        return pd.read_csv(path)
 
 
 def is_date(s, cat_been_checked=False):
