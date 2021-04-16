@@ -73,7 +73,8 @@ xenon.estimator = xenon.fit_ensemble(
 # 满足集成学习可视化的需求
 if hasattr(xenon, "ensemble_estimator") and isinstance(xenon.ensemble_estimator, StackEstimator):
     display(resource_manager, task_id, 100, savedpath, trial_ids=trial_ids,  # 感觉输出csv的代码有点问题，就不输出了
-            ensemble_estimator=xenon.ensemble_estimator, file_name="ensemble_records", output_csv=False)
+            ensemble_estimator=xenon.ensemble_estimator, file_name="ensemble_records", output_csv=False,
+            xenon=xenon)
 # 保存各种ID
 save_info_json(
     xenon.experiment_id,

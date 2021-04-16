@@ -91,6 +91,7 @@ local_path = f"{savedpath}/experiment_{experiment_id}_best_model.bz2"
 assert bool(final_model_path), ValueError(f"experiment {experiment_id}  was not completed normally, is invalid.")
 resource_manager.file_system.download(final_model_path, local_path)
 xenon = load(local_path)
+ID_COLUMN_NAME = xenon.data_manager.column_descriptions.get("id")
 is_classifier = ("Classifier" in xenon.__class__.__name__)
 
 predict_base_model = isinstance(xenon.estimator, StackEstimator) \
@@ -105,12 +106,11 @@ def single_dir_predict(data_path, saved_dir, saved_in_dir=False):
     feature_name_list = env_utils.FEATURE_NAME_LIST
     # column_descriptions = {}
     train_target_column_name = None
-    id_column_name = None
     model_type = None
     data, _, _, SMILES = load_data_from_datapath(
         data_path,
         train_target_column_name,
-        id_column_name,
+        ID_COLUMN_NAME,
         logger,
         traditional_qsar_mode,
         model_type,

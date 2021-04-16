@@ -252,7 +252,8 @@ def save_current_expriment_model(savedpath, experiment_id, logger, xenon):
 
 def display(
         resource_manager, task_id, display_size, savedpath,
-        trial_ids=None, ensemble_estimator=None, file_name="search_records", output_csv=True
+        trial_ids=None, ensemble_estimator=None, file_name="search_records", output_csv=True,
+        xenon=None
 ):
     user_id = resource_manager.user_id
     if trial_ids is None:
@@ -261,6 +262,7 @@ def display(
         records = resource_manager._get_trial_records_by_ids(trial_ids, task_id, user_id)
     ml_task, y_train = resource_manager.get_ensemble_needed_info(task_id)
     y_train = y_train.data
+
     # 处理records, 加载y_info_path
     processed_records = []
     records_copy = deepcopy(records)
@@ -278,6 +280,7 @@ def display(
             parser_logger.error(f"error trial_id = {trial_id}")
         if exception is not None:
             parser_logger.error(exception)
+
     # 处理stacking ensemble的可视化
     # fixme: 但是输出csv有点问题，把下面的records改成processed_records会好一点
     if ensemble_estimator is not None:
@@ -297,7 +300,7 @@ def display(
         if 'mcc' in all_score:
             ensemble_record['loss'] = 1 - all_score['mcc']
         else:
-            ensemble_record['loss'] = 1 - all_score['r2']  # fixme: 应该没写错吧
+            ensemble_record['loss'] = 1 - all_score['r2']
         y_true_indexes = processed_records[0]['y_info']['y_true_indexes']
         # hold-out
         if len(y_true_indexes) == 1:
@@ -317,7 +320,7 @@ def display(
         pred_df = pd.DataFrame(index=list(range(hstack.max() + 1)))
         # 产品要求输出主键名
         experiment_id = os.getenv("EXPERIMENT_ID")
-        if experiment_id:
+        if experiment_id is not None and xenon is None:
             experiment_records = resource_manager._get_experiment_record(experiment_id)
             assert len(experiment_records) > 0, ValueError(f"experiment_id {experiment_id} is invalid.")
             experiment_record = experiment_records[0]
@@ -331,6 +334,7 @@ def display(
                     f"experiment {experiment_id}  was not completed normally, is invalid.")
                 resource_manager.file_system.download(final_model_path, local_path)
             xenon = load(local_path)
+        if xenon is not None:
             train_id_seq = getattr(xenon.data_manager, "train_id_seq", None)
             ID_COLUMN_NAME = xenon.data_manager.column_descriptions.get('id')
             if train_id_seq is not None and ID_COLUMN_NAME is not None:
@@ -362,7 +366,6 @@ def display(
 
     output_records = deepcopy(records)
     for output_record in output_records:
-        output_record['budget'] = output_record['additional_info'].get('budget')
         output_record.pop("all_scores")
         output_record.pop("intermediate_results")
         output_record.pop("test_all_score")
@@ -373,6 +376,7 @@ def display(
     search_records_html_path = f"{savedpath}/{file_name}.html"
     if output_csv:
         search_records_df.to_csv(search_records_csv_path, index=False)
+    # fixme: 绘图无法适应多分类的情况
     try:
         Path(search_records_html_path).write_text(lib_display.display(data))
     except Exception as e:
