@@ -10,7 +10,6 @@ import pandas as pd
 strategy_to_class = {
     "minmax": MinMaxScaler,
     "standardize": StandardScaler
-
 }
 
 
