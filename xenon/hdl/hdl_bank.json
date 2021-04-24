@@ -164,6 +164,27 @@
       "alpha": {"_type": "loguniform", "_value": [1e-2, 100],"_default": 1.0},
       "fit_prior": {"_type": "choice", "_value": [true,false],"_default": true}
     },
+    "pytorch_fm": {
+      "n_jobs": 1,
+      "random_state": 42,
+      // 虽然实现了sgd和adam优化器，但是用ftrl求解会得到泛化能力更好的模型
+      "optimizer": "ftrl",
+      "tol": 1e-3,
+      "max_epoch": 1000,
+      "k": {"_type": "int_quniform", "_value": [1, 4, 1],"_default": 2},
+      "use_fm": {"_type": "choice", "_value": [true, false],"_default": true},
+      "alpha": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
+      "beta": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
+      "l2": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
+      "l1": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
+      "__condition":[
+          {
+            "_child": "k",
+            "_parent": "use_fm",
+            "_values": [true]
+          },
+        ],
+    },
     "qda": {
       "reg_param": {"_type": "quniform", "_value": [0.0,1.0],"_default": 0}
     },

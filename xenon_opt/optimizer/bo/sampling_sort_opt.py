@@ -5,6 +5,7 @@
 # @Contact    : qichun.tang@bupt.edu.cn
 
 import itertools
+from collections import defaultdict
 from copy import deepcopy
 from functools import partial
 from typing import Tuple, List
@@ -21,6 +22,10 @@ from xenon_opt.utils.config_transformer import ConfigTransformer
 from xenon_opt.utils.loss_transformer import LossTransformer, LogScaledLossTransformer, ScaledLossTransformer
 
 get_one_exchange_neighbourhood = partial(get_one_exchange_neighbourhood, stdev=0.05, num_neighbors=8)
+
+
+def construct_None():
+    return None
 
 
 class SamplingSortOptimizer(BaseOptimizer):
@@ -57,7 +62,8 @@ class SamplingSortOptimizer(BaseOptimizer):
 
     def initialize(self, config_space, budgets=(1,), random_state=42, initial_points=None, budget2obvs=None):
         super(SamplingSortOptimizer, self).initialize(config_space, budgets, random_state, initial_points, budget2obvs)
-        self.budget2epm = {budget: None for budget in budgets}
+        self.budget2epm = defaultdict(construct_None)
+        self.budget2epm.update({budget: None for budget in budgets})
         self.config_transformer.fit(config_space)
         self.budget2confevt = {}
         for budget in budgets:
@@ -105,7 +111,7 @@ class SamplingSortOptimizer(BaseOptimizer):
         for i, config in enumerate(concat_configs_sorted):
             if self.is_config_exist(budget, config):
                 self.logger.debug(f"The sample already exists and needs to be resampled. "
-                                 f"It's the {i}-th time sampling in bayesian sampling. ")
+                                  f"It's the {i}-th time sampling in bayesian sampling. ")
             else:
                 return self.process_config_info_pair(config, info_dict, budget)
         return self.process_all_configs_exist(info_dict, budget)

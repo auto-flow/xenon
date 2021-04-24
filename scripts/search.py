@@ -327,7 +327,7 @@ def search(datapath: Optional[str] = None, save_in_savedpath=True) -> Union[Xeno
             raise ValueError(f"Invalid KFOLD {kfold}.")
         logger.info(f"KFOLD = {kfold}, data_splitter will be interpret as {splitter}.")
     # ------------------------#
-    # stacking 集成学习的参数  #
+    # stacking 集成学习的参数   #
     # ------------------------#
     ensemble_size = env_utils.ENSEMBLE_SIZE
     if ensemble_size <= 1:

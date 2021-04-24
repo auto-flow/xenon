@@ -17,7 +17,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 
 import xenon
-from xenon.datasets import load_task
 from xenon.tests.mock import get_mock_resource_manager
 
 
