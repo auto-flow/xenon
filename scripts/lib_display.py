@@ -416,96 +416,99 @@ def display(data: dict) -> str:
 
     info_list = list()
     for record in records:
-        info = dict()
-        info["trial_id"] = record["trial_id"]
-        info["estimator"] = record["estimator"]
-        info["cost_time"] = str("{:.4f}").format(record["cost_time"])
-        if record["dict_hyper_param"]:
-            info["preprocessing"] = str(record["dict_hyper_param"]["preprocessing"])
-            info["estimating"] = str(record["dict_hyper_param"]["estimating"][info["estimator"]])
-        else:
-            info["preprocessing"] = record.get('preprocessing', '')
-            info["estimating"] = record.get('estimating', '')
-        info["loss"] = str("{:.4f}").format(record["loss"])
+        try:
+            info = dict()
+            info["trial_id"] = record["trial_id"]
+            info["estimator"] = record["estimator"]
+            info["cost_time"] = str("{:.4f}").format(record["cost_time"])
+            if record["dict_hyper_param"]:
+                info["preprocessing"] = str(record["dict_hyper_param"]["preprocessing"])
+                info["estimating"] = str(record["dict_hyper_param"]["estimating"][info["estimator"]])
+            else:
+                info["preprocessing"] = record.get('preprocessing', '')
+                info["estimating"] = record.get('estimating', '')
+            info["loss"] = str("{:.4f}").format(record["loss"])
 
-        if mainTask == "classification":  # fixme: 如果不是二分类就报错
-            try:
-                cms = record["additional_info"]["confusion_matrices"]
-                cm = np.concatenate(np.sum(cms, axis=0)) / len(cms)
-            except:
-                cm = [0] * 4
-            info["tn"] = str(cm[0])
-            info["fp"] = str(cm[1])
-            info["fn"] = str(cm[2])
-            info["tp"] = str(cm[3])
-            info["mcc"] = str("{:.4f}").format(record["all_score"]["mcc"])
-            info["se"] = str("{:.4f}").format(record["all_score"]["sensitivity"])
-            info["sp"] = str("{:.4f}").format(record["all_score"]["specificity"])
-            info["acc"] = str("{:.4f}").format(record["all_score"]["accuracy"])
-            info["auc"] = str("{:.4f}").format(record["all_score"]["roc_auc"])
-            info["f1"] = str("{:.4f}").format(record["all_score"]["f1"])
-        else:  # regression
-            info["r2"] = str("{:.4f}").format(record["all_score"]["r2"])
-            info["mse"] = str("{:.4f}").format(record["all_score"]["mean_squared_error"])
-            info["mae"] = str("{:.4f}").format(record["all_score"]["mean_absolute_error"])
-            info["pearsonr"] = str("{:.4f}").format(record["all_score"]["pearsonr"])
-            info["spearmanr"] = str("{:.4f}").format(record["all_score"]["spearmanr"])
-            info["kendalltau"] = str("{:.4f}").format(record["all_score"]["kendalltau"])
+            if mainTask == "classification":  # fixme: 如果不是二分类就报错
+                try:
+                    cms = record["additional_info"]["confusion_matrices"]
+                    cm = np.concatenate(np.sum(cms, axis=0)) / len(cms)
+                except:
+                    cm = [0] * 4
+                info["tn"] = str(cm[0])
+                info["fp"] = str(cm[1])
+                info["fn"] = str(cm[2])
+                info["tp"] = str(cm[3])
+                info["mcc"] = str("{:.4f}").format(record["all_score"]["mcc"])
+                info["se"] = str("{:.4f}").format(record["all_score"]["sensitivity"])
+                info["sp"] = str("{:.4f}").format(record["all_score"]["specificity"])
+                info["acc"] = str("{:.4f}").format(record["all_score"]["accuracy"])
+                info["auc"] = str("{:.4f}").format(record["all_score"]["roc_auc"])
+                info["f1"] = str("{:.4f}").format(record["all_score"]["f1"])
+            else:  # regression
+                info["r2"] = str("{:.4f}").format(record["all_score"]["r2"])
+                info["mse"] = str("{:.4f}").format(record["all_score"]["mean_squared_error"])
+                info["mae"] = str("{:.4f}").format(record["all_score"]["mean_absolute_error"])
+                info["pearsonr"] = str("{:.4f}").format(record["all_score"]["pearsonr"])
+                info["spearmanr"] = str("{:.4f}").format(record["all_score"]["spearmanr"])
+                info["kendalltau"] = str("{:.4f}").format(record["all_score"]["kendalltau"])
 
-        info["img"] = list()
-        cv = len(record["y_info"]["y_true_indexes"])
-        y_true_all = list()
-        y_score_all = list()
-        y_pred_all = list()
+            info["img"] = list()
+            cv = len(record["y_info"]["y_true_indexes"])
+            y_true_all = list()
+            y_score_all = list()
+            y_pred_all = list()
 
-        for i in range(cv):
-            index_list = record["y_info"]["y_true_indexes"][i]
-            y_true = y_train[index_list]
-            y_true_all.extend(list(y_true))
-            title = "valid " + str(i + 1)
+            for i in range(cv):
+                index_list = record["y_info"]["y_true_indexes"][i]
+                y_true = y_train[index_list]
+                y_true_all.extend(list(y_true))
+                title = "valid " + str(i + 1)
+                if mainTask == "classification":
+                    y_score = record["y_info"]['y_preds'][i][:, 1]
+                    y_score_all.extend(list(y_score))
+                    info["img"].append(
+                        clf_plot(
+                            y_true,
+                            y_score,
+                            title=title
+                        )
+                    )
+                else:  # regression
+                    y_pred = record["y_info"]['y_preds'][i]
+                    y_pred_all.extend(list(y_pred))
+                    info["img"].append(
+                        reg_plot(
+                            y_true,
+                            y_pred,
+                            min(y_train),
+                            max(y_train),
+                            title=title
+                        )
+                    )
+            # cvmix
             if mainTask == "classification":
-                y_score = record["y_info"]['y_preds'][i][:, 1]
-                y_score_all.extend(list(y_score))
                 info["img"].append(
                     clf_plot(
-                        y_true,
-                        y_score,
-                        title=title
+                        y_true_all,
+                        y_score_all,
+                        title="all validation"
                     )
                 )
             else:  # regression
-                y_pred = record["y_info"]['y_preds'][i]
-                y_pred_all.extend(list(y_pred))
                 info["img"].append(
                     reg_plot(
-                        y_true,
-                        y_pred,
+                        y_true_all,
+                        y_pred_all,
                         min(y_train),
                         max(y_train),
-                        title=title
+                        title="all validation"
                     )
                 )
-        # cvmix
-        if mainTask == "classification":
-            info["img"].append(
-                clf_plot(
-                    y_true_all,
-                    y_score_all,
-                    title="all validation"
-                )
-            )
-        else:  # regression
-            info["img"].append(
-                reg_plot(
-                    y_true_all,
-                    y_pred_all,
-                    min(y_train),
-                    max(y_train),
-                    title="all validation"
-                )
-            )
 
-        info_list.append(info)
+            info_list.append(info)
+        except:
+            pass
 
     if mainTask == "classification":
         temp_dict = {

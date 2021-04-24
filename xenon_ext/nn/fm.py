@@ -232,6 +232,8 @@ class FMBaseEstimator(BaseEstimator):
         return self
 
     def _predict(self, X):
+        if isinstance(X, pd.DataFrame):
+            X = X.values
         return self.fm_nn(
             torch.from_numpy(X.astype('float32')).to(self.device)
         ).detach().cpu().numpy()
