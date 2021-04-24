@@ -487,7 +487,7 @@
         "threshold": {"_type": "loguniform", "_value": [1e-5, 0.01]}
       },
       "flexible": {
-        "strategy": {"_type": "choice", "_value": c},
+        "strategy": {"_type": "choice", "_value": ["none", "rf", "gbdt", "l1_linear"]},
         "should_select_percent": {"_type": "choice", "_value": [true, false]},
         "select_percent": {"_type": "quniform", "_value": [10,100,0.5],"_default": 90},
         "rf_type": {"_type": "choice", "_value": ["random_forest", "extra_trees"]},
