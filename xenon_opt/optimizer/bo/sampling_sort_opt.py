@@ -63,6 +63,7 @@ class SamplingSortOptimizer(BaseOptimizer):
     def initialize(self, config_space, budgets=(1,), random_state=42, initial_points=None, budget2obvs=None):
         super(SamplingSortOptimizer, self).initialize(config_space, budgets, random_state, initial_points, budget2obvs)
         self.budget2epm = defaultdict(construct_None)
+        self.budget2epm.update({budget: None for budget in budgets})
         self.config_transformer.fit(config_space)
         self.budget2confevt = {}
         for budget in budgets:
