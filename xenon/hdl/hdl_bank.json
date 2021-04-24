@@ -183,7 +183,7 @@
             "_parent": "use_fm",
             "_values": [true]
           },
-        ]
+        ],
     },
     "qda": {
       "reg_param": {"_type": "quniform", "_value": [0.0,1.0],"_default": 0}
