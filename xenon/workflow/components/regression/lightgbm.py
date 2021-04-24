@@ -1,9 +1,9 @@
-from xenon.workflow.components.classification_base import XenonClassificationAlgorithm
+from xenon.workflow.components.regression_base import XenonRegressionAlgorithm
 
 __all__ = ["LGBMRegressor"]
 
 
-class LGBMRegressor(XenonClassificationAlgorithm):
+class LGBMRegressor(XenonRegressionAlgorithm):
     class__ = "LGBMRegressor"
     module__ = "xenon_ext.wrap_lightgbm"
 
