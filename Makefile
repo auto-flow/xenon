@@ -34,7 +34,9 @@ install_apt_deps:
 	apt install libpq-dev -y
 	apt install graphviz -y
 
-
+cp_xenon_opt:
+	rm -r ../xenon_opt/xenon_opt
+	cp -r xenon_opt ../xenon_opt
 
 
 install_pip_deps:
