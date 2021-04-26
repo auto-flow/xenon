@@ -279,4 +279,63 @@ xenon采用超参描述语言HDL定义超参空间，相关介绍在xenon_opt的
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20210424132102772.png)顺利跑通，结果还可
 
 
+# 2. 扩展Scaler
+
+## 2.1 修改 flexible_scaler.py
+
+修改文件：	`xenon_ext/scale/flexible_scaler.py`
+
+如图，只需要做少量的修改，就可以扩展`RobustScaler`
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20210426084948198.png)
+
+## 2.2 如有必要，更新search时的默认学习器候选集
+
+修改文件：	`scripts/env_configs/search.json`
+
+如图，新增了策略名
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20210426085145249.png)
+
+# 3 扩展Selector
+
+## 3.1 修改 flexible_feature_selector.py
+
+修改文件：`xenon_ext/feature_selection/flexible_feature_selector.py`
+
+目前整合了这几种特征筛选策略：
+
+- gbdt，梯度替身树，由lightgbm实现
+- rf，随机森林，可选 random_forest 或 extra_trees
+- l1_linear，L1 正则化的线性模型，通过产生稀疏解来做特征筛选
+- none，不做特征筛选
+
+
+参数如下：
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2021041911534493.png)
+
+| 变量名 | 变量类型 | 取值范围|
+|--|--|--|
+| strategy | choice | ["none", "l1_linear", "rf", "gbdt"] |
+| should_select_percent | choice |[true, false] |
+| select_percent | quniform | [10,100,0.5] |
+| rf_type | choice | ["random_forest", "extra_trees"] |
+| C | loguniform | [0.01, 10] |
+
+假设我们一个简单的扩展：**引入xgboost做特征筛选**，我们可以这样修改：
+
+
+
+
+在xenon代码中使用命令`git diff 4d1279c2d81acbea94619ded438d9589dff505ca cad32f2f9d87ff5c2bc5fa756f77036b7eecf829`
+可以看到：
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20210426090357193.png)
+## 3.2 如有必要，更新search时的默认学习器候选集
+
+修改文件：	`scripts/env_configs/search.json`
+
+如图，新增了策略名
+
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20210426090948701.png)
 
