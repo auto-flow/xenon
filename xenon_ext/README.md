@@ -15,6 +15,8 @@
  /data/Project/AutoML/Xenon (v2.1 ✘)✭ ᐅ python setup_ext.py install
 ```
 
+- 如果你想生成 `xenon_ext.whl` ：
+
 ```bash
 /data/Project/AutoML/Xenon (v2.1 ✘)✭ ᐅ python setup_ext.py bdist_wheel
 。。。
