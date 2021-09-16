@@ -166,14 +166,20 @@ def read_csv(path):
     df_pre = pd.read_csv(path, nrows=3)
     float_columns = df_pre.select_dtypes("float").columns
     int_columns = df_pre.select_dtypes("int").columns
-    dtypes = dict(zip(float_columns, ["float32"] * len(float_columns)))
+    dtypes = dict(zip(
+        float_columns,
+        ["float16"] * len(float_columns)
+    ))
     dtypes.update(zip(
         int_columns,
-        ["int32"] * len(int_columns)
+        ["int16"] * len(int_columns)
     ))
     try:
+        print('内存压缩版 pd.read_csv 调用成功')
         return pd.read_csv(path, dtype=dtypes)
-    except:
+    except Exception as e:
+        print('内存压缩版 pd.read_csv 调用失败')
+        print(e)
         return pd.read_csv(path)
 
 
