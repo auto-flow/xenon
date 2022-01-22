@@ -1,0 +1,12 @@
+[
+  {
+    "name": "DISPLAY_SIZE",
+    "default": 50,
+    "description": "默认只展示最好的 ``50`` 次试验"
+  },
+  {
+    "name": "TASK_ID",
+    "default": "5a73130cfe68340968b2e6c029e71fc0",
+    "description": "你需要展示机器学习任务的 ``task_id`` , 可以通过上次任务 `result dataset` 中的 ``info.json`` 查找"
+  }
+]

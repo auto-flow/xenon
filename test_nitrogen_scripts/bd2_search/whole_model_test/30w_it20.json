@@ -1,0 +1,30 @@
+{
+  "name": "30w_it20",
+  "description": "20w_it20",
+  "project": "X-M014-V2.6",
+  "git_url": "git@bitbucket.org:xtalpi/xenon.git",
+  "git_branch": "xenon4bigdata",
+  "git_commit": "",
+  "datasets": "244529",
+  "command": "python scripts/bd2_search.py",
+  "use_gpu": 0,
+  "env": {
+    "XENON_URL": "https://xenon-test.nitrogen.fun:9091",
+    "USER_ID": "2",
+    "USER_TOKEN": "8v$NdlCVujOey#&194fK%7OwYc8FNsMY",
+    "MODEL_TYPE": "clf",
+    "METRIC": "auc",
+    "SPECIFIC_TASK_TOKEN": "whole_model_test",
+    "DISPLAY_SIZE": "10",
+    "N_RANDOM_STARTS": "20",
+    "N_ITERATIONS": "20"
+  },
+  "docker_image": "xenon:v2.1",
+  "resource": {
+    "cpu": 60,
+    "memory": 100,
+    "gpu": 0,
+    "gpu_model": "standard",
+    "spot": true
+  }
+}

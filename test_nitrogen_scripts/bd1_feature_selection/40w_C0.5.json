@@ -1,0 +1,26 @@
+{
+  "name": "40w_C0.5",
+  "description": "test_bd1_feature_selection",
+  "project": "X-M014-V2.6",
+  "git_url": "git@bitbucket.org:xtalpi/xenon.git",
+  "git_branch": "xenon4bigdata",
+  "git_commit": "",
+  "datasets": "239766",
+  "command": "python scripts/bd1_preprocess.py",
+  "use_gpu": 0,
+  "env": {
+    "MODEL_TYPE": "clf",
+    "TRAIN_TARGET_COLUMN_NAME": "LABEL",
+    "FEATURE_SELECT_METHOD": "l1_linear",
+    "SELECTOR_PARAMS": "l1_linear(C=0.5,max_iter=100)",
+    "FEATURE_NAME_LIST": "None"
+  },
+  "docker_image": "xenon:v2.1",
+  "resource": {
+    "cpu": 60,
+    "memory": 100,
+    "gpu": 0,
+    "gpu_model": "standard ",
+    "spot": true
+  }
+}

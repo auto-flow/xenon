@@ -1,0 +1,19 @@
+{
+    "name": "xenon_display_script",
+    "description": "xenon display script",
+    "git_url": "git@bitbucket.org:xtalpi/xenon.git",
+    "git_branch": "v3.0",
+    "git_commit": "",
+    "datasets": "",
+    "command": "python scripts/display.py",
+    "use_gpu": 0,
+    "env": {
+        "USER_ID": "None",
+        "USER_TOKEN": "None",
+        "EMAIL": "None",
+        "PASSWORD": "None",
+        "DISPLAY_SIZE": "50",
+        "TASK_ID": "5a73130cfe68340968b2e6c029e71fc0"
+    },
+    "docker_image": "harbor.atompai.com/nitrogen/xenon:v3.0"
+}

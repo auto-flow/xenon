@@ -1,0 +1,7 @@
+[
+  {
+    "name": "EXTERNAL_DELIVERY",
+    "default": false,
+    "description": "是否产生对外交付模型，该模型只依赖部分xenon代码，可以交付给外部用户"
+  }
+]

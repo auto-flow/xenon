@@ -1,0 +1,22 @@
+[
+  {
+    "name": "FEATURE_NAME_LIST",
+    "default": null,
+    "description": "非空时为指定使用某几种特征，如 ``['SubFP']`` "
+  },
+  {
+    "name": "EXPERIMENT_ID",
+    "default": "45",
+    "description": "请提供一个实验ID，用于下载这次实验的最好模型， 可查看上次任务( `search` 或 `ensemble` )的 ``info.json`` "
+  },
+  {
+    "name" : "PREDICT_THREAD_NUM",
+    "default": 3,
+    "description": "预测过程中，线程池中的线程数量"
+  },
+  {
+    "name" : "PREDICT_BASE_MODEL",
+    "default": false,
+    "description": "对于Stacking时，是否使用所有基模型再预测一遍"
+  }
+]

@@ -1,0 +1,12 @@
+digraph workflow_space {
+	data
+	num [label=<<font color="#0099CC">num</font>> color="#0099CC"]
+	data -> num [label=<data_manager: <font color="#0099CC">num</font>>]
+	num [label=<<font color="#0099CC">num</font>> color="#0099CC"]
+	selected [label=<<font color="#0066CC">selected</font>> color="#0066CC"]
+	num -> selected [label=<<font color="#663366">select.from_model_clf</font>>]
+	selected [label=<<font color="#0066CC">selected</font>> color="#0066CC"]
+	target [label=<<font color="#000000">target</font>> color="#000000"]
+	selected -> target [label=<{<font color="#663300">adaboost</font>, <font color="#666633">extra_trees</font>, <font color="#333366">random_forest</font>, <font color="#660033">liblinear_svc</font>, <font color="#663366">libsvm_svc</font>, <font color="#663300">lightgbm</font>, <font color="#666633">logistic_regression</font>}>]
+	label="WorkFlow Space"
+}
