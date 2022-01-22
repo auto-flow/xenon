@@ -5,10 +5,9 @@
 import os
 import re
 import shutil
-import sys
 import unittest
 from pathlib import Path
-from typing import Iterator, Tuple, Optional
+from typing import Iterator, Tuple
 
 import joblib
 import numpy as np
@@ -16,7 +15,7 @@ import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, LabelEncoder
 
-import autoflow
+from autoflow.datasets import load_task
 from autoflow.tests.mock import get_mock_resource_manager
 
 
@@ -83,7 +82,7 @@ class EstimatorTestCase(unittest.TestCase):
         cat_na_mask = (nan_cnt > 0) & cat
         num_na_mask = (nan_cnt > 0) & (~cat)
         cat_imputer = SimpleImputer(strategy="constant", fill_value="NA").fit(X_train.loc[:, cat_na_mask])
-        # num_imputer = SimpleImputer(strategy="median").fit(X_train.loc[:, num_na_mask])
+        # num_imputer = BaseImputer(strategy="median").fit(X_train.loc[:, num_na_mask])
         X_train.loc[:, cat_na_mask] = cat_imputer.transform(X_train.loc[:, cat_na_mask])
         X_test.loc[:, cat_na_mask] = cat_imputer.transform(X_test.loc[:, cat_na_mask])
         # X_train.loc[:, num_na_mask] = num_imputer.transform(X_train.loc[:, num_na_mask])
@@ -100,54 +99,3 @@ class EstimatorTestCase(unittest.TestCase):
         self.y_test = label_encoder.transform(y_test)
         self.X_train = X_train
         self.X_test = X_test
-
-
-class SimulateNitrogenTestCase(unittest.TestCase):
-    env_str = None
-    name = None
-    script = None
-    download_nitrogen_data = False
-    dataset_id = None
-    dataset_name = None
-
-    def test(self):
-        # assert self.name is not None, NotImplementedError("You should specific name first!")
-        for k_v in self.env_str.split(";"):
-            if "=" in k_v:
-                k, v = k_v.split("=")
-                os.environ[k] = v
-        root_path = Path(autoflow.__path__[0]).parent
-        savedpath = root_path / "savedpath"
-        datapath = root_path / "data"
-        # 处理 savedpath
-        savedpath_ = savedpath / self.name
-        cnt = 0
-        while savedpath_.exists():
-            savedpath_ = savedpath / f"{self.name}_{cnt}"
-            cnt += 1
-        savedpath_.mkdir(parents=True, exist_ok=True)
-        print(f"Current SAVEDPATH = {savedpath_}")
-        os.environ["SAVEDPATH"] = str(savedpath_)
-        # 处理 datapath
-        datapath_=None
-        if self.download_nitrogen_data:
-            assert self.dataset_id is not None, ValueError
-            assert self.dataset_name is not None, ValueError
-            datapath_ = datapath / self.dataset_name
-            if not datapath_.exists():
-                print(f"{datapath_} didn't exitst, download from nitrogen, "
-                      f"please make sure you have login in nitrogen!")
-                os.system(f"nitrogen download {self.dataset_id} -p {datapath}")
-            else:
-                print(f"{datapath_} exists.")
-            os.environ["DATAPATH"] = str(datapath_)
-            print(f"Current DATAPATH = {datapath_}")
-        # 开始瞎搞
-        script_path = root_path / "scripts" / f"{self.script}.py"
-        cmd = f"{sys.executable} {script_path}"
-        print(cmd)
-        os.system(cmd)
-        self.do_test(savedpath_, datapath_)
-
-    def do_test(self, savedpath: Path, datapath:Optional[Path]=None):
-        raise NotImplementedError

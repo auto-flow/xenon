@@ -1,22 +1,25 @@
 import datetime
 import hashlib
+import json
 import os
 import shutil
+import traceback
 from copy import deepcopy
 from math import ceil
 from typing import Dict, Tuple, List, Union, Any
 
+import h5py
+import joblib
 import numpy as np
 import pandas as pd
 import peewee as pw
 from frozendict import frozendict
 # from playhouse.fields import PickleField
 from playhouse.reflection import generate_models
+from redis import Redis
 
-from generic_fs import FileSystem
-from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, create_database
-from generic_fs.utils.fs import get_file_system
-from autoflow.constants import RESOURCE_MANAGER_CLOSE_ALL_LOGGER, ExperimentType
+from autoflow.constants import RESOURCE_MANAGER_CLOSE_ALL_LOGGER, CONNECTION_POOL_CLOSE_MSG, START_SAFE_CLOSE_MSG, \
+    END_SAFE_CLOSE_MSG, ExperimentType, ERR_LOSS
 from autoflow.data_manager import DataManager
 from autoflow.ensemble.mean.regressor import MeanRegressor
 from autoflow.ensemble.vote.classifier import VoteClassifier
@@ -27,7 +30,11 @@ from autoflow.utils.hash import get_hash_of_str, get_hash_of_dict
 from autoflow.utils.klass import StrSignatureMixin
 from autoflow.utils.logging_ import get_logger
 from autoflow.utils.ml_task import MLTask
-from uuid import uuid4
+from generic_fs import FileSystem
+from generic_fs.utils.db import get_db_class_by_db_type, get_JSONField, create_database
+from generic_fs.utils.fs import get_file_system
+from generic_fs.utils.http import CustomJsonEncoder
+from . import cache as cache_module
 
 
 def get_field_of_type(type_, df, column):
@@ -75,7 +82,12 @@ class ResourceManager(StrSignatureMixin):
             user_id=0,
             search_record_db_name="autoflow",
             dataset_table_db_name="autoflow_dataset",
-            del_local_log_path=True
+            del_local_log_path=True,
+            cache_system="FsCache",
+            cache_system_params=frozendict(),
+            should_record_workflow_step=False,
+            save_experiment_model=True,
+            store_dataset=True
     ):
         '''
 
@@ -116,6 +128,11 @@ class ResourceManager(StrSignatureMixin):
         compress_suffix: str
             compress file's suffix, default is bz2
         '''
+        self.store_dataset = store_dataset
+        self.save_experiment_model = save_experiment_model
+        self.should_record_workflow_step = should_record_workflow_step
+        self.cache_system_params = dict(cache_system_params)
+        self.cache_system = cache_system
         self.del_local_log_path = del_local_log_path
         self.dataset_table_db_name = dataset_table_db_name
         self.search_record_db_name = search_record_db_name
@@ -137,6 +154,8 @@ class ResourceManager(StrSignatureMixin):
         assert db_type in ("sqlite", "postgresql", "mysql")
         self.db_type = db_type
         self.db_params = dict(db_params)
+        # if db_type == "sqlite": # compatible Nitrogen FS
+        #     assert self.file_system_type == "local"
         # ---redis----------------
         self.redis_params = dict(redis_params)
         # ---max_persistent_model---
@@ -152,9 +171,9 @@ class ResourceManager(StrSignatureMixin):
         self.is_init_trial = False
         self.is_init_dataset = False
         self.is_init_redis = False
-        self.is_master = False
         self.is_init_record_db = False
         self.is_init_dataset_db = False
+        self.is_init_workflow_step = False
         # --some specific path based on file_system---
         self.datasets_dir = self.file_system.join(self.store_path, "datasets")
         self.databases_dir = self.file_system.join(self.store_path, "databases")
@@ -170,6 +189,8 @@ class ResourceManager(StrSignatureMixin):
         # None means didn't create database
         self._dataset_db_name = None
         self._record_db_name = None
+        # --cache system---------------------------------
+        self.cache: cache_module.BaseCache = getattr(cache_module, self.cache_system)(self, **self.cache_system_params)
 
     def close_all(self):
         self.close_redis()
@@ -180,13 +201,17 @@ class ResourceManager(StrSignatureMixin):
         self.close_dataset_table()
         self.close_dataset_db()
         self.close_record_db()
+        self.close_workflow_step_table()
         self.file_system.close_fs()
+        self.close_all_logger.warning(CONNECTION_POOL_CLOSE_MSG)
+        stack_txt = "".join(traceback.format_stack())
+        self.close_all_logger.info(stack_txt)
 
     def start_safe_close(self):
-        pass
+        self.close_all_logger.info(START_SAFE_CLOSE_MSG)
 
     def end_safe_close(self):
-        pass
+        self.close_all_logger.info(END_SAFE_CLOSE_MSG)
 
     def __reduce__(self):
         self.close_all()
@@ -230,7 +255,8 @@ class ResourceManager(StrSignatureMixin):
         self.trial_dir = self.file_system.join(self.parent_trials_dir, str(self.user_id), self.task_id, self.hdl_id)
         self.file_system.mkdir(self.trial_dir)
         # ----get specific URL---------
-        models_path = self.file_system.join(self.trial_dir, f"{model_id}_models.{self.compress_suffix}")
+        models_path = self.file_system.join(self.trial_dir,
+                                            f"{model_id}_models.{self.compress_suffix}")  # compatible Nitrogen FS
         y_info_path = self.file_system.join(self.trial_dir, f"{model_id}_y-info.{self.compress_suffix}")
         if info.get("finally_fit_model") is not None:
             finally_fit_model_path = self.file_system.join(self.trial_dir,
@@ -241,7 +267,7 @@ class ResourceManager(StrSignatureMixin):
         models_path = self.file_system.dump_pickle(info.pop("models"), models_path)
         y_info_path = self.file_system.dump_pickle(y_info, y_info_path)
         if finally_fit_model_path:
-            finally_fit_model_path = self.file_system.dump_pickle(info.pop("finally_fit_model"), finally_fit_model_path)
+            self.file_system.dump_pickle(info.pop("finally_fit_model"), finally_fit_model_path)
         # ----return----------------
         return models_path, finally_fit_model_path, y_info_path
 
@@ -282,39 +308,38 @@ class ResourceManager(StrSignatureMixin):
         record = self._get_trial_records_by_id(trial_id, self.task_id, self.user_id)[0]
         return record["dict_hyper_param"]
 
-    def load_estimators_in_trials(self, trials: Union[List, Tuple], ml_task: MLTask) -> Tuple[
-        List, List, List, List, List]:
+    def _load_estimators_in_trials(self, record):
+        exists = True
+        if not self.file_system.exists(record["models_path"]):
+            exists = False
+            estimator = None
+        else:
+            estimator = self.file_system.load_pickle(record["models_path"])
+        if exists:
+            y_info = self.file_system.load_pickle(record["y_info_path"])
+            y_true_indexes = y_info["y_true_indexes"]
+            y_preds = y_info["y_preds"]
+            return estimator, y_true_indexes, y_preds
+        else:
+            return None
+
+    def load_estimators_in_trials(self, trials: Union[List, Tuple]) -> Tuple[List, List, List]:
         self.init_trial_table()
         records = self._get_trial_records_by_ids(trials, self.task_id, self.user_id)
-        estimator_list = []
-        y_true_indexes_list = []
-        y_preds_list = []
-        performance_list = []
-        scores_list = []  # 之前出了个bug，因为评价指标改为
-        default_metric = "mcc" if ml_task.mainTask == "classification" else "r2"
-
-        for record in records:
-            exists = True
-            if not self.file_system.exists(record["models_path"]):
-                exists = False
-            else:
-                estimator_list.append(self.file_system.load_pickle(record["models_path"]))
-            if exists:
-                y_info = self.file_system.load_pickle(record["y_info_path"])
-                y_true_indexes_list.append(y_info["y_true_indexes"])
-                y_preds_list.append(y_info["y_preds"])
-                all_score = record["all_score"]
-                performance = all_score[default_metric]
-                trial_id = record["trial_id"]
-                performance_list.append(performance)
-                scores_list.append(all_score)
-                self.logger.info(f"trial_id = {trial_id}\t{default_metric} = {performance}")
-        return estimator_list, y_true_indexes_list, y_preds_list, performance_list, scores_list
-
-    def set_is_master(self, is_master):
-        self.is_master = is_master
+        # 用多进程读入
+        with joblib.parallel_backend('loky', n_jobs=-1):
+            results = joblib.Parallel()(
+                joblib.delayed(self._load_estimators_in_trials)(record)
+                for record in records
+            )
+            results = [result for result in results if result is not None]
+            estimator_list = [result[0] for result in results]
+            y_true_indexes_list = [result[1] for result in results]
+            y_preds_list = [result[2] for result in results]
+        return estimator_list, y_true_indexes_list, y_preds_list
 
     # ----------runhistory------------------------------------------------------------------
+
     @property
     def runhistory_db_params(self):
         self.init_record_db()
@@ -376,7 +401,6 @@ class ResourceManager(StrSignatureMixin):
         if self.is_init_redis:
             return True
         try:
-            from redis import Redis
             self.redis_client = Redis(**self.redis_params)
             self.is_init_redis = True
             return True
@@ -537,15 +561,41 @@ class ResourceManager(StrSignatureMixin):
         self.is_init_dataset = False
         self.DatasetModel = None
 
+    def upload_df_to_table(self, df, dataset_id, column_mapper):
+        dataset_db = self.init_dataset_db()
+
+        class Meta:
+            database = dataset_db
+            table_name = f"dataset_{dataset_id}"
+
+        origin_columns = deepcopy(df.columns)
+        df.columns = pd.Series(df.columns).map(column_mapper)
+        database_id = get_unique_col_name(df.columns, "id")
+        dict_ = {"Meta": Meta, database_id: pw.AutoField()}
+        for col_name, dtype in zip(df.columns, df.dtypes):
+            dict_[col_name] = get_field_of_type(dtype, df, col_name)
+        DataframeModel = type("DataframeModel", (pw.Model,), dict_)
+        dataset_db.create_tables([DataframeModel])
+        sp0 = df.shape[0]
+        L = 500
+        N = ceil(sp0 / L)
+        for i in range(N):
+            sub_df = df.iloc[i * L:min(sp0, (i + 1) * L)]
+            sub_df = replace_nan_to_None(sub_df)
+            dicts = sub_df.to_dict('records')
+            DataframeModel.insert_many(dicts).execute()
+        df.columns = origin_columns
+
     def upload_df_to_fs(self, df: pd.DataFrame, dataset_path):
         tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
-        df.to_hdf(tmp_path, "dataset")
-        return self.file_system.upload(dataset_path, tmp_path)
+        if self.store_dataset:
+            df.to_hdf(tmp_path, "dataset", format="table")
+            return self.file_system.upload(dataset_path, tmp_path)
+        return ""
 
     def upload_ndarray_to_fs(self, arr: np.ndarray, dataset_path):
-        import h5py
         tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
@@ -593,16 +643,17 @@ class ResourceManager(StrSignatureMixin):
             df = df[columns]
         return df
 
-    def download_df_from_fs(self, dataset_path):
-        tmp_path = f"/tmp/tmp_df_{get_hash_of_str(dataset_path)}.h5"
+    def download_df_from_fs(self, dataset_path, columns=None):
+        tmp_path = f"/tmp/tmp_df_{os.getpid()}.h5"
         self.file_system.download(dataset_path, tmp_path)
         df: pd.DataFrame = pd.read_hdf(tmp_path, "dataset")
+        # if columns is not None:
+        #     df = df[columns]
         return df
 
     def download_arr_from_fs(self, dataset_path):
-        tmp_path = f"/tmp/tmp_arr_{get_hash_of_str(dataset_path)}.h5"
+        tmp_path = f"/tmp/tmp_arr_{os.getpid()}.h5"
         self.file_system.download(dataset_path, tmp_path)
-        import h5py
         with h5py.File(tmp_path, 'r') as hf:
             arr = hf['dataset'][:]
         return arr
@@ -636,9 +687,10 @@ class ResourceManager(StrSignatureMixin):
     ):
         self.init_experiment_table()
         assert isinstance(experiment_type, ExperimentType)
-        self.experiment_id = self._insert_experiment_record(self.user_id, getattr(self, "hdl_id", None), self.task_id,
-                                                            experiment_type.value,
-                                                            experiment_config, additional_info)
+        self.experiment_id = self._insert_experiment_record(
+            self.user_id, getattr(self, "hdl_id", None), self.task_id,
+            experiment_type.value,
+            experiment_config, additional_info)
 
     def _insert_experiment_record(
             self, user_id: int, hdl_id: str, task_id: str,
@@ -664,14 +716,14 @@ class ResourceManager(StrSignatureMixin):
                                                      str(self.experiment_id))
         self.file_system.mkdir(self.experiment_path)
         experiment_log_path = self.file_system.join(self.experiment_path, "log_file.log")
-        experiment_model_path = self.file_system.join(self.experiment_path, f"model-{uuid4().hex[:8]}.bz2")
+        experiment_model_path = self.file_system.join(self.experiment_path, "model.bz2")
         # 实验结果模型序列化
-        final_model = final_model.copy()
-        assert final_model.data_manager.is_empty()
-        self.start_safe_close()
-        #          这个操作将一个路径转化为一个ID
-        experiment_model_path = self.file_system.dump_pickle(final_model, experiment_model_path)
-        self.end_safe_close()
+        if self.save_experiment_model:
+            final_model = final_model.copy()
+            assert final_model.data_manager.is_empty()
+            self.start_safe_close()
+            experiment_model_path = self.file_system.dump_pickle(final_model, experiment_model_path)
+            self.end_safe_close()
         # 日志上传
         if os.path.exists(local_log_path):
             tmp_log_path = f"/tmp/log"
@@ -895,36 +947,40 @@ class ResourceManager(StrSignatureMixin):
         self.is_init_hdl = False
         self.HdlModel = None
 
+
     # ----------trial_model------------------------------------------------------------------
 
     def get_trial_model(self) -> pw.Model:
         class Trial(pw.Model):
             trial_id = pw.AutoField(primary_key=True)
             user_id = pw.IntegerField()
-            config_id = pw.FixedCharField(max_length=32)
-            run_id = pw.FixedCharField(max_length=256)
-            instance_id = pw.FixedCharField(max_length=128)
+            config_id = pw.FixedCharField(max_length=32,null=True)
+            config = self.JSONField(default={},null=True)  # new
+            config_info = self.JSONField(default={},null=True)  # new
+            # run_id = pw.FixedCharField(max_length=256)
+            # instance_id = pw.FixedCharField(max_length=128)
             experiment_id = pw.IntegerField()
-            task_id = pw.FixedCharField(max_length=32, index=True)  # 加索引
-            hdl_id = pw.FixedCharField(max_length=32)
-            estimator = pw.CharField(max_length=256, default="")
-            loss = pw.FloatField(default=65535)
-            losses = self.JSONField(default=[])
-            test_loss = self.JSONField(default=[])  # 测试集
-            all_score = self.JSONField(default={})
-            all_scores = self.JSONField(default=[])
-            test_all_score = self.JSONField(default={})  # 测试集
-            models_path = pw.TextField(default="")
-            final_model_path = pw.TextField(default="")
-            y_info_path = pw.TextField(default="")
-            additional_info = self.JSONField(default={})
+            task_id = pw.FixedCharField(max_length=32, index=True,null=True)  # 加索引
+            hdl_id = pw.FixedCharField(max_length=32,null=True)
+            estimator = pw.CharField(max_length=256, default="",null=True)
+            loss = pw.FloatField(default=ERR_LOSS,null=True)
+            losses = self.JSONField(default=[],null=True)
+            test_loss = self.JSONField(default=[],null=True)
+            all_score = self.JSONField(default={},null=True)
+            all_scores = self.JSONField(default=[],null=True)
+            test_all_score = self.JSONField(default={},null=True)
+            models_path = pw.TextField(default="",null=True)
+            final_model_path = pw.TextField(default="",null=True)
+            y_info_path = pw.TextField(default="",null=True)
+            additional_info = self.JSONField(default={},null=True)
             # smac_hyper_param = PickleField(default=0)
-            dict_hyper_param = self.JSONField(default={})
-            cost_time = pw.FloatField(default=65535)
-            status = pw.CharField(max_length=32, default="SUCCESS")
-            failed_info = pw.TextField(default="")
-            warning_info = pw.TextField(default="")
-            intermediate_results = self.JSONField(default=[])
+            dict_hyper_param = self.JSONField(default={},null=True)
+            cost_time = pw.FloatField(default=ERR_LOSS,null=True)
+            status = pw.CharField(max_length=32, default="SUCCESS",null=True)
+            failed_info = pw.TextField(default="",null=True)
+            warning_info = pw.TextField(default="",null=True)
+            intermediate_results = self.JSONField(default=[],null=True)
+            timestamps = self.JSONField(default={}, null=True)  # new
             start_time = pw.DateTimeField()
             end_time = pw.DateTimeField()
 
@@ -939,41 +995,45 @@ class ResourceManager(StrSignatureMixin):
             return
         self.is_init_trial = True
         self.init_record_db()
-        self.TrialsModel = self.get_trial_model()
+        self.TrialModel = self.get_trial_model()
 
     def close_trial_table(self):
         self.is_init_trial = False
-        self.TrialsModel = None
+        self.TrialModel = None
 
     def insert_trial_record(self, info: Dict):
         self.init_trial_table()
+        # fixme: 之所以如此苟是因为trial_id不可知
         config_id = info.get("config_id")
+        model_id = "-".join([config_id])
         models_path, finally_fit_model_path, y_info_path = \
-            self.persistent_evaluated_model(info, config_id + f"-{uuid4().hex[:8]}")
+            self.persistent_evaluated_model(info, model_id)
         info.update(
             models_path=models_path,
             finally_fit_model_path=finally_fit_model_path,
             y_info_path=y_info_path,
         )
-        self._insert_trial_record(self.user_id, self.task_id, self.hdl_id, self.experiment_id, info)
+        return self._insert_trial_record(self.user_id, self.task_id, self.hdl_id, self.experiment_id,
+                                         info)
 
     def _get_sorted_trial_records(self, task_id, user_id, limit):
-        records = self.TrialsModel.select().where(
-            (self.TrialsModel.task_id == task_id) & (self.TrialsModel.user_id == user_id)
-        ).order_by(self.TrialsModel.loss, self.TrialsModel.cost_time).limit(limit).dicts()
+
+        records = self.TrialModel.select().where(  # select *
+            (self.TrialModel.task_id == task_id) & (self.TrialModel.user_id == user_id)
+        ).order_by(self.TrialModel.loss, self.TrialModel.cost_time).limit(limit).dicts()
         return list(records)
 
     def _get_trial_records_by_id(self, trial_id, task_id, user_id):
-        records = self.TrialsModel.select().where(
-            (self.TrialsModel.trial_id == trial_id) & (self.TrialsModel.task_id == task_id) &
-            (self.TrialsModel.user_id == user_id)
+        records = self.TrialModel.select().where(
+            (self.TrialModel.trial_id == trial_id) & (self.TrialModel.task_id == task_id) &
+            (self.TrialModel.user_id == user_id)
         ).dicts()
         return list(records)
 
     def _get_trial_records_by_ids(self, trial_ids, task_id, user_id):
-        records = self.TrialsModel.select().where(
-            (self.TrialsModel.trial_id << trial_ids) & (self.TrialsModel.task_id == task_id) &
-            (self.TrialsModel.user_id == user_id)
+        records = self.TrialModel.select().where(
+            (self.TrialModel.trial_id << trial_ids) & (self.TrialModel.task_id == task_id) &
+            (self.TrialModel.user_id == user_id)
         ).dicts()
         records = list(records)
         return records
@@ -981,48 +1041,36 @@ class ResourceManager(StrSignatureMixin):
     def _get_best_k_trial_ids(self, task_id, user_id, k):
         # self.init_trial_table()
         trial_ids = []
-        records = self.TrialsModel.select(self.TrialsModel.trial_id).where(
-            (self.TrialsModel.task_id == task_id) & (self.TrialsModel.user_id == user_id)
-        ).order_by(self.TrialsModel.loss, self.TrialsModel.cost_time).limit(k)
+        records = self.TrialModel.select(self.TrialModel.trial_id).where(
+            (self.TrialModel.task_id == task_id) & (self.TrialModel.user_id == user_id)
+        ).order_by(self.TrialModel.loss, self.TrialModel.cost_time).limit(k)
         for record in records:
             trial_ids.append(record.trial_id)
         return trial_ids
 
-    def _insert_trial_record(self, user_id: int, task_id: str, hdl_id: str, experiment_id: int, info: dict):
+    def _insert_trial_record(self, user_id: int, task_id: str, hdl_id: str, experiment_id: int,
+                             info: dict):
         success = False
         max_try_times = 3
         trial_id = -1
-        for i in range(max_try_times):
-            try:
-                trial_id = self.do_insert_trial_record(user_id, task_id, hdl_id, experiment_id, info)
-                success = True
-            except Exception as e:
-                self.logger.error(e)
-                self.logger.error(f"Insert 'trial' table failed, {i + 1} try.")
-                # 关闭连接池， 重新连接
-                self.close_trial_table()
-                self.close_record_db()
-                self.init_record_db()
-                self.init_trial_table()
-            if success:
-                break
-        if not success:
-            self.logger.error(f"After {max_try_times} times try, trial info cannot insert into trial table.")
+        trial_id = self.do_insert_trial_record(user_id, task_id, hdl_id, experiment_id, info)
         return trial_id
 
     def do_insert_trial_record(self, user_id, task_id, hdl_id, experiment_id, info: dict):
-        trial_record = self.TrialsModel.create(
+        trial_record = self.TrialModel.create(
             user_id=user_id,
             config_id=info.get("config_id"),
-            run_id=info.get("run_id"),
-            instance_id=info.get("instance_id"),
+            config=info.get("config"),
+            config_info=info.get("config_info"),
+            # run_id=info.get("run_id"),
+            # instance_id=info.get("instance_id"),
             task_id=task_id,
             hdl_id=hdl_id,
             experiment_id=experiment_id,
-            estimator=info.get("component", ""),
-            loss=info.get("loss", 65535),
+            estimator=info.get("estimator", ""),
+            loss=info.get("loss", ERR_LOSS),
             losses=info.get("losses", []),
-            test_loss=info.get("test_loss", 65535),
+            test_loss=info.get("test_loss", ERR_LOSS),
             all_score=info.get("all_score", {}),
             all_scores=info.get("all_scores", []),
             test_all_score=info.get("test_all_score", {}),
@@ -1032,7 +1080,7 @@ class ResourceManager(StrSignatureMixin):
             additional_info=info.get("additional_info", {}),
             # smac_hyper_param=info.get("program_hyper_param"),
             dict_hyper_param=info.get("dict_hyper_param", {}),
-            cost_time=info.get("cost_time", 65535),
+            cost_time=info.get("cost_time", ERR_LOSS),
             status=info.get("status", "failed"),
             failed_info=info.get("failed_info", ""),
             warning_info=info.get("warning_info", ""),
@@ -1042,33 +1090,89 @@ class ResourceManager(StrSignatureMixin):
         )
         return trial_record.trial_id
 
+    def _finish_trial_update_info(self, trial_id, timestamps: dict):
+        trial = self.TrialModel.select().where(self.TrialModel.trial_id == trial_id)[0]
+        trial.timestamps = timestamps
+        trial.save()
+
+    # todo: check 这个功能
     def delete_models(self):
-        # if hasattr(self, "sync_dict"):
-        #     exit_processes = self.sync_dict.get("exit_processes", 3)
-        #     records = 0
-        #     for key, value in self.sync_dict.items():
-        #         if isinstance(key, int):
-        #             records += value
-        #     if records >= exit_processes:
-        #         return False
-        # master segment
-        if not self.is_master:
-            return True
         self.init_trial_table()
         # todo: 设置一个取余
         if self.max_persistent_estimators > 0:
             # 只删除这次task & hdl中表现最差的模型
-            should_delete = self.TrialsModel.select().where(
-                (self.TrialsModel.task_id == self.task_id) & (self.TrialsModel.user_id == self.user_id)
-                & (self.TrialsModel.hdl_id == self.hdl_id)
+            should_delete = self.TrialModel.select().where(
+                (self.TrialModel.task_id == self.task_id) & (self.TrialModel.user_id == self.user_id)
+                & (self.TrialModel.hdl_id == self.hdl_id)
             ).order_by(
-                self.TrialsModel.loss, self.TrialsModel.cost_time
+                self.TrialModel.loss, self.TrialModel.cost_time
             ).offset(self.max_persistent_estimators)
             if len(should_delete):
                 for record in should_delete:
                     models_path = record.models_path
                     self.logger.info(f"Delete expire Model in path : {models_path}")
                     self.file_system.delete(models_path)
-                self.TrialsModel.delete().where(
-                    self.TrialsModel.trial_id.in_(should_delete.select(self.TrialsModel.trial_id))).execute()
+                self.TrialModel.delete().where(
+                    self.TrialModel.trial_id.in_(should_delete.select(self.TrialModel.trial_id))).execute()
         return True
+
+    # ----------workflow_step_model------------------------------------------------------------------
+    def get_workflow_step_model(self) -> pw.Model:
+        class WorkflowStep(pw.Model):
+            workflow_step_id = pw.AutoField(primary_key=True)
+            config_id = pw.FixedCharField(max_length=32)
+            experiment_id = pw.IntegerField()
+            config = self.JSONField(default={})  # new
+            step_idx = pw.IntegerField()
+            step_name = pw.CharField(max_length=256, default="")
+            component_name = pw.CharField(max_length=256, default="")
+            hyperparams = self.JSONField(default={})  # new
+            dataset_id = pw.FixedCharField(max_length=32, default="", null=True)
+            hit_cache = pw.BooleanField()
+            cache_key = pw.CharField(max_length=256, default="", null=True)
+
+            class Meta:
+                database = self.record_db
+                table_name = "workflow_step"
+
+        self.record_db.create_tables([WorkflowStep])
+        return WorkflowStep
+
+    def init_workflow_step_table(self):
+        if self.is_init_workflow_step:
+            return
+        self.is_init_workflow_step = True
+        self.init_record_db()
+        self.WorkflowStepModel = self.get_workflow_step_model()
+
+    def close_workflow_step_table(self):
+        self.is_init_workflow_step = False
+        self.WorkflowStepModel = None
+
+    def insert_workflow_step_record(
+            self,
+            config_id,
+            experiment_id,
+            config,
+            step_idx,
+            step_name,
+            component_name,
+            hyperparams,
+            dataset_id,
+            hit_cache,
+            cache_key
+    ):
+        self.init_workflow_step_table()
+        workflow_step_record = self.WorkflowStepModel.create(
+            config_id=config_id,
+            experiment_id=experiment_id,
+            config=config,
+            step_idx=step_idx,
+            step_name=step_name,
+            component_name=component_name,
+            hyperparams=hyperparams,
+            dataset_id=dataset_id,
+            hit_cache=hit_cache,
+            cache_key=cache_key
+        )
+        return workflow_step_record.workflow_step_id

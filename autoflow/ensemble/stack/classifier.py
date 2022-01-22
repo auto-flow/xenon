@@ -14,12 +14,12 @@ class StackClassifier(StackEstimator, ClassifierMixin):
             self,
             meta_learner=None,
             use_features_in_secondary=False,
-            drop_first_proba=True,
+            drop_last_proba=True,
             use_probas=True
     ):
         super(StackClassifier, self).__init__(meta_learner, use_features_in_secondary)
         self.use_probas = use_probas
-        self.drop_first_proba = drop_first_proba
+        self.drop_last_proba = drop_last_proba
 
     def predict_meta_features(self, X, is_train):
 
@@ -35,8 +35,8 @@ class StackClassifier(StackEstimator, ClassifierMixin):
             if not self.use_probas:
                 prediction = np.argmax(proba, axis=1)
             else:
-                if self.drop_first_proba:
-                    prediction = proba[:, 1:]
+                if self.drop_last_proba:
+                    prediction = proba[:, :-1]
                 else:
                     prediction = proba
 

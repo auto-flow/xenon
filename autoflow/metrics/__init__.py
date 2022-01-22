@@ -11,7 +11,11 @@ from sklearn.metrics import confusion_matrix
 from sklearn.utils.multiclass import type_of_target
 
 from autoflow.metrics import classification_metrics
-from autoflow.utils.array import sanitize_array
+from autoflow.utils.array_ import sanitize_array
+from autoflow.utils.logging_ import get_logger
+from autoflow.utils.ml_task import MLTask
+
+logger = get_logger("metrics")
 
 
 class Scorer(object, metaclass=ABCMeta):
@@ -300,28 +304,14 @@ for name, metric in [
         CLASSIFICATION_METRICS[qualified_name] = globals()[qualified_name]
 
 
-def convert_nan_to_0(dict_: dict):
-    for k, v in dict_.items():
-        if pd.isna(v):
-            dict_[k] = 0
-        else:
-            dict_[k] = float(v)
-    return dict_
-
-
-def calculate_score(solution, prediction, mainTask, metric=None,
+def calculate_score(solution, prediction, ml_task: MLTask, metric,
                     should_calc_all_metric=False):
     if isinstance(solution, (pd.Series, pd.DataFrame)):
         solution = solution.values
-    if metric is None:
-        if mainTask == "classification":
-            metric = accuracy
-        else:
-            metric = r2
     if should_calc_all_metric:
         score = dict()
         true_score = {}
-        if mainTask == "regression":
+        if ml_task == "regression":
             # TODO put this into the regression metric itself
             cprediction = sanitize_array(prediction)
             metric_dict = copy.copy(REGRESSION_METRICS)
@@ -353,21 +343,28 @@ def calculate_score(solution, prediction, mainTask, metric=None,
                                       "average='binary'. Please choose another average " \
                                       "setting, one of [None, 'micro', 'macro', 'weighted'].":
                         continue
+                    # else:
+                    #     raise e
 
     else:
-        if mainTask == "regression":
+        if ml_task.mainTask == "regression":
             # TODO put this into the regression metric itself
             cprediction = sanitize_array(prediction)
             score = metric(solution, cprediction)
         else:
             score = metric(solution, prediction)
 
-    ret = convert_nan_to_0(score), convert_nan_to_0(true_score)
-    return ret
+    return score, true_score
 
 
 def calculate_confusion_matrix(y_true, y_pred) -> List[List[int]]:
     # return 2d list
     if len(y_pred.shape) > 1 and y_pred.shape[1] > 1:
         y_pred = np.argmax(y_pred, axis=1)
-    return confusion_matrix(y_true, y_pred).tolist()
+    result = confusion_matrix(y_true, y_pred)
+    if np.any(np.isnan(result)):
+        logger.warning("confusion_matrix contain NaN")
+        logger.debug(f"y_true = {y_true.tolist()}")
+        logger.debug(f"y_pred = {y_pred.tolist()}")
+        result[np.isnan(result)] = -1
+    return result.tolist()

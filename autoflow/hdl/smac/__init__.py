@@ -1,9 +1,8 @@
 import math
 from typing import Any, List
 
-from autoflow.lazy_import import CategoricalHyperparameter, \
-    UniformFloatHyperparameter, UniformIntegerHyperparameter, Constant, \
-    OrdinalHyperparameter
+from ConfigSpace import CategoricalHyperparameter, \
+    UniformFloatHyperparameter, UniformIntegerHyperparameter, Constant
 
 from autoflow.utils.math_ import float_gcd
 
@@ -29,23 +28,10 @@ def _decode(str_value: str) -> Any:
             return str_value
 
 
-def ordinal(label: str, sequence: List, default=None):
-    if len(sequence) == 1:
-        return Constant(label, _encode(sequence[0]))
-    choices = []
-    for option in sequence:
-        choices.append(_encode(option))
-    kwargs = {}
-    if default:
-        kwargs.update({'default_value': _encode(default)})
-    hp = OrdinalHyperparameter(label, choices, **kwargs)
-    return hp
-
-
 def choice(label: str, options: List, default=None):
     if len(options) == 1:
         return Constant(label, _encode(options[0]))  # fixme: if declare probability in here?
-    # fixme: copy from autoflow/hdl2shps/hdl2shps.py:354
+    # fixme: copy from autoflow/hdl2configSpce/hdl2configSpce.py:354
     choice2proba = {}
     not_specific_proba_choices = []
     sum_proba = 0
@@ -79,8 +65,8 @@ def choice(label: str, options: List, default=None):
     kwargs = {}
     if default:
         kwargs.update({'default_value': _encode(default)})
-    hp = CategoricalHyperparameter(label, choices, weights=proba_list, **kwargs)
-    # hp.probabilities=proba_list  # fixme: don't make sense
+    hp=CategoricalHyperparameter(label, choices, weights=proba_list, **kwargs)
+    hp.probabilities=proba_list  # fixme: don't make sense
     return hp
 
 

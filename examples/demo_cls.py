@@ -15,7 +15,7 @@ test_df = pd.read_csv("data/test_classification.csv")
 trained_pipeline = AutoFlowClassifier(
     initial_runs=5, run_limit=10, n_jobs=1,
     included_classifiers=["lightgbm"],
-    per_run_time_limit=60)
+    per_run_time_limit=60,n_iterations=1)
 # describing meaning of columns. `id`, `target` and `ignore` all has specific meaning
 # `id` is a column name means unique descriptor of each rows,
 # `target` column in the dataset is what your model will learn to predict
@@ -34,8 +34,5 @@ trained_pipeline.fit(
     fit_ensemble_params=False,
     splitter=KFold(n_splits=3, shuffle=True, random_state=42),
 )
-# finally , the best model will be serialize and store in local file system for subsequent use
-joblib.dump(trained_pipeline, "autoflow_classification.bz2")
-# if you want to see what the workflow AutoFlow is searching, you can use `draw_workflow_space` to visualize
-hdl_constructor = trained_pipeline.hdl_constructors[0]
-hdl_constructor.draw_workflow_space()
+
+graph = trained_pipeline.hdl_constructor.draw_workflow_space()

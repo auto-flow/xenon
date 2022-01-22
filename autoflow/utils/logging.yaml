@@ -20,33 +20,13 @@ handlers:
     formatter: formal
     filename: autoflow.log
 
-
+# 如果设为DEBUG, sql也会下来
 root:
   level: DEBUG
   handlers: [console, file_handler]
 
 loggers:
-  LightGBM:
-    level: WARNING
-    handlers: [file_handler]
-    propagate: false
-
-  matplotlib.axes._base:
-    level: WARNING
-    handlers: [file_handler]
-    propagate: false
-
-  matplotlib.font_manager:
-    level: WARNING
-    handlers: [file_handler]
-    propagate: false
-
   hyperopt.tpe:
-    level: WARNING
-    handlers: [file_handler]
-    propagate: false
-
-  urllib3.connectionpool:
     level: WARNING
     handlers: [file_handler]
     propagate: false
@@ -63,6 +43,11 @@ loggers:
 
   dsmac.optimizer.local_search.LocalSearch:
     level: DEBUG
+    handlers: [file_handler, console]
+    propagate: false
+
+  matplotlib:
+    level: INFO
     handlers: [file_handler, console]
     propagate: false
 

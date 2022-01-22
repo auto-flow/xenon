@@ -9,16 +9,6 @@ from autoflow.utils.logging_ import get_logger
 logger = get_logger(__name__)
 
 
-def replace_dict_by_key_suffix(dict_, key_suffix, replace_to):
-    ans = deepcopy(dict_)
-    for key, value in dict_.items():
-        if isinstance(key, str) and key.endswith(key_suffix):
-            ans[key] = replace_to
-        else:
-            ans[key] = value
-    return ans
-
-
 def object_kwargs2dict(obj, func="__init__", keys=None, contain_class_name=False):
     if keys is None:
         dicts = obj.__dict__

@@ -7,14 +7,15 @@ import pandas as pd
 from frozendict import frozendict
 
 from autoflow.constants import PHASE1, PHASE2, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN
-from autoflow.hdl.smac import _encode
+from autoflow.data_container.base import get_container_data
 from autoflow.hdl.utils import get_hdl_bank, get_default_hdl_bank
-from autoflow.utils.dict_ import add_prefix_in_dict_keys, sort_dict
+from autoflow.utils.dict_ import add_prefix_in_dict_keys
 from autoflow.utils.graphviz import ColorSelector
 from autoflow.utils.klass import StrSignatureMixin
 from autoflow.utils.logging_ import get_logger
 from autoflow.utils.math_ import get_int_length
 from autoflow.utils.packages import get_class_object_in_pipeline_components
+from autoflow.workflow.components.utils import stack_Xs
 
 
 class HDL_Constructor(StrSignatureMixin):
@@ -39,173 +40,54 @@ class HDL_Constructor(StrSignatureMixin):
             hdl_metadata=frozendict(),
             balance_strategies=("weight", "None"),
             included_classifiers=(
-                    "adaboost", "catboost", "decision_tree", "extra_trees", "gaussian_nb", "k_nearest_neighbors",
-                    "liblinear_svc", "libsvm_svc", "lightgbm", "logistic_regression", "random_forest", "sgd"),
+                    "extra_trees", "lightgbm", "logistic_regression", "random_forest", "tabular_nn"),  # "gbt_lr"
             included_regressors=(
-                    "adaboost", "bayesian_ridge", "catboost", "decision_tree", "elasticnet", "extra_trees",
-                    "gaussian_process", "k_nearest_neighbors", "kernel_ridge",
-                    "liblinear_svr", "lightgbm", "random_forest", "sgd"),
-            included_highR_nan_imputers=("operate.drop", "operate.none"),
-            included_nan_imputers=(
-                    "impute.adaptive_fill",),
-            included_highR_cat_encoders=("operate.drop", "encode.ordinal", "encode.cat_boost"),
-            included_cat_encoders=("encode.one_hot", "encode.ordinal", "encode.cat_boost"),
-            num2purified_workflow=frozendict({
-                "num->scaled": ["scale.standardize", "operate.none"],
-                "scaled->purified": ["operate.none", "transform.power"]
+                    "extra_trees", "lightgbm", "elasticnet", "random_forest", "tabular_nn"),  #  "gbt_lr"
+            included_imputers=("impute.simple", "impute.gbt"),
+            included_highC_cat_encoders=("encode.entity", "encode.ordinal", "encode.cat_boost"),
+            combine_rare=True,
+            included_cat_encoders=("encode.one_hot", "encode.ordinal"),
+            num2normed_workflow=frozendict({
+                "num->normed": ["scale.standard", "operate.keep_going"],  # "scale.adaptive",
             }),
-            text2purified_workflow=frozendict({
+            text2normed_workflow=frozendict({
                 "text->tokenized": "text.tokenize.simple",
-                "tokenized->purified": [
+                "tokenized->normed": [
                     "text.topic.tsvd",
                     "text.topic.lsi",
                     "text.topic.nmf",
                 ]
             }),
-            date2purified_workflow=frozendict({
+            date2normed_workflow=frozendict({
             }),
-            purified2final_workflow=frozendict({
-                "purified->final": ["operate.none"]
+            normed2final_workflow=frozendict({
+                "normed->final": [
+                    "operate.keep_going",
+                    "select.boruta",
+                    # "generate.autofeat"
+                ]
             })
 
     ):
-        '''
-
-        Parameters
-        ----------
-        DAG_workflow: str or dict, default="generic_recommend"
-
-            directed acyclic graph (DAG) workflow to describe the machine-learning procedure.
-
-            By default, this value is  "generic_recommend", means HDL_Constructor will analyze the training data
-            to recommend a valid DAG workflow.
-
-            If you want design DAG workflow by yourself, you can seed a dict .
-
-        hdl_bank_path: str, default=None
-
-            ``hdl_bank`` is a json file which contains  all the hyper-parameters of the algorithm.
-
-            ``hdl_bank_path`` is this file's path. If it is None, ``autoflow/hdl/hdl_bank.json`` will be choosed.
-
-        hdl_bank: dict, default=None
-
-            If you pass param ``hdl_bank_path=None`` and pass  ``hdl_bank`` as a dict,
-            program will not load ``hdl_bank.json``, it uses passed ``hdl_bank`` directly.
-
-        included_classifiers: list or tuple
-
-            active if ``DAG_workflow="generic_recommend"``, and all of the following params will active in such situation.
-
-            It decides which **classifiers** will consider in the algorithm selection.
-
-        included_regressors: list or tuple
-
-            It decides which **regressors** will consider in the algorithm selection.
-
-        included_highR_nan_imputers: list or tuple
-
-            ``highR_nan`` is a feature_group, means ``NaN`` has a high ratio in a column.
-
-            for example:
-
-            >>> from numpy import NaN
-            >>> column = [1, 2, NaN, NaN, NaN]    # nan ratio is 60% , more than 50% (default highR_nan_threshold)
-
-            ``highR_nan_imputers`` algorithms will handle such columns contain high ratio missing value.
-
-        included_cat_nan_imputers: list or tuple
-
-            ``cat_nan`` is a feature_group, means a categorical feature column contains ``NaN`` value.
-
-            for example:
-
-            >>> column = ["a", "b", "c", "d", NaN]
-
-            ``cat_nan_imputers`` algorithms will handle such columns.
-
-        included_num_nan_imputers: list or tuple
-
-            ``num_nan`` is a feature_group, means a numerical feature column contains ``NaN`` value.
-
-            for example:
-
-            >>> column = [1, 2, 3, 4, NaN]
-
-            ``num_nan_imputers`` algorithms will handle such columns.
-
-        included_highR_cat_encoders: list or tuple
-
-            ``highR_cat`` is a feature_group, means a categorical feature column contains highly cardinality ratio.
-
-            for example:
-
-            >>> import numpy as np
-            >>> column = ["a", "b", "c", "d", "a"]
-            >>> rows = len(column)
-            >>> np.unique(column).size / rows  # result is 0.8 , is higher than 0.5 (default highR_cat_ratio)
-            0.8
-            
-            ``highR_cat_imputers`` algorithms will handle such columns.
-
-        included_lowR_cat_encoders: list or tuple
-        
-            ``lowR_cat`` is a feature_group, means a categorical feature column contains lowly cardinality ratio.
-
-            for example:
-
-            >>> import numpy as np
-            >>> column = ["a", "a", "a", "d", "a"]
-            >>> rows = len(column)
-            >>> np.unique(column).size / rows  # result is 0.4 , is lower than 0.5 (default lowR_cat_ratio)
-            0.4
-            
-            ``lowR_cat_imputers`` algorithms will handle such columns.
-
-        Attributes
-        ----------
-        random_state: int
-
-        ml_task: :class:`autoflow.utils.ml_task.MLTask`
-
-        data_manager: :class:`autoflow.manager.data_manager.DataManager`
-
-        hdl: dict
-            construct by :meth:`run`
-
-        Examples
-        ----------
-        >>> import numpy as np
-        >>> from autoflow.manager.data_manager import DataManager
-        >>> from autoflow.hdl.hdl_constructor import  HDL_Constructor
-        >>> hdl_constructor = HDL_Constructor(DAG_workflow={"num->target":["lightgbm"]},
-        ...   hdl_bank={"classification":{"lightgbm":{"boosting_type":  {"_type": "choice", "_value":["gbdt","dart","goss"]}}}})
-        >>> data_manager = DataManager(X_train=np.random.rand(3,3), y_train=np.arange(3))
-        >>> hdl_constructor.run(data_manager, 42, 0.5)
-        >>> hdl_constructor.hdl
-        {'preprocessing': {}, 'estimating(choice)': {'lightgbm': {'boosting_type': {'_type': 'choice', '_value': ['gbdt', 'dart', 'goss']}}}}
-
-        '''
+        self.combine_rare = combine_rare
         self.balance_strategies = balance_strategies
-        self.date2purified_workflow = date2purified_workflow
-        self.text2purified_workflow = text2purified_workflow
-        self.purified2final_workflow = purified2final_workflow
-        self.num2purified_workflow = num2purified_workflow
+        self.date2normed_workflow = date2normed_workflow
+        self.text2normed_workflow = text2normed_workflow
+        self.normed2final_workflow = normed2final_workflow
+        self.num2normed_workflow = num2normed_workflow
         self.hdl_metadata = dict(hdl_metadata)
         self.included_cat_encoders = included_cat_encoders
-        self.included_highR_cat_encoders = included_highR_cat_encoders
-        self.included_nan_imputers = included_nan_imputers
-        self.included_highR_nan_imputers = included_highR_nan_imputers
+        self.included_highC_cat_encoders = included_highC_cat_encoders
+        self.included_imputers = included_imputers
         self.included_regressors = included_regressors
         self.included_classifiers = included_classifiers
         self.logger = get_logger(self)
         self.hdl_bank_path = hdl_bank_path
         self.DAG_workflow = DAG_workflow
-        if hdl_bank is None:
-            if hdl_bank_path:
-                hdl_bank = get_hdl_bank(hdl_bank_path)
-            else:
-                hdl_bank = get_default_hdl_bank()
+        if hdl_bank is not None:
+            hdl_bank = get_hdl_bank(hdl_bank_path)
+        else:
+            hdl_bank = get_default_hdl_bank()
         if hdl_bank is None:
             hdl_bank = {}
             self.logger.warning("No hdl_bank, will use DAG_descriptions only.")
@@ -276,43 +158,32 @@ class HDL_Constructor(StrSignatureMixin):
 
         '''
         DAG_workflow = OrderedDict()
-        contain_highR_nan = False
-        essential_feature_groups = self.data_manager.essential_feature_groups
-        nan_column2essential_fg = self.data_manager.nan_column2essential_fg
-        fg_set = set(essential_feature_groups)
-        nan_fg_set = set(nan_column2essential_fg.values())
+        X_train_ = get_container_data(self.data_manager.X_train)
+        X_test_ = get_container_data(self.data_manager.X_test)
+        X_stack = stack_Xs(X_train_, None, X_test_)
+        fg_set = self.data_manager.X_train.feature_groups.unique()
         # --------Start imputing missing(nan) value--------------------
-        if "highR_nan" in self.data_manager.feature_groups:
-            DAG_workflow["highR_nan->nan"] = self.included_highR_nan_imputers
-            contain_highR_nan = True
-        if contain_highR_nan or "nan" in self.data_manager.feature_groups:
-            DAG_workflow["nan->imputed"] = self.included_nan_imputers
-            if len(nan_fg_set) > 1:
-                sorted_nan_column2essential_fg = sort_dict(nan_column2essential_fg)
-                sorted_nan_fg = sort_dict(list(nan_fg_set))
-                DAG_workflow[f"imputed->{','.join(sorted_nan_fg)}"] = {"_name": "operate.split",
-                                                                       "column2fg": _encode(
-                                                                           sorted_nan_column2essential_fg)}
-            elif len(nan_fg_set) == 1:
-                elem = list(nan_fg_set)[0]
-                DAG_workflow[f"imputed->{elem}"] = "operate.none"
-            else:
-                raise NotImplementedError
+        if np.count_nonzero(pd.isna(X_stack)):
+            DAG_workflow["impute"] = self.included_imputers
         # --------Start encoding categorical(cat) value --------------------
         if "cat" in fg_set:
-            DAG_workflow["cat->purified"] = self.included_cat_encoders
-        if "highR_cat" in fg_set:
-            DAG_workflow["highR_cat->purified"] = self.included_highR_cat_encoders
+            DAG_workflow["cat->normed"] = self.included_cat_encoders
+        if "highC_cat" in fg_set:
+            if self.combine_rare:
+                DAG_workflow["highC_cat->combined"] = "encode.combine_rare"
+                DAG_workflow["combined->normed"] = self.included_highC_cat_encoders
+            else:
+                DAG_workflow["highC_cat->normed"] = self.included_highC_cat_encoders
         # --------processing text features--------------------
         if "text" in fg_set:
-            for k, v in self.text2purified_workflow.items():
+            for k, v in self.text2normed_workflow.items():
                 DAG_workflow[k] = v
         # --------processing numerical features--------------------
         if "num" in fg_set:
-            for k, v in self.num2purified_workflow.items():
+            for k, v in self.num2normed_workflow.items():
                 DAG_workflow[k] = v
         # --------finally processing--------------------
-        for k, v in self.purified2final_workflow.items():
+        for k, v in self.normed2final_workflow.items():
             DAG_workflow[k] = v
         # --------Start estimating--------------------
         mainTask = self.ml_task.mainTask
@@ -322,8 +193,6 @@ class HDL_Constructor(StrSignatureMixin):
             DAG_workflow["final->target"] = self.included_regressors
         else:
             raise NotImplementedError
-        # todo: 如果特征多，做特征选择或者降维。如果特征少，做增维
-        # todo: 处理样本不平衡
         return DAG_workflow
 
     def draw_workflow_space(
@@ -498,20 +367,20 @@ class HDL_Constructor(StrSignatureMixin):
         Parameters
         ----------
         data_manager: :class:`autoflow.manager.data_manager.DataManager`
-        highR_cat_threshold: float
+        highC_cat_threshold: float
 
         '''
         if model_registry is None:
             model_registry = {}
         self.data_manager = data_manager
         self.ml_task = data_manager.ml_task
-        self.highR_cat_threshold = data_manager.highR_cat_threshold
+        self.highC_cat_threshold = data_manager.highC_cat_threshold
         self.highR_nan_threshold = data_manager.highR_nan_threshold
         self.consider_ordinal_as_cat = data_manager.consider_ordinal_as_cat
         if isinstance(self.DAG_workflow, str):
             if self.DAG_workflow == "generic_recommend":
                 self.hdl_metadata.update({"source": "generic_recommend"})
-                self.logger.info("Using 'generic_recommend' method to initialize a generic DAG_workflow, \n"
+                self.logger.info("Using 'generic_recommend' method to initialize a generic DAG_workflow, "
                                  "to Adapt to various data such like NaN and categorical features.")
                 self.DAG_workflow = self.generic_recommend()
             else:
@@ -551,6 +420,10 @@ class HDL_Constructor(StrSignatureMixin):
                 sub_dict[packages] = params
                 sub_dict[packages].update(addition_dict)
             preprocessing_dict[formed_key] = sub_dict
+        # impute -> missing_rate
+        imp_key = 'impute(choice)'
+        if imp_key in preprocessing_dict:
+            preprocessing_dict[imp_key]["missing_rate"] = {"_type": "quniform", "_value": [0.2, 1, 0.2], "_default": 0.4}
         # 构造estimator
         estimator_dict = {}
         for estimator_value in estimator_values:
@@ -574,6 +447,7 @@ class HDL_Constructor(StrSignatureMixin):
                     "balance(choice)": {k: {} for k in self.balance_strategies}
                 }
         final_dict["process_sequence"] = ";".join(DAG_workflow.keys())
+
         self.hdl = final_dict
 
     def get_hdl(self) -> Dict[str, Any]:

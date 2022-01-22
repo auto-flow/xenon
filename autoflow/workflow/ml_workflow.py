@@ -115,43 +115,9 @@ class ML_Workflow(Pipeline):
                             f"In ML Workflow step '{step_name}', transformer haven't attribute 'prepare_X_to_fit'. ")
                         return X_train
 
-                X_stack_pre = stack_X_before_fit(X_train, X_valid, X_test)
-                dataset_id = X_stack_pre.get_hash()
-                component_name = transformer.__class__.__name__
-                m = hashlib.md5()
-                get_hash_of_str(component_name, m)
-                get_hash_of_str(str(transformer.in_feature_groups), m)
-                get_hash_of_str(str(transformer.out_feature_groups), m)
-                component_hash = get_hash_of_dict(hyperparams, m)
-                cache_key = f"workflow-{component_hash}-{dataset_id}"
-                cache_results = self.resource_manager.cache.get(cache_key)
-                if X_stack_pre.shape[1] > 0 and \
-                        cache_results is not None and isinstance(cache_results, dict) \
-                        and "X_trans" in cache_results and "component" in cache_results:
-                    # hit cache
-                    self.logger.debug(f"workflow cache hit, component_name = {component_name},"
-                                      f" dataset_id = {dataset_id}, cache_key = '{cache_key}'")
-                    X_trans = cache_results["X_trans"]
-                    fitted_transformer = cache_results["component"]  # set the variable in later
-                    X_stack = fitted_transformer.get_X_stack(X_train, X_valid, X_test)
-                    result = fitted_transformer.assemble_all_result(
-                        X_stack, X_trans, X_train, X_valid, X_test, y_train)
-                    hit_cache = True
-                else:
-                    # not hit cache
-                    self.logger.debug(f"workflow cache miss, component_name = {component_name},"
-                                      f" dataset_id = {dataset_id}, cache_key = '{cache_key}'")
-                    fitted_transformer = transformer.fit(X_train, y_train, X_valid, y_valid, X_test, y_test)
-                    X_stack, X_trans = transformer.transform(X_train, X_valid, X_test, y_train, return_stack_trans=True)
-                    result = transformer.assemble_all_result(X_stack, X_trans, X_train, X_valid, X_test, y_train)
-                    if X_stack_pre.shape[1] > 0:
-                        self.resource_manager.cache.set(
-                            cache_key, {
-                                "X_trans": X_trans,
-                                "component": fitted_transformer
-                            }
-                        )
-                    # todo: 增加一些元信息
+                fitted_transformer = transformer.fit(X_train, y_train, X_valid, y_valid, X_test, y_test)
+                X_stack, X_trans = transformer.transform(X_train, X_valid, X_test, y_train, return_stack_trans=True)
+                result = transformer.assemble_all_result(X_stack, X_trans, X_train, X_valid, X_test, y_train)
             else:
                 fitted_transformer = transformer.fit(X_train, y_train, X_valid, y_valid, X_test, y_test)
                 result = transformer.transform(X_train, X_valid, X_test, y_train)
@@ -215,7 +181,7 @@ class ML_Workflow(Pipeline):
             self, ml_task: MLTask, X_train, y_train, X_valid=None, y_valid=None,
             X_test=None, y_test=None, max_iter=-1, budget=0, should_finish_evaluation=False
     ):
-        if max_iter > 0:
+        if max_iter and max_iter > 0:
             # set final model' max_iter param
             self[-1].set_max_iter(max_iter)
         # 高budget的模型不能在低budget时刻被加载
@@ -249,21 +215,12 @@ class ML_Workflow(Pipeline):
         X_valid = self.last_data.get("X_valid")
         X_test = self.last_data.get("X_test")
         self.last_data = None  # GC
-        try:
-            check_array(X_test.data) if X_test is not None else None
-            check_array(X_valid.data) if X_valid is not None else None
-            if ml_task.mainTask == "classification":
-                pred_valid = self._final_estimator.predict_proba(X_valid)
-                pred_test = self._final_estimator.predict_proba(X_test) if X_test is not None else None
-            else:
-                pred_valid = self._final_estimator.predict(X_valid)
-                pred_test = self._final_estimator.predict(X_test) if X_test is not None else None
-        except Exception as e:
-            # self.logger.warning(f"INF: {np.count_nonzero(~np.isfinite(X_test.data), axis=0)}")
-            # self.logger.warning(f"NAN: {np.count_nonzero(pd.isna(X_test.data), axis=0)}")
-            self.logger.error(e)
-            pred_test = -65535
-            pred_valid = -65535
+        if ml_task.mainTask == "classification":
+            pred_valid = self._final_estimator.predict_proba(X_valid)
+            pred_test = self._final_estimator.predict_proba(X_test) if X_test is not None else None
+        else:
+            pred_valid = self._final_estimator.predict(X_valid)
+            pred_test = self._final_estimator.predict(X_test) if X_test is not None else None
         self.resource_manager = None  # 避免触发 resource_manager 的__reduce__导致连接池消失
 
         if (max_iter > 0 and should_finish_evaluation) or (max_iter <= 0):

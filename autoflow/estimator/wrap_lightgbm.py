@@ -17,7 +17,7 @@ class LGBMEstimator(BaseEstimator):
 
     def __init__(
             self,
-            n_estimators=2000,
+            n_estimators=2048,
             objective=None,
             boosting_type="gbdt",
             # objective="binary",
@@ -34,7 +34,7 @@ class LGBMEstimator(BaseEstimator):
             subsample_for_bin=40000,
             # min_data_in_leaf=4,
             min_child_weight=0.01,
-            early_stopping_rounds=250,
+            early_stopping_rounds=256,
             verbose=-1,
             n_jobs=1,
             warm_start=True
@@ -62,7 +62,7 @@ class LGBMEstimator(BaseEstimator):
         self.model = None
         self.current_iterations = 0
         self.early_stopped = False
-        self.logger = get_logger(self)
+        self.logger=get_logger(self)
 
     def fit(self, X, y, X_valid=None, y_valid=None, categorical_feature="auto",
             sample_weight=None, **kwargs):
@@ -101,16 +101,15 @@ class LGBMEstimator(BaseEstimator):
             num_threads=self.n_jobs
         )
         if self.objective == "multiclass":
-            param.update({"num_class": int(np.max(y) + 1)})
+            param.update({"num_class": len(set(y))})
         num_boost_round = self.n_estimators - self.current_iterations
         if num_boost_round <= 0:
             self.logger.warning(f"num_boost_round = {num_boost_round}, <=0, "
-                                f"n_estimators = {self.n_estimators}, "
-                                f"current_iterations = {self.current_iterations}")
+                           f"n_estimators = {self.n_estimators}, "
+                           f"current_iterations = {self.current_iterations}")
             return self
         if self.early_stopped:
-            self.logger.info(
-                f"{self.__class__.__name__} is early_stopped, best_iterations = {self.model.best_iteration}")
+            self.logger.info(f"{self.__class__.__name__} is early_stopped, best_iterations = {self.model.best_iteration}")
             return self
         train_set = lightgbm.Dataset(
             X, y,

@@ -36,14 +36,14 @@
       "random_state": 42
     },
     "extra_trees": {
-      "n_estimators": 500,
-      "early_stopping_rounds": 4,
+      "n_estimators": 1024,
+      "early_stopping_rounds": 8,
       "early_stopping_tol": 0.0,
-      "iter_inc": 25,
+      "iter_inc": 16,
       "criterion": {"_type": "choice","_value": ["gini", "entropy"],"_default": "gini"},
       "max_features": {"_type": "choice","_value": ["sqrt","log2"],"_default": "sqrt"},
 //      "max_features": {"_type": "uniform", "_value": [0.01, 1.0],"_default": 1},
-      "max_depth":  {"_type": "int_uniform", "_value": [5, 100],"_default": 30},
+      "max_depth":  null,  //{"_type": "int_uniform", "_value": [5, 100],"_default": 30},
       "min_samples_split": {"_type": "int_uniform", "_value": [2, 20],"_default": 2},
       "min_samples_leaf": {"_type": "int_uniform", "_value": [1, 20],"_default": 1},
       "min_weight_fraction_leaf": 0,
@@ -53,25 +53,24 @@
       "random_state": 42,
       "n_jobs": 1
     },
-    "gbdt_lr": {
-      "n_estimators": {"_type": "int_quniform", "_value": [30,300],"_default": 100},
+    "gbt_lr": {
+      "n_estimators": 256,
       "boosting_type":  "gbdt",
-      "num_leaves":  31,//{"_type": "int_quniform", "_value": [10,150],"_default": 31},
+      "num_leaves":  {"_type": "int_quniform", "_value": [10,150],"_default": 31},
       "max_depth": {"_type": "int_quniform", "_value": [1,100],"_default": 31},
-//      "learning_rate": {"_type": "loguniform", "_value": [1e-2,0.2],"_default": 0.1},
-//      "subsample_for_bin": {"_type": "int_quniform","_value": [2e4, 3e5, 2e4],"_default": 40000},
+      "learning_rate": {"_type": "loguniform", "_value": [1e-2,0.2],"_default": 0.1},
+      "subsample_for_bin": {"_type": "int_quniform","_value": [2e4, 3e5, 2e4],"_default": 40000},
       "feature_fraction": {"_type": "quniform","_value": [0.5,1,0.05],"_default": 1},
       "bagging_fraction": {"_type": "quniform","_value": [0.5,1,0.05],"_default": 1},  //alias "subsample"
       "lambda_l1": {"_type": "loguniform","_value": [1e-7,10], "_default": 0}, // reg_alpha
       "lambda_l2": {"_type": "loguniform","_value": [1e-7,10], "_default": 0}, // reg_lambda
       "min_child_weight": {"_type": "loguniform","_value": [1e-7,10], "_default": 1e-3}, //aliases to min_sum_hessian
       "bagging_freq": {"_type": "int_loguniform","_value": [1, 10], "_default": 1},
-//      "use_categorical_feature": {"_type": "choice", "_value": [true, false],"_default": false},
-      "early_stopping_rounds": 50,
+      "use_categorical_feature": {"_type": "choice", "_value": [true, false],"_default": false},
+      "early_stopping_rounds": 32,
       "n_jobs": 1,
       "random_state": 42,
-      "C": {"_type": "loguniform", "_value": [0.01, 10],"_default": 1.0},
-      "penalty": "l2"
+      "C": {"_type": "loguniform", "_value": [0.01, 10000],"_default": 1.0},
     },
     "gaussian_nb": {
     },
@@ -89,7 +88,7 @@
       "max_features": {"_type": "choice","_value": ["sqrt","log2"],"_default": "sqrt"},
       "random_state": 42
     },
-    "k_nearest_neighbors": {
+    "knn": {
       "n_neighbors": {"_type": "int_loguniform", "_value": [1,100],"_default": 3},
       "weights" : {"_type": "choice", "_value": ["uniform", "distance"],"_default": "uniform"},
       "p": {"_type": "choice", "_value": [1, 2],"_default": 2},
@@ -100,26 +99,29 @@
 //      "shrinkage_factor": {"_type": "quniform", "_value": [0.0,1.0],"_default": 0.5},
       "_n_components__sp1_ratio": {"_type": "quniform", "_value": [0.1,0.9],"_default": 0.5}
     },
-    "liblinear_svc": {
-      "max_iter": {"_type": "int_quniform","_value": [600, 3000, 100], "_default": 1000},
-      "penalty":  "l2",
+    "linearsvc": {
+      "max_iter": {"_type": "int_quniform","_value": [300, 3000, 100], "_default": 600},
+      "penalty":  {"_type": "choice", "_value": ["l1", "l2"],"_default": "l2"},
       "dual": {"_type": "choice", "_value": [true,false],"_default": false},
       "loss":  {"_type": "choice", "_value": ["hinge", "squared_hinge"],"_default": "squared_hinge"},
-      "C": {"_type": "loguniform", "_value": [0.01, 10],"_default": 1.0},
+      "C": {"_type": "loguniform", "_value": [0.01, 10000],"_default": 1.0},
       "multi_class": "ovr",
       "random_state": 42,
       "__forbidden": [
-          {"penalty": "l2", "dual": false, "loss": "hinge"},
+          {"penalty": "l1","loss": "hinge"},
+          {"penalty": "l2","dual": false,"loss": "hinge"},
+          {"penalty": "l1","dual": false},
+          {"penalty": "l1","dual": true,"loss": "squared_hinge"},
       ]
     },
-    "libsvm_svc": {
-      "C": {"_type": "loguniform", "_value": [0.01, 10],"_default": 1.0},
+    "svc": {
+      "C": {"_type": "loguniform", "_value": [0.01, 10000],"_default": 1.0},
       "kernel":{"_type": "choice", "_value": ["rbf","poly","sigmoid"],"_default": "rbf"},
       "degree": {"_type": "int_uniform", "_value": [2,5],"_default": 3},
       "gamma":{"_type": "loguniform", "_value": [1e-05, 8],"_default": 0.1},
       "coef0":{"_type": "quniform", "_value": [-1,1],"_default": 0},
       "shrinking": {"_type": "choice", "_value": [true,false],"_default": true},
-      "class_weight":{"_type": "choice", "_value": ["balanced",null],"_default": "balanced"},
+      "class_weight": null,
       "probability": true,
       "decision_function_shape": "ovr",
       "__activate":{
@@ -132,7 +134,7 @@
       "random_state": 42
     },
     "lightgbm": {
-      "n_estimators": 2000,
+      "n_estimators": 2048,
       "boosting_type":  "gbdt",
       "num_leaves":  {"_type": "int_quniform", "_value": [10,150],"_default": 31},
       "max_depth": {"_type": "int_quniform", "_value": [1,100],"_default": 31},
@@ -145,58 +147,38 @@
       "min_child_weight": {"_type": "loguniform","_value": [1e-7,10], "_default": 1e-3}, //aliases to min_sum_hessian
       "bagging_freq": {"_type": "int_loguniform","_value": [1, 10], "_default": 1},
       "use_categorical_feature": {"_type": "choice", "_value": [true, false],"_default": false},
-      "early_stopping_rounds": 250,
+      "early_stopping_rounds": 256,
       "n_jobs": 1,
       "random_state": 42
     },
     "logistic_regression": {
-      "penalty": {"_type": "choice", "_value": ["l1", "l2"],"_default": "l2"},
-      "solver":"liblinear",
-//      "l1_ratio": {"_type": "quniform", "_value": [0,1,0.05],"_default": 0.5},
-      "C": {"_type": "loguniform", "_value": [0.01, 10],"_default": 1.0},
+      "penalty":"elasticnet",
+      "solver":"saga",
+      "l1_ratio": {"_type": "quniform", "_value": [0,1,0.05],"_default": 0.5},
+      "C": {"_type": "loguniform", "_value": [0.01, 10000],"_default": 1.0},
       "random_state": 42,
-      "max_iter": 1000,
-      "early_stopping_rounds": 5,
+      "n_jobs": 1,
+      "max_iter": 512,
+      "early_stopping_rounds": 4,
       "early_stopping_tol": 0.0,
-      "iter_inc": 20,
+      "iter_inc": 16
     },
     "multinomial_nb": {
       "alpha": {"_type": "loguniform", "_value": [1e-2, 100],"_default": 1.0},
       "fit_prior": {"_type": "choice", "_value": [true,false],"_default": true}
     },
-    "pytorch_fm": {
-      "n_jobs": 1,
-      "random_state": 42,
-      // 虽然实现了sgd和adam优化器，但是用ftrl求解会得到泛化能力更好的模型
-      "optimizer": "ftrl",
-      "tol": 1e-3,
-      "max_epoch": 1000,
-      "k": {"_type": "int_quniform", "_value": [1, 4, 1],"_default": 2},
-      "use_fm": {"_type": "choice", "_value": [true, false],"_default": true},
-      "alpha": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
-      "beta": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
-      "l2": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
-      "l1": {"_type": "uniform", "_value": [0.1, 2],"_default": 1.0},
-      "__condition":[
-          {
-            "_child": "k",
-            "_parent": "use_fm",
-            "_values": [true]
-          },
-        ],
-    },
     "qda": {
       "reg_param": {"_type": "quniform", "_value": [0.0,1.0],"_default": 0}
     },
     "random_forest": {
-      "n_estimators": 500,
-      "early_stopping_rounds": 4,
+      "n_estimators": 1024,
+      "early_stopping_rounds": 8,
       "early_stopping_tol": 0.0,
-      "iter_inc": 25,
+      "iter_inc": 16,
       "criterion": {"_type": "choice","_value": ["gini", "entropy"],"_default": "gini"},
       "max_features": {"_type": "choice","_value": ["sqrt","log2"],"_default": "sqrt"},
 //      "max_features": {"_type": "uniform", "_value": [0.01, 1.0],"_default": 1},
-      "max_depth":  {"_type": "int_uniform", "_value": [5, 100],"_default": 30},
+      "max_depth": null, // {"_type": "int_uniform", "_value": [5, 100],"_default": 30},
       "min_samples_split": {"_type": "int_uniform", "_value": [2, 20],"_default": 2},
       "min_samples_leaf": {"_type": "int_uniform", "_value": [1, 20],"_default": 1},
       "min_weight_fraction_leaf": 0.0,
@@ -229,6 +211,28 @@
       ],
       "n_jobs": 1,
       "random_state": 42
+    },
+    "tabular_nn": {
+      "max_layer_width": 2056,
+      "min_layer_width": 32,
+      "dropout_hidden": {"_type": "quniform", "_value": [0, 0.5, 0.05],"_default": 0.15},
+      "dropout_output": {"_type": "quniform", "_value": [0, 0.5, 0.05],"_default": 0.15},
+      "af_hidden": {"_type": "choice", "_value": ["relu", "leaky_relu", "tanh"],"_default": "relu"},
+      "af_output": "linear",
+      "layer1": {"_type": "int_quniform", "_value": [128, 384, 64],"_default": 256},
+      "layer2": {"_type": "int_quniform", "_value": [32, 160, 32],"_default": 128},
+      "use_bn": {"_type": "choice", "_value": [true, false],"_default": false},
+      "lr": 0.01,
+      "max_epoch": 128,
+      "random_state": 42,
+      "batch_size": 1024,
+      "optimizer": "adam",
+      "early_stopping_rounds": 16,
+      "early_stopping_tol": 0,
+      "verbose": -1,
+      "n_jobs": 1,
+      "class_weight": null,
+//      "normalize": true,
     }
   },
   "regression": {
@@ -296,8 +300,8 @@
       "random_state": 42
     },
     "extra_trees": {
-      "n_estimators": 500,
-      "early_stopping_rounds": 4,
+      "n_estimators": 1000,
+      "early_stopping_rounds": 10,
       "early_stopping_tol": 0.0,
       "iter_inc": 25,
       "criterion": {"_type": "choice","_value": ["mse", "friedman_mse"],"_default": "friedman_mse"},//delete "mae"
@@ -337,7 +341,7 @@
       "max_features": {"_type": "choice","_value": ["sqrt","log2"],"_default": "sqrt"},
       "random_state": 42
     },
-    "k_nearest_neighbors": {
+    "knn": {
       "n_neighbors": {"_type": "int_loguniform", "_value": [1,100],"_default": 3},
       "weights" : {"_type": "choice", "_value": ["uniform", "distance"],"_default": "uniform"},
       "p": {"_type": "choice", "_value": [1, 2],"_default": 2},
@@ -356,25 +360,25 @@
         }
       }
     },
-    "liblinear_svr": {
+    "linearsvr": {
       "loss":  {"_type": "choice", "_value": ["epsilon_insensitive", "squared_epsilon_insensitive"],"_default": "squared_epsilon_insensitive"},
       "epsilon": {"_type": "loguniform", "_value": [0.001,1],"_default": 0.1},
       "penalty":  {"_type": "choice", "_value": ["l1", "l2"],"_default": "l2"},
       "dual": {"_type": "choice", "_value": [true,false],"_default": false},
-      "C": {"_type": "loguniform", "_value": [0.01, 10],"_default": 1.0},
+      "C": {"_type": "loguniform", "_value": [0.01, 10000],"_default": 1.0},
       "__forbidden": [
           {"loss": "epsilon_insensitive","dual": false},
       ],
       "random_state": 42
     },
-    "libsvm_svr": {
-      "C": {"_type": "loguniform", "_value": [0.01, 10],"_default": 1.0},
+    "svr": {
+      "C": {"_type": "loguniform", "_value": [0.01, 10000],"_default": 1.0},
       "kernel":{"_type": "choice", "_value": ["rbf","poly","sigmoid"],"_default": "rbf"},
       "degree": {"_type": "int_uniform", "_value": [2,5],"_default": 3},
       "gamma":{"_type": "loguniform", "_value": [1e-05, 8],"_default": 0.1},
       "coef0":{"_type": "quniform", "_value": [-1,1],"_default": 0},
       "shrinking": {"_type": "choice", "_value": [true,false],"_default": true},
-      "class_weight":{"_type": "choice", "_value": ["balanced",null],"_default": null},
+      "class_weight": null,
       "__activate":{
         "kernel":{
           "rbf":["gamma"],
@@ -403,8 +407,8 @@
       "random_state": 42
     },
     "random_forest": {
-      "n_estimators": 500,
-      "early_stopping_rounds": 4,
+      "n_estimators": 1000,
+      "early_stopping_rounds": 10,
       "early_stopping_tol": 0.0,
       "iter_inc": 25,
       "criterion": {"_type": "choice","_value": ["mse", "friedman_mse"],"_default": "friedman_mse"},
@@ -443,48 +447,169 @@
       ],
       "n_jobs": 1,
       "random_state": 42
+    },
+    "tabular_nn": {
+      "max_layer_width": 2056,
+      "min_layer_width": 32,
+      "dropout_hidden": {"_type": "quniform", "_value": [0, 0.5, 0.05],"_default": 0.15},
+      "dropout_output": {"_type": "quniform", "_value": [0, 0.5, 0.05],"_default": 0.15},
+      "af_hidden": {"_type": "choice", "_value": ["relu", "leaky_relu", "tanh"],"_default": "relu"},
+      "af_output": "linear",
+      "layer1": {"_type": "int_quniform", "_value": [128, 384, 64],"_default": 256},
+      "layer2": {"_type": "int_quniform", "_value": [32, 160, 32],"_default": 128},
+      "use_bn": {"_type": "choice", "_value": [true, false],"_default": false},
+      "lr": 0.01,
+      "max_epoch": 64,
+      "random_state": 42,
+      "batch_size": 1024,
+      "optimizer": "adam",
+      "early_stopping_rounds": 16,
+      "early_stopping_tol": 0,
+      "verbose": -1,
+      "n_jobs": 1,
+//      "class_weight": null,
+      "normalize": true,
     }
   },
   "preprocessing": {
-    "encode": {
-    },
-    "decompose": {
-      "flexible": {
-        "strategy":  {"_type": "choice",
-          "_value": ["none", "PCA", "KernelPCA"],"_default": "none"},
-        "n_components": {"_type":  "quniform", "_value": [0.70, 0.96],"_default": 0.9},
-        "kernel": "poly",
-        "degree": {"_type": "int_uniform", "_value": [2, 3],"_default": 3},
-        "gamma":{"_type": "loguniform", "_value": [1e-05, 8],"_default": 0.1},
-        "coef0":{"_type": "quniform", "_value": [-1, 1],"_default": 0},
-        "__activate":{
-          "strategy":{
-            "KernelPCA":  ["degree","gamma","coef0"]
-          }
-        }
+    "compress": {
+      "f1_score": {
+        "threshold": 0.9,
+        "n_jobs": 1,
+        "max_delete": 1,
+      },
+      "pearson": {
+        "threshold": 0.9,
+        "n_jobs": 1,
+        "max_delete": 1,
+      },
+      "variance": {
+        "threshold": 0.01,
+        "n_jobs": 1,
+        "max_delete": 1,
       }
     },
-    "discretize": {
-      "flexible": {
-        "strategy":  {"_type": "choice",
-          "_value": ["decision_tree", "none"],"_default": "none"},
-        "max_leaf_nodes": {"_type": "int_uniform", "_value": [4, 10],"_default": 6},
-        "min_samples_leaf": 0.05,
-        "n_jobs": 1,
-        "backend": "multiprocessing", // threading
-        // fixme: 感觉 activate 不奏效， 有待查明
-        "__activate":{ // 决策树分箱器对应的子变量
-          "strategy":{
-            "decision_tree":  ["max_leaf_nodes", "min_samples_leaf"]
+    "encode": {
+      "binary": {},
+      "cat_boost": {},
+      "hash": {
+        "_n_components__card_ratio": {"_type": "quniform", "_value": [0.1,1,0.1],"_default": 0.8}
+      },
+      "ordinal": {},
+      "leave_one_out": {},
+      "one_hot": {},
+      "target": {},
+      "weight_of_evidence": {},
+      "combine_rare": {
+//        "minimum_fraction": {"_type": "loguniform", "_value": [0.001, 0.1],"_default": 0.1},
+        "minimum_fraction": {"_type": "choice", "_value": [0.001, 0.01, 0.1],"_default": 0.1},
+        "copy": false
+      },
+      "entity": {
+        "max_epoch":20,
+        "n_jobs": -1,
+        "random_state": 42,
+        "copy": false
+      }
+    },
+    "expand": {
+      "kitchen_sinks": {
+        "gamma": {"_type": "loguniform", "_value": [1e-05, 8],"_default": 1},
+        "_n_components__sp1_ratio": {"_type": "quniform", "_value": [1.1,2],"_default": 1.5}
+      },
+      "nystroem_sampler": {
+        "kernel": {"_type": "choice", "_value": ["poly","rbf", "sigmoid", "cosine"],"_default": "rbf"}, // todo: chi2
+        "_n_components__sp1_ratio":  {"_type": "quniform", "_value": [1.1,2],"_default": 1.5},
+        "gamma": {"_type": "loguniform", "_value": [1e-05, 8],"_default": 1},
+        "degree": {"_type": "int_uniform", "_value": [2,5],"_default": 3},
+        "coef0":  {"_type": "quniform", "_value": [-1,1],"_default": 0},
+        "__activate":{
+          "kernel":{
+            "rbf":["gamma"],
+            "sigmoid":["gamma","coef0"],
+            "poly":["degree","gamma","coef0"]
           }
         }
+      },
+      "polynomial": {
+        "degree": {"_type": "choice", "_value": ["poly","rbf", "sigmoid", "cosine"],"_default": "rbf"},
+        "interaction_only":  {"_type": "choice", "_value": [true, false],"_default": true},
+        "include_bias": false
+      }
+    },
+    "generate": {
+      "autofeat": {
+        "n_jobs": 1,
+        "random_state": 42,
+        "sqr_op": {"_type": "choice","_value": [true, false],"_default": true}
+      }
+    },
+    "impute": {
+      "simple": {
+        "num_strategy": {"_type": "choice","_value": ["median", "mean"],"_default": "median"},
+        "cat_strategy": {"_type": "choice","_value": ["constant", "most_frequent"],"_default": "most_frequent"},
+        "copy": false
+      },
+      "gbt": {
+        "n_jobs": 1,
+        "random_state": 42,
+        "copy": false
+      }
+    },
+    "reduce": {
+      "fast_ica": {
+        "_n_components__sp1_ratio": {"_type": "quniform", "_value": [0.5,1],"_default": 0.8},
+        "algorithm":  {"_type": "choice", "_value": ["parallel", "deflation"],"_default": "parallel"},
+        "fun": {"_type": "choice", "_value": ["logcosh", "exp", "cube"],"_default": "logcosh"},
+        "whiten": {"_type": "choice", "_value": [true,false],"_default": true},
+        "__condition": [
+          {"_child": "_n_components__sp1_ratio","_parent": "whiten","_values": true}
+        ]
+      },
+      "feature_agglomeration": {
+        "pooling_func": {"_type": "choice", "_value": ["numpy.mean","numpy.median","numpy.max"],"_default": "numpy.median"},
+        "_n_clusters__sp1_ratio": {"_type": "quniform", "_value": [0.5,1],"_default": 0.8},
+        "affinity":  {"_type": "choice", "_value": ["euclidean", "manhattan", "cosine"],"_default": "euclidean"},
+        "linkage":  {"_type": "choice", "_value": ["ward", "complete", "average"],"_default": "ward"},
+        "__forbidden": [
+          {"affinity": ["manhattan", "cosine"],"linkage": "ward"}
+        ]
+      },
+      "kernel_pca": {
+        "_n_components__sp1_ratio":  {"_type": "quniform", "_value": [0.5,1],"_default": 0.8},
+        "kernel":  {"_type": "choice", "_value": ["poly", "rbf", "sigmoid", "cosine"],"_default": "rbf"},
+        "gamma": {"_type": "loguniform", "_value": [1e-05, 8],"_default": 1},
+        "degree": {"_type": "int_uniform", "_value": [2,5],"_default": 3},
+        "coef0": {"_type": "quniform", "_value": [-1,1],"_default": 0},
+        "__activate":{
+          "kernel":{
+            "rbf":["gamma"],
+            "sigmoid":["gamma","coef0"],
+            "poly":["degree","gamma","coef0"]
+          }
+        }
+      },
+      "pca": {
+        "_n_components__sp1_ratio": {"_type": "quniform", "_value": [0.5, 1],"_default": 0.8},    //keep_variance
+        "whiten": {"_type": "choice", "_value": [true,false],"_default": true},
+        "copy": true
+      },
+      "random_trees_embedding": {
+        // todo
+        "n_estimators": {"_type": "int_uniform", "_value": [10,100],"_default": 10},
+        "max_depth": {"_type": "int_uniform", "_value": [2,10],"_default": 5},
+        "min_samples_split": {"_type": "int_uniform", "_value": [2,20],"_default": 2},
+        "min_samples_leaf": {"_type": "int_uniform", "_value": [1,20],"_default": 1},
+        "min_weight_fraction_leaf": 0.0,
+        "max_leaf_nodes": null,
+        "bootstrap": {"_type": "choice","_value": [true,false],"_default": true}
+      },
+      "truncatedSVD": {
+        // todo
+        //target_dim
       }
     },
     "scale": {
-      "flexible": {
-        "strategy":  {"_type": "choice",
-          "_value": ["none","minmax","standardize"],"_default": "minmax"}
-      },
       "minmax": {
       },
       "normalize": {
@@ -504,33 +629,23 @@
       }
     },
     "select": {
-      "variance": {
-        "threshold": {"_type": "loguniform", "_value": [1e-5, 0.01]}
-      },
-      "flexible": {
-        "strategy": {"_type": "choice", "_value": ["none", "rf", "gbdt", "l1_linear"]},
-        "should_select_percent": {"_type": "choice", "_value": [true, false]},
-        "select_percent": {"_type": "quniform", "_value": [10,100,0.5],"_default": 90},
-        "rf_type": {"_type": "choice", "_value": ["random_forest", "extra_trees"]},
-        "C": {"_type": "loguniform", "_value": [0.01, 10],"_default": 1.0},
+      "adaptive": {
+        "percentage": {"_type": "quniform", "_value": [0, 100, 0.1],"_default": 80},
+        "feats_must_less_than_rows": true,
+        "lgbm_w": {"_type": "quniform", "_value": [0, 1, 0.1],"_default": 0.5},
+        "et_iters": 100,
+        "lgbm_iters": 100,
+        "et_budget": 1.5,
+        "lgbm_budget": 1.5,
+        "step": 10,
         "n_jobs": 1,
-        "__condition":[
-          {
-            "_child": "C",
-            "_parent": "strategy",
-            "_values": ["l1_linear"]
-          },
-          {
-            "_child": "rf_type",
-            "_parent": "strategy",
-            "_values": ["rf"]
-          },
-          {
-            "_child": "select_percent",
-            "_parent": "should_select_percent",
-            "_values": [true]
-          }
-        ]
+        "random_state": 42
+      },
+      "boruta": {
+        "max_depth": {"_type": "quniform", "_value": [5, 9, 2],"_default": 7},
+        "weak": {"_type": "choice", "_value": [true, false],"_default": true},
+        "n_jobs": 1,
+        "random_state": 42
       },
       "from_model_clf": {
         "estimator":{"_type": "choice", "_value": [
@@ -550,6 +665,12 @@
         "random_state": 42,
         "n_jobs": 1,
         "solver":"saga",
+//        "__activate":{
+//          "estimator":{
+//            "sklearn.svm.LinearSVC":["penalty", "dual", "C", "multi_class"],
+//            "sklearn.ensemble.ExtraTreesClassifier":["n_estimators","max_depth","min_samples_split","min_samples_leaf"],
+//          }
+//        },
         "_select_percent": {"_type": "quniform", "_value": [1,100,0.5],"_default": 90}
       },
       "from_model_reg": {
@@ -569,6 +690,12 @@
         "min_samples_leaf": 10,
         "random_state": 42,
         "n_jobs": 1,
+//        "__activate":{
+//          "estimator":{
+//            "sklearn.svm.LinearSVR":["loss", "dual", "C"],
+//            "sklearn.ensemble.ExtraTreesRegressor":["n_estimators","max_depth","min_samples_split","min_samples_leaf"],
+//          }
+//        },
         "_select_percent": {"_type": "quniform", "_value": [1,100,0.5],"_default": 90}
       },
       "rfe_clf": {
@@ -589,6 +716,11 @@
         "random_state": 42,
         "n_jobs": 1,
         "solver":"saga",
+//        "__activate":{
+//          "estimator":{
+//            "sklearn.ensemble.ExtraTreesClassifier":["n_estimators","max_depth","min_samples_split","min_samples_leaf"],
+//          }
+//        },
         "_select_percent": {"_type": "quniform", "_value": [1,100,0.5],"_default": 90},
         "_step__sp1_dev": 20
       },
@@ -610,6 +742,11 @@
         "min_samples_leaf": 10,
         "random_state": 42,
         "n_jobs": 1,
+//        "__activate":{
+//          "estimator":{
+//            "sklearn.ensemble.ExtraTreesRegressor":["n_estimators","max_depth","min_samples_split","min_samples_leaf"],
+//          }
+//        },
         "_select_percent": {"_type": "quniform", "_value": [1,100,0.5],"_default": 90},
         "_step__sp1_dev": 20
       },
@@ -622,7 +759,40 @@
         "score_func": {"_type": "choice", "_value": ["f_regression", "mutual_info_regression"],"_default": "f_regression"},
 //        "param": {"_type": "quniform", "_value": [1,100,0.5],"_default": 90}
         "_select_percent": {"_type": "quniform", "_value": [1,100,0.5],"_default": 90}
-      },
+      }
     },
+    "text": {
+      "tokenize": {
+        "simple": {}
+      },
+      "topic": {
+        "hdp": {"random_state": 42},
+        "lda": {
+          "random_state": 42,
+          "num_topics": {"_type": "int_quniform", "_value": [5, 200, 5],"_default": 10},
+          "iterations": 50
+        },
+        "lsi": {
+          "num_topics": {"_type": "int_quniform", "_value": [10, 400, 10],"_default": 20}
+        },
+        "nmf": {
+          "random_state": 42,
+          "num_topics": {"_type": "int_quniform", "_value": [10, 400, 10],"_default": 20}
+        },
+        "rp": {
+          "num_topics": {"_type": "int_quniform", "_value": [10, 300, 10],"_default": 20}
+        },
+        "tsvd": {
+          "random_state": 42,
+          "num_topics": {"_type": "int_quniform", "_value": [5, 200, 5],"_default": 10}
+        }
+      }
+    },
+    "transform": {
+      //todo: power设置超参
+      //todo: quantile重复了
+       "power": {},
+       "quantile": {},
+    }
   }
 }

@@ -4,7 +4,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-# from datefinder import find_dates
+from datefinder import find_dates
 from scipy.sparse import issparse
 from sklearn.utils.multiclass import type_of_target
 
@@ -97,7 +97,7 @@ def is_cat(s: Union[pd.Series, np.ndarray], consider_ordinal_as_cat):
         s = pd.Series(s)
     if s.dtype == object:
         for elem in s:
-            if isinstance(elem, (float, int)):
+            if isinstance(elem, (float, int)):  # todo: faster
                 continue
             else:
                 return True
@@ -111,6 +111,12 @@ def is_cat(s: Union[pd.Series, np.ndarray], consider_ordinal_as_cat):
         if tp in valid_types:
             return True
     return False
+
+
+def is_ignore(s: Union[pd.Series, np.ndarray]):
+    if np.count_nonzero(pd.isna(s)):
+        return False
+    return s.nunique() == 1
 
 
 def finite_array(array):
@@ -131,8 +137,8 @@ def is_highR_nan(s: pd.Series, threshold):
     return (np.count_nonzero(pd.isna(s)) / s.size) > threshold
 
 
-def is_highR_cat(s: pd.Series, threshold):
-    return (np.unique(s.astype("str")).size / s.size) > threshold
+def is_highC_cat(s: pd.Series, threshold):
+    return (np.unique(s.astype("str")).size) >= threshold
 
 
 def is_nan(s: pd.Series):
@@ -140,10 +146,9 @@ def is_nan(s: pd.Series):
 
 
 def to_array(X):
-    if X is None:
-        return X
     if isinstance(X, (pd.DataFrame, pd.Series)):
-        return X.values
+        X = X.values
+    # X = X.astype("float32")
     return X
 
 
@@ -155,44 +160,20 @@ def is_text(s, cat_been_checked=False):
             return False
     s = s.dropna()
     s = s.astype(str)
-    if is_highR_cat(s, 0.8):
-        s = s.str.split(" ")
-        s = s.apply(len)
-        return np.all(s >= 2)
-    return False
-
-
-def read_csv(path):
-    df_pre = pd.read_csv(path, nrows=3)
-    float_columns = df_pre.select_dtypes("float").columns
-    int_columns = df_pre.select_dtypes("int").columns
-    dtypes = dict(zip(
-        float_columns,
-        ["float16"] * len(float_columns)
-    ))
-    dtypes.update(zip(
-        int_columns,
-        ["int16"] * len(int_columns)
-    ))
-    try:
-        print('内存压缩版 pd.read_csv 调用成功')
-        return pd.read_csv(path, dtype=dtypes)
-    except Exception as e:
-        print('内存压缩版 pd.read_csv 调用失败')
-        print(e)
-        return pd.read_csv(path)
+    s = s.str.split(" ")
+    s = s.apply(len)
+    return np.all(s >= 4)  # todo 参考 AG
 
 
 def is_date(s, cat_been_checked=False):
-    # if not isinstance(s, pd.Series):
-    #     s = pd.Series(s)
-    # if not cat_been_checked:
-    #     if not is_cat(s, consider_ordinal_as_cat=False):
-    #         return False
-    # s = s.dropna()
-    # s = s.astype(str)
-    return False
-    # return all(bool(list(find_dates(elem, strict=True))) for elem in s)
+    if not isinstance(s, pd.Series):
+        s = pd.Series(s)
+    if not cat_been_checked:
+        if not is_cat(s, consider_ordinal_as_cat=False):
+            return False
+    s = s.dropna()
+    s = s.astype(str)  # todo 参考 AG
+    return all(bool(list(find_dates(elem, strict=True))) for elem in s)
 
 
 if __name__ == '__main__':
@@ -226,3 +207,15 @@ if __name__ == '__main__':
         '456',
         '256'
     ]))
+
+
+def pairwise_distance(X, Y):
+    A, M = X.shape
+    B, _ = Y.shape
+    matrix1 = X.reshape([A, 1, M])
+    matrix1 = np.repeat(matrix1, B, axis=1)
+    matrix2 = Y.reshape([1, B, M])
+    matrix2 = np.repeat(matrix2, A, axis=0)
+    distance_sqr = np.sum((matrix1 - matrix2) ** 2, axis=-1)  # A, B
+    # didnt sqrt
+    return distance_sqr

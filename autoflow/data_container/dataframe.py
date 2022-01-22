@@ -3,9 +3,8 @@
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
 import hashlib
-import json
 from collections import defaultdict
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import Union, List
 
 import inflection
@@ -23,10 +22,11 @@ class DataFrameContainer(DataContainer):
     VALID_INSTANCE = (np.ndarray, pd.DataFrame)
     dataset_type = "dataframe"
 
-    def __init__(self, dataset_source="", dataset_path=None, dataset_instance=None, dataset_id=None,
-                 resource_manager=None,
-                 dataset_metadata=frozendict(),
-                 process_dirty=False
+    def __init__(
+            self, dataset_source="", dataset_path=None, dataset_instance=None, dataset_id=None,
+            resource_manager=None,
+            dataset_metadata=frozendict(),
+            process_dirty=False
     ):
         self.process_dirty = process_dirty
         self.column_descriptions = None
@@ -55,7 +55,7 @@ class DataFrameContainer(DataContainer):
                         # 2. replace
                         columns[first_ix] = get_unique_col_name(columns, dup_col)
             # set unique columns to dataset_instance
-            dataset_instance.columns = columns
+            dataset_instance.columns = columns.copy()
             if self.process_dirty:
                 # 2. rename dirty columns
                 for i, column in enumerate(columns):
@@ -87,16 +87,13 @@ class DataFrameContainer(DataContainer):
         else:
             raise NotImplementedError
 
-    def upload(self, upload_type="fs", upload_data=True):
+    def upload(self, upload_type="fs"):
         assert upload_type in ("table", "fs")
         self.dataset_id = self.get_hash()
         if self.dataset_id == self.uploaded_hash:
             return
-        if upload_data:
-            dataset_path = self.resource_manager.get_dataset_path(self.dataset_id)
-            dataset_path = self.resource_manager.upload_df_to_fs(self.data, dataset_path)
-        else:
-            dataset_path = ""
+        dataset_path = self.resource_manager.get_dataset_path(self.dataset_id)
+        dataset_path = self.resource_manager.upload_df_to_fs(self.data, dataset_path)
         response = self.resource_manager.insert_dataset_record(
             self.dataset_id, self.dataset_metadata, self.dataset_type, dataset_path,
             upload_type, self.dataset_source, self.column_descriptions,
@@ -119,19 +116,10 @@ class DataFrameContainer(DataContainer):
         dataset_path = record["dataset_path"]
         upload_type = record["upload_type"]
         columns = record["columns"]
-        if isinstance(columns, str):
-            try:
-                columns = json.loads(columns)
-            except Exception as e:
-                self.logger.error(e)
-                columns = []
         if upload_type == "table":
             df = self.resource_manager.download_df_from_table(dataset_id, columns, self.columns_mapper)
         else:
-            if dataset_path:
-                df = self.resource_manager.download_df_from_fs(dataset_path)
-            else:
-                df = pd.DataFrame(columns=columns)
+            df = self.resource_manager.download_df_from_fs(dataset_path, columns)
         # inverse_columns_mapper = inverse_dict(self.columns_mapper)
         # df.columns.map(inverse_columns_mapper)
         # todo: 建立本地缓存，防止二次下载
@@ -141,6 +129,7 @@ class DataFrameContainer(DataContainer):
     def set_feature_groups(self, feature_groups):
         if not isinstance(feature_groups, pd.Series):
             feature_groups = pd.Series(feature_groups)
+        feature_groups.index = range(len(feature_groups))
         assert len(feature_groups) == self.shape[1], "feature_groups' length should equal to features' length."
         self.feature_groups = feature_groups
         self.column_descriptions = self.feature_groups2column_descriptions(feature_groups)
@@ -195,6 +184,8 @@ class DataFrameContainer(DataContainer):
         self.feature_groups = self.column_descriptions2feature_groups(column_descriptions)
 
     def filter_feature_groups(self, feature_group: Union[List, str], copy=True, isin=True):  # , inplace=False
+        if feature_group is None:
+            return self
         if feature_group == "all":  # todo 用正则表达式判断
             feature_group = np.unique(self.feature_groups).tolist()
         # 用于过滤feature_groups
@@ -237,6 +228,18 @@ class DataFrameContainer(DataContainer):
                                new_feature_group: Union[str, List[str], pd.Series]):
         if old_feature_group == "all":
             old_feature_group = np.unique(self.feature_groups).tolist()
+        if new_feature_group is None:
+            # imputer will trigger this
+            self.logger.debug("new_feature_group is None, return all feature_groups")
+            assert values.shape[1] == len(self.feature_groups)
+            assert values.shape[0] == self.shape[0]
+            if not isinstance(values, pd.DataFrame):
+                self.logger.debug(f"values is not DataFrame, is {type(values)}, "
+                                  f"convert to DataFrame and set column and index same to self.")
+                values = pd.DataFrame(values, columns=self.columns, index=self.index)
+            result = self.copy()
+            result.data = values
+            return result
         if isinstance(old_feature_group, str):
             old_feature_group = [old_feature_group]
 
@@ -270,7 +273,18 @@ class DataFrameContainer(DataContainer):
 
     def sub_sample(self, index):
         new_df = self.copy()
-        new_df.data = new_df.data.iloc[index, :].copy()
+        # fixme iloc 与 loc
+        new_df.data = new_df.data.loc[index, :].copy()
+        return new_df
+
+    def sub_feature(self, index):
+        new_df = self.copy()
+        if isinstance(index, np.ndarray) and index.dtype == int:
+            new_df.data = deepcopy(new_df.data.iloc[:, index])
+            new_df.set_feature_groups(new_df.feature_groups[index])
+        else:
+            # todo: 如果index是列名序列
+            raise NotImplementedError
         return new_df
 
     @property

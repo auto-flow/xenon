@@ -11,7 +11,7 @@ from typing import Dict, Optional, List, Union
 import numpy as np
 
 from autoflow.evaluation.budget import implement_subsample_budget
-from autoflow.lazy_import import Configuration
+from ConfigSpace import Configuration
 
 from autoflow.constants import PHASE2, PHASE1, SERIES_CONNECT_LEADER_TOKEN, SERIES_CONNECT_SEPARATOR_TOKEN, JOBLIB_CACHE
 from autoflow.data_container import DataFrameContainer
@@ -30,12 +30,6 @@ from autoflow.utils.sys_ import get_trance_back_msg
 from autoflow.workflow.ml_workflow import ML_Workflow
 from autoflow.utils.hash import get_hash_of_config
 from joblib import Memory
-
-# lazy import dsmac
-try:
-    from dsmac.runhistory.runhistory_db import RunHistoryDB
-except Exception:
-    RunHistoryDB = None
 
 memory = Memory(JOBLIB_CACHE, verbose=1)
 
@@ -202,18 +196,10 @@ class TrainEvaluator(BaseEvaluator):
                     sample_weight = self.calc_balanced_sample_weight(y_train.data)
                 else:
                     sample_weight = None
-                try:
-                    procedure_result = cloned_model.procedure(
-                        self.ml_task, X_train, y_train, X_valid, y_valid, X_test,
-                        y_test, sample_weight
-                    )
-                except Exception as e:
-                    failed_info = get_trance_back_msg()
-                    status = "FAILED"
-                    if self.debug:
-                        self.logger.error("re-raise exception")
-                        raise sys.exc_info()[1]
-                    break
+                procedure_result = cloned_model.procedure(
+                    self.ml_task, X_train, y_train, X_valid, y_valid, X_test,
+                    y_test
+                )
                 intermediate_results.append(cloned_model.intermediate_result)
                 models.append(cloned_model)
                 y_true_indexes.append(valid_index)
@@ -321,7 +307,6 @@ class TrainEvaluator(BaseEvaluator):
         cost_time = time() - start
         info["config_id"] = config_id
         info["instance_id"] = self.instance_id
-        info["run_id"] = RunHistoryDB.get_run_id(self.instance_id, config_id)
         # info["program_hyper_param"] = shp
         info["dict_hyper_param"] = dhp
         estimator = list(dhp.get(PHASE2, {"unk": ""}).keys())[0]

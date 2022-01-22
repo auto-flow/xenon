@@ -1,4 +1,4 @@
-from autoflow.lazy_import import Configuration
+from ConfigSpace import Configuration
 
 from autoflow.utils.klass import StrSignatureMixin
 

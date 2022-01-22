@@ -6,57 +6,14 @@ import datetime
 import json
 import os
 import sys
-from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
-
-import requests
 
 from autoflow import ResourceManager
 from autoflow.utils import list_
 from autoflow.utils.klass import get_valid_params_in_kwargs
 from autoflow.utils.logging_ import get_logger
-from generic_fs.utils.http import send_requests, extend_to_list, get_data_of_response
-
-
-def utc2local(utc_dtm):
-    # UTC 时间转本地时间（ +8:00 ）
-    local_tm = datetime.datetime.fromtimestamp(0)
-    utc_tm = datetime.datetime.utcfromtimestamp(0)
-    offset = local_tm - utc_tm
-    return utc_dtm + offset
-
-
-def check_login_status(url, user_id, user_token, common_headers, logger=None):
-    headers = deepcopy(common_headers)
-    if logger is None:
-        func = print
-    else:
-        func = logger.info
-    headers.update({
-        "user_id": str(user_id),
-        "user_token": user_token
-    })
-    response = requests.get(f"{url}/api/v1/user", headers=headers)
-    json_response = response.json()
-    if "data" in json_response and bool(json_response["data"]):
-        data = json_response["data"]
-        issued_on = data["issued_on"]
-        issued_on = datetime.datetime.strptime(issued_on, '%Y-%m-%d %H:%M:%S')
-        expires_on = data["expires_on"]
-        expires_on = datetime.datetime.strptime(expires_on, '%Y-%m-%d %H:%M:%S')
-        func("Your Login status is OK !")
-        func(f"Login Time :\t{utc2local(issued_on)}")
-        func(f"Expire Time :\t{utc2local(expires_on)}")
-    else:
-        func("Your Login status is Error !")
-        func(f"status_code :\t{response.status_code}")
-        func(f"code :\t{json_response.get('code')}")
-        func(f"message :\t{json_response.get('message')}")
-        if os.getenv("AUTH_ERR") == "ignore":
-            pass
-        else:
-            sys.exit(-1)
+from generic_fs.utils.http import send_requests, extend_to_list
 
 
 class HttpResourceManager(ResourceManager):
@@ -71,7 +28,7 @@ class HttpResourceManager(ResourceManager):
 
         if url is None:
             # url = "http://192.168.1.182:9901"
-            url = os.getenv("XENON_URL", "https://autoflow.nitrogen.fun:9091")
+            url = os.getenv("XENON_URL", "https://xacs.nitrogen.fun:9090")
         # todo: 增加encrypt字段
         self.url = url
         self.user_token = user_token
@@ -112,9 +69,8 @@ class HttpResourceManager(ResourceManager):
             self.user_id, self.user_token = self.login()
             Path(token_dir).mkdir(parents=True, exist_ok=True)
             Path(token_file).write_text(json.dumps({"user_id": self.user_id, "user_token": self.user_token}))
-        check_login_status(self.url, self.user_id, self.user_token, self.db_params["headers"], self.login_logger)
         super(HttpResourceManager, self).__init__(
-            store_path="autoflow",
+            store_path="xenon",
             db_params=self.db_params,
             user_id=self.user_id,
             file_system="nitrogen",
@@ -184,7 +140,7 @@ class HttpResourceManager(ResourceManager):
         local["columns"] = json.dumps(local["columns"])
         target = "dataset"
         response = send_requests(self.db_params, target, local)
-        data = get_data_of_response(response)
+        data = response.json()["data"]
         if "dataset_id" not in data:
             data["dataset_id"] = dataset_id
             data["dataset_path"] = dataset_path
@@ -196,7 +152,7 @@ class HttpResourceManager(ResourceManager):
     def _get_dataset_records(self, dataset_id, user_id) -> List[Dict[str, Any]]:
         target = f"dataset/{dataset_id}"
         response = send_requests(self.db_params, target, method="get")
-        data = get_data_of_response(response)
+        data = response.json()["data"]
         return extend_to_list(data)
 
     ##################################################################
@@ -212,7 +168,7 @@ class HttpResourceManager(ResourceManager):
         local.pop("user_id")
         target = "experiment"
         response = send_requests(self.db_params, target, local)
-        data = get_data_of_response(response)
+        data = response.json()["data"]
         if "experiment_id" not in data:
             raise ValueError("insert experiment failed.")
         return data["experiment_id"]
@@ -227,7 +183,7 @@ class HttpResourceManager(ResourceManager):
     def _get_experiment_record(self, experiment_id):
         target = f"experiment/{experiment_id}"
         response = send_requests(self.db_params, target, method="get")
-        data = get_data_of_response(response)
+        data = response.json()["data"]
         return extend_to_list(data)
 
     ##################################################################
@@ -244,14 +200,13 @@ class HttpResourceManager(ResourceManager):
         local["sub_feature_indexes"] = json.dumps(local["sub_feature_indexes"])
         local.pop("user_id")
         target = "task"
-        send_requests(self.db_params, target, local)
+        data = send_requests(self.db_params, target, local).json()["data"]
         return task_id
 
     def _get_task_records(self, task_id: str, user_id: int):
         target = f"task/{task_id}"
         response = send_requests(self.db_params, target, method="get")
-        data = get_data_of_response(response)
-        return extend_to_list(data)
+        return extend_to_list(response.json()["data"])
 
     ##################################################################
     ############################   hdl     ###########################
@@ -286,7 +241,7 @@ class HttpResourceManager(ResourceManager):
         # local["test_loss"]={}
         # local["test_all_score"]={}
         response = send_requests(self.db_params, target, local)
-        data = get_data_of_response(response)
+        data = response.json()["data"]
         if "trial_id" not in data:
             self.logger.warning("insert trial failed.")
         return data.get("trial_id", -1)
@@ -294,26 +249,20 @@ class HttpResourceManager(ResourceManager):
     def _get_sorted_trial_records(self, task_id, user_id, limit):
         target = f"task/{task_id}/trial?page_num={1}&page_size={limit}"
         response = send_requests(self.db_params, target, method="get")
-        data = get_data_of_response(response)
-        return extend_to_list(data)
+        return extend_to_list(response.json()["data"])
 
     def _get_trial_records_by_id(self, trial_id, task_id, user_id):
         target = f"trial/{trial_id}"
         response = send_requests(self.db_params, target, method="get")
         # 返回值是一个字典
-        data = get_data_of_response(response)
-        return data
+        return response.json()["data"]
 
     def _get_trial_records_by_ids(self, trial_ids, task_id, user_id):
         result = []
         for sub_trial_ids in list_.chunk(trial_ids, 10):
             target = f"trial?" + "&".join([f"trial_id={trial_id}" for trial_id in sub_trial_ids])
             response = send_requests(self.db_params, target, method="get")
-            data = get_data_of_response(response)
-            if data:
-                result.extend(data)
-            else:
-                break
+            result.extend(extend_to_list(response.json()["data"]))
         return result
 
     def _get_best_k_trial_ids(self, task_id, user_id, k):
