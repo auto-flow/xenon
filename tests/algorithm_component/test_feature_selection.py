@@ -7,15 +7,15 @@ from time import time
 
 import numpy as np
 
-from xenon import DataFrameContainer, NdArrayContainer
-from xenon.datasets import load
-from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.preprocessing.select.from_model_clf import SelectFromModelClf
-from xenon.workflow.components.preprocessing.select.from_model_reg import SelectFromModelReg
-from xenon.workflow.components.preprocessing.select.rfe_clf import RFE_Clf
-from xenon.workflow.components.preprocessing.select.rfe_reg import RFE_Reg
-from xenon.workflow.components.preprocessing.select.univar_clf import SelectPercentileClassification
-from xenon.workflow.components.preprocessing.select.univar_reg import SelectPercentileRegression
+from autoflow import DataFrameContainer, NdArrayContainer
+from autoflow.datasets import load
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.workflow.components.preprocessing.select.from_model_clf import SelectFromModelClf
+from autoflow.workflow.components.preprocessing.select.from_model_reg import SelectFromModelReg
+from autoflow.workflow.components.preprocessing.select.rfe_clf import RFE_Clf
+from autoflow.workflow.components.preprocessing.select.rfe_reg import RFE_Reg
+from autoflow.workflow.components.preprocessing.select.univar_clf import SelectPercentileClassification
+from autoflow.workflow.components.preprocessing.select.univar_reg import SelectPercentileRegression
 
 
 def very_close(i, j, delta=2):

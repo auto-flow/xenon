@@ -5,8 +5,8 @@
 import unittest
 import numpy as np
 import h5py
-from xenon import datasets
-from xenon.utils.hash import get_hash_of_dataframe_csv, get_hash_of_dict, get_hash_of_array
+from autoflow import datasets
+from autoflow.utils.hash import get_hash_of_dataframe_csv, get_hash_of_dict, get_hash_of_array
 
 
 class TestDict(unittest.TestCase):

@@ -10,17 +10,17 @@ import pandas as pd
 from sklearn.datasets import load_boston
 from sklearn.metrics import r2_score
 
-from xenon import XenonRegressor
-from xenon.hdl.utils import get_default_hp_of_cls
-from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.preprocessing.operate.keep_going import KeepGoing
-from xenon.workflow.components.preprocessing.scale.minmax import MinMaxScaler
-from xenon.workflow.components.preprocessing.scale.normalize import Normalizer
-from xenon.workflow.components.preprocessing.scale.quantile import QuantileTransformer
-from xenon.workflow.components.preprocessing.scale.robust import RobustScaler
-from xenon.workflow.components.preprocessing.scale.standardize import StandardScaler
-from xenon.workflow.components.regression.liblinear_svr import LibLinear_SVR
-from xenon.workflow.ml_workflow import ML_Workflow
+from autoflow import AutoFlowRegressor
+from autoflow.hdl.utils import get_default_hp_of_cls
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.workflow.components.preprocessing.operate.none import KeepGoing
+from autoflow.workflow.components.preprocessing.scale.minmax import MinMaxScaler
+from autoflow.workflow.components.preprocessing.scale.normalize import Normalizer
+from autoflow.workflow.components.preprocessing.scale.quantile import QuantileTransformer
+from autoflow.workflow.components.preprocessing.scale.robust import RobustScaler
+from autoflow.workflow.components.preprocessing.scale.standardize import StandardScaler
+from autoflow.workflow.components.regression.liblinear_svr import LibLinear_SVR
+from autoflow.workflow.ml_workflow import ML_Workflow
 
 
 class TestScaler(LocalResourceTestCase):
@@ -36,7 +36,7 @@ class TestScaler(LocalResourceTestCase):
         y_train = boston.target[train_ix]
         X_test = pd.DataFrame(boston.data[test_ix, :], columns=boston.feature_names)
         y_test = boston.target[test_ix]
-        pipe = XenonRegressor(
+        pipe = AutoFlowRegressor(
             # consider_ordinal_as_cat=True,
             resource_manager=self.mock_resource_manager
         )

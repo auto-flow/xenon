@@ -6,10 +6,10 @@
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split, ShuffleSplit
 
-from xenon.constants import CONNECTION_POOL_CLOSE_MSG, START_SAFE_CLOSE_MSG, \
+from autoflow.constants import CONNECTION_POOL_CLOSE_MSG, START_SAFE_CLOSE_MSG, \
     END_SAFE_CLOSE_MSG, RESOURCE_MANAGER_CLOSE_ALL_LOGGER
-from xenon.core.classifier import XenonClassifier
-from xenon.tests.base import LogTestCase
+from autoflow.core.classifier import AutoFlowClassifier
+from autoflow.tests.base import LogTestCase
 
 
 class TestCloseAll(LogTestCase):
@@ -19,7 +19,7 @@ class TestCloseAll(LogTestCase):
         # todo : 增加预测与集成学习的案例
         X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
             },

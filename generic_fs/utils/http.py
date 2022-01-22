@@ -68,7 +68,7 @@ def judge_state_code(response: requests.Response):
     if response.status_code != 200:
         logger.warning("response.status_code != 200")
         if response.status_code == 401:
-            logger.error("Authentication failed, maybe token is expired! Xenon-SDK will exit...")
+            logger.error("Authentication failed, maybe token is expired! AutoFlow-SDK will exit...")
             sys.exit(-1)
         return False
     return True
@@ -156,7 +156,7 @@ def send_requests(db_params: dict, target: str, json_data: Optional[dict] = None
         if savedpath is not None:
             root_path = savedpath
         else:
-            root_path = f"{os.getenv('HOME')}/xenon"
+            root_path = f"{os.getenv('HOME')}/autoflow"
         log_path = f"{root_path}/requests_err"
         Path(log_path).mkdir(parents=True, exist_ok=True)
         log_file = f"{log_path}/{log_file_name}"

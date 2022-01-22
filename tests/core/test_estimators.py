@@ -7,17 +7,17 @@ from numpy import array
 from sklearn.datasets import load_iris, load_boston
 from sklearn.model_selection import train_test_split
 
-from xenon import XenonRegressor
-from xenon.constants import STACK_X_MSG
-from xenon.core.classifier import XenonClassifier
-from xenon.tests.base import LocalResourceTestCase, LogTestCase
+from autoflow import AutoFlowRegressor
+from autoflow.constants import STACK_X_MSG
+from autoflow.core.classifier import AutoFlowClassifier
+from autoflow.tests.base import LocalResourceTestCase, LogTestCase
 
 
 class TestEstimators(LocalResourceTestCase):
     def test_single_classifier(self):
         X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
             },
@@ -35,7 +35,7 @@ class TestEstimators(LocalResourceTestCase):
     def test_single_regressor(self):
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonRegressor(
+        pipe = AutoFlowRegressor(
             DAG_workflow={
                 "num->target": ["elasticnet"]
             },
@@ -54,7 +54,7 @@ class TestEstimators(LocalResourceTestCase):
     def test_single_classifier_with_X_test(self):
         X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
             },
@@ -82,7 +82,7 @@ class TestEstimators(LocalResourceTestCase):
     def test_single_regressor_with_X_test(self):
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonRegressor(
+        pipe = AutoFlowRegressor(
             DAG_workflow={
                 "num->target": ["elasticnet"]
             },
@@ -116,7 +116,7 @@ class TestEstimators(LocalResourceTestCase):
         y[y == '1'] = "pear"
         y[y == '2'] = "banana"
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
             },
@@ -141,7 +141,7 @@ class TestShouldStackX(LogTestCase):
     def test_should_stack_X(self):
         X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->scale": "scale.standardize",
                 "scale->trans": "transform.power",

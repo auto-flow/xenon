@@ -5,8 +5,8 @@
 import numpy as np
 import pandas as pd
 
-from xenon import NdArrayContainer
-from xenon.tests.base import LocalResourceTestCase
+from autoflow import NdArrayContainer
+from autoflow.tests.base import LocalResourceTestCase
 
 
 class TestDataFrameContainer(LocalResourceTestCase):

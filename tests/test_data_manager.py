@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 from pandas import Index
 
-from xenon import DataManager
-from xenon import datasets
-from xenon.tests.base import LocalResourceTestCase
-from xenon.utils.dict_ import sort_dict
+from autoflow import DataManager
+from autoflow import datasets
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.utils.dict_ import sort_dict
 
 
 class TestDataManager(LocalResourceTestCase):
@@ -85,11 +85,11 @@ class TestDataManager(LocalResourceTestCase):
         from sklearn.datasets import load_iris
         from sklearn.model_selection import train_test_split
 
-        from xenon.core.classifier import XenonClassifier
+        from autoflow.core.classifier import AutoFlowClassifier
 
         X, y = load_iris(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": [
                     "logistic_regression",

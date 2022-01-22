@@ -6,8 +6,8 @@ import numpy as np
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
-from xenon import XenonClassifier
-from xenon.tests.base import LocalResourceTestCase
+from autoflow import AutoFlowClassifier
+from autoflow.tests.base import LocalResourceTestCase
 
 
 class TestSplitter(LocalResourceTestCase):
@@ -16,7 +16,7 @@ class TestSplitter(LocalResourceTestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         groups = np.zeros([X_train.shape[0]])
         groups[:len(groups) // 2] = 1
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
             },

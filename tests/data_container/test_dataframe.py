@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 from pandas import Index
 
-from xenon.data_container import DataFrameContainer
-from xenon.datasets import load
-from xenon.tests.base import LocalResourceTestCase
+from autoflow.data_container import DataFrameContainer
+from autoflow.datasets import load
+from autoflow.tests.base import LocalResourceTestCase
 
 
 class TestDataFrameContainer(LocalResourceTestCase):

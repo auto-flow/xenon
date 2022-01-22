@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
-from xenon import DataManager, HDL_Constructor
-from xenon.datasets import load
-from xenon.tests.base import LocalResourceTestCase
+from autoflow import DataManager, HDL_Constructor
+from autoflow.datasets import load
+from autoflow.tests.base import LocalResourceTestCase
 
 
 class TestHDL_Visualize(LocalResourceTestCase):

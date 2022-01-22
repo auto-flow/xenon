@@ -10,16 +10,16 @@ import pandas as pd
 from sklearn.datasets import load_boston
 from sklearn.metrics import r2_score
 
-from xenon import XenonRegressor
-from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.preprocessing.encode.binary import BinaryEncoder
-from xenon.workflow.components.preprocessing.encode.cat_boost import CatBoostEncoder
-from xenon.workflow.components.preprocessing.encode.leave_one_out import LeaveOneOutEncoder
-from xenon.workflow.components.preprocessing.encode.one_hot import OneHotEncoder
-from xenon.workflow.components.preprocessing.encode.ordinal import OrdinalEncoder
-from xenon.workflow.components.preprocessing.encode.target import TargetEncoder
-from xenon.workflow.components.regression.random_forest import RandomForestRegressor
-from xenon.workflow.ml_workflow import ML_Workflow
+from autoflow import AutoFlowRegressor
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.workflow.components.preprocessing.encode.binary import BinaryEncoder
+from autoflow.workflow.components.preprocessing.encode.cat_boost import CatBoostEncoder
+from autoflow.workflow.components.preprocessing.encode.leave_one_out import LeaveOneOutEncoder
+from autoflow.workflow.components.preprocessing.encode.one_hot import OneHotEncoder
+from autoflow.workflow.components.preprocessing.encode.ordinal import OrdinalEncoder
+from autoflow.workflow.components.preprocessing.encode.target import TargetEncoder
+from autoflow.workflow.components.regression.random_forest import RandomForestRegressor
+from autoflow.workflow.ml_workflow import ML_Workflow
 
 
 class TestCoding(LocalResourceTestCase):
@@ -35,7 +35,7 @@ class TestCoding(LocalResourceTestCase):
         y_train = boston.target[train_ix]
         X_test = pd.DataFrame(boston.data[test_ix, :], columns=boston.feature_names)
         y_test = boston.target[test_ix]
-        pipe = XenonRegressor(
+        pipe = AutoFlowRegressor(
             consider_ordinal_as_cat=True,
             resource_manager=self.mock_resource_manager
         )

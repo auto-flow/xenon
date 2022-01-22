@@ -8,12 +8,12 @@ from pathlib import Path
 import pandas as pd
 from sklearn.model_selection import KFold
 
-import xenon
-from xenon import XenonClassifier
-from xenon.datasets import load
+import autoflow
+from autoflow import AutoFlowClassifier
+from autoflow.datasets import load
 
 train_df = load("qsar")
-trained_pipeline = XenonClassifier(
+trained_pipeline = AutoFlowClassifier(
     initial_runs=1, run_limit=5, n_jobs=1,
     included_classifiers=["lightgbm"], debug=True,
     num2purified_workflow={
@@ -27,7 +27,7 @@ trained_pipeline = XenonClassifier(
 column_descriptions = {
     "target": "target"
 }
-# if not os.path.exists("xenon_classification.bz2"):
+# if not os.path.exists("autoflow_classification.bz2"):
 trained_pipeline.fit(
     X_train=train_df,  column_descriptions=column_descriptions,
     splitter=KFold(n_splits=3, shuffle=True, random_state=42),

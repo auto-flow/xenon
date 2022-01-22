@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # @Author  : qichun tang
 # @Contact    : tqichun@gmail.com
-from xenon.tests.base import LocalResourceTestCase
-from xenon.utils.data import is_target_need_label_encode
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.utils.data import is_target_need_label_encode
 
 
 class TestData(LocalResourceTestCase):

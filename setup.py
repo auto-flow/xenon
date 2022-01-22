@@ -8,7 +8,7 @@ import sys
 
 from setuptools import setup, find_packages
 
-with open("xenon/__version__.py") as fh:
+with open("autoflow/__version__.py") as fh:
     version = fh.readlines()[-1].split()[-1].strip("\"'")
 
 
@@ -23,7 +23,7 @@ if os.name != 'posix':
 
 if sys.version_info < (3, 5):
     raise ValueError(
-        'Unsupported Python version %d.%d.%d found. Xenon requires Python '
+        'Unsupported Python version %d.%d.%d found. AutoFlow requires Python '
         '3.6 or higher.' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
 
@@ -75,7 +75,7 @@ def find_pkgs(pkg_name):
     return res
 
 
-all_pkgs = ['xenon', 'generic_fs', 'xenon_ext']  # tiny 版本不再安装 dsmac
+all_pkgs = ['autoflow', 'generic_fs', 'autoflow_ext']  # tiny 版本不再安装 dsmac
 
 
 def build_package_dir(pkgs):
@@ -89,13 +89,13 @@ def build_package_data(pkgs):
 
 
 setup(
-    name='xenon',
+    name='autoflow',
     version=version,
     author='qichun tang',
     author_email='tqichun@gmail.com',
-    description='Xenon: XARC AutoML Platform.',
+    description='AutoFlow: XARC AutoML Platform.',
     license='BSD',
-    url='https://bitbucket.org/xtalpi/xenon',
+    url='https://bitbucket.org/xtalpi/autoflow',
     packages=find_packages("./", include=all_pkgs),
     package_dir=build_package_dir(all_pkgs),
     package_data=build_package_data(all_pkgs),

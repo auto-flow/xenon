@@ -7,13 +7,13 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.neural_network import MLPClassifier as SklearnMLPClassifier
 
-from xenon import XenonClassifier
-from xenon.hdl.utils import get_default_hdl_bank
-from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.classification import XenonClassificationAlgorithm
+from autoflow import AutoFlowClassifier
+from autoflow.hdl.utils import get_default_hdl_bank
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.workflow.components.classification import AutoFlowClassificationAlgorithm
 
 
-class MLPClassifier(XenonClassificationAlgorithm):
+class MLPClassifier(AutoFlowClassificationAlgorithm):
     def fit(self, X_train, y_train=None,
             X_valid=None, y_valid=None,
             X_test=None, y_test=None):
@@ -37,7 +37,7 @@ class TestUserDefinedAlgorithmComponent(LocalResourceTestCase):
             "activation": {"_type": "choice", "_value": ["relu", "tanh", "logistic"]},
         }
 
-        trained_pipeline = XenonClassifier(
+        trained_pipeline = AutoFlowClassifier(
             initial_runs=1, run_limit=2, n_jobs=1,
             included_classifiers=["mlp"],
             hdl_bank=hdl_bank,
@@ -52,8 +52,8 @@ class TestUserDefinedAlgorithmComponent(LocalResourceTestCase):
             X_train=X, y_train=y, X_test=X_test, y_test=y_test,
             splitter=KFold(n_splits=3, shuffle=True, random_state=42),
         )
-        joblib.dump(trained_pipeline, "xenon_classification.bz2")
+        joblib.dump(trained_pipeline, "autoflow_classification.bz2")
         # ---
-        predict_pipeline = joblib.load("xenon_classification.bz2")
+        predict_pipeline = joblib.load("autoflow_classification.bz2")
         score = predict_pipeline.score(X_test, y_test)
         print(score)

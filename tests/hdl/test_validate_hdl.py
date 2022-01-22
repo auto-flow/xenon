@@ -5,15 +5,15 @@
 
 from sklearn.model_selection import KFold
 
-from xenon import XenonClassifier
-from xenon import datasets
-from xenon.tests.base import LocalResourceTestCase
+from autoflow import AutoFlowClassifier
+from autoflow import datasets
+from autoflow.tests.base import LocalResourceTestCase
 
 
 class TestValidateHDL(LocalResourceTestCase):
     def test_validate_hdl1(self):
         train_df, test_df = datasets.load("titanic", return_train_test=True)
-        trained_pipeline = XenonClassifier(
+        trained_pipeline = AutoFlowClassifier(
             initial_runs=1, run_limit=3, n_jobs=1,
             included_classifiers=["dogboost"],
             debug=True,
@@ -38,7 +38,7 @@ class TestValidateHDL(LocalResourceTestCase):
 
     def test_validate_hdl2(self):
         train_df, test_df = datasets.load("titanic", return_train_test=True)
-        trained_pipeline = XenonClassifier(
+        trained_pipeline = AutoFlowClassifier(
             initial_runs=1, run_limit=3, n_jobs=1,
             included_highR_nan_imputers=["operate.pop"],
             debug=True,

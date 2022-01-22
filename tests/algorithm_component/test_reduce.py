@@ -5,13 +5,13 @@
 from copy import deepcopy
 from time import time
 
-from xenon import DataFrameContainer, NdArrayContainer
-from xenon.datasets import load
-from xenon.hdl.utils import get_default_hp_of_cls
-from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.preprocessing.reduce.fast_ica import FastICA
-from xenon.workflow.components.preprocessing.reduce.kernel_pca import KernelPCA
-from xenon.workflow.components.preprocessing.reduce.pca import PCA
+from autoflow import DataFrameContainer, NdArrayContainer
+from autoflow.datasets import load
+from autoflow.hdl.utils import get_default_hp_of_cls
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.workflow.components.preprocessing.reduce.fast_ica import FastICA
+from autoflow.workflow.components.preprocessing.reduce.kernel_pca import KernelPCA
+from autoflow.workflow.components.preprocessing.reduce.pca import PCA
 
 
 def very_close(i, j, delta=2):

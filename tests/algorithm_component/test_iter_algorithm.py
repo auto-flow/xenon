@@ -11,20 +11,20 @@ import pylab as plt
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 
-from xenon.data_container import DataFrameContainer
-from xenon.data_container import NdArrayContainer
-from xenon.hdl.utils import get_default_hp_of_cls
-from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.classification.extra_trees import ExtraTreesClassifier
-from xenon.workflow.components.classification.gradient_boosting import GradientBoostingClassifier
-from xenon.workflow.components.classification.logistic_regression import LogisticRegression
-from xenon.workflow.components.classification.random_forest import RandomForestClassifier
-from xenon.workflow.components.classification.sgd import SGDClassifier
-from xenon.workflow.components.regression.elasticnet import ElasticNet
-from xenon.workflow.components.regression.extra_trees import ExtraTreesRegressor
-from xenon.workflow.components.regression.gradient_boosting import GradientBoostingRegressor
-from xenon.workflow.components.regression.random_forest import RandomForestRegressor
-from xenon.workflow.components.regression.sgd import SGDRegressor
+from autoflow.data_container import DataFrameContainer
+from autoflow.data_container import NdArrayContainer
+from autoflow.hdl.utils import get_default_hp_of_cls
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.workflow.components.classification.extra_trees import ExtraTreesClassifier
+from autoflow.workflow.components.classification.gradient_boosting import GradientBoostingClassifier
+from autoflow.workflow.components.classification.logistic_regression import LogisticRegression
+from autoflow.workflow.components.classification.random_forest import RandomForestClassifier
+from autoflow.workflow.components.classification.sgd import SGDClassifier
+from autoflow.workflow.components.regression.elasticnet import ElasticNet
+from autoflow.workflow.components.regression.extra_trees import ExtraTreesRegressor
+from autoflow.workflow.components.regression.gradient_boosting import GradientBoostingRegressor
+from autoflow.workflow.components.regression.random_forest import RandomForestRegressor
+from autoflow.workflow.components.regression.sgd import SGDRegressor
 
 
 class TestIterAlforithm(LocalResourceTestCase):

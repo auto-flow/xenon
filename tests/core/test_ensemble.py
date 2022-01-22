@@ -8,9 +8,9 @@ import numpy as np
 from sklearn.datasets import load_iris, load_boston
 from sklearn.model_selection import train_test_split, ShuffleSplit, KFold  #, LeaveOneOut
 
-from xenon import XenonRegressor
-from xenon.core.classifier import XenonClassifier
-from xenon.tests.base import LocalResourceTestCase
+from autoflow import AutoFlowRegressor
+from autoflow.core.classifier import AutoFlowClassifier
+from autoflow.tests.base import LocalResourceTestCase
 
 
 class TestEnsemble(LocalResourceTestCase):
@@ -21,7 +21,7 @@ class TestEnsemble(LocalResourceTestCase):
         y[y == '1'] = "pear"
         y[y == '2'] = "banana"
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
             },
@@ -52,7 +52,7 @@ class TestEnsemble(LocalResourceTestCase):
     def test_ensemble_regressors(self):
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        pipe = XenonRegressor(
+        pipe = AutoFlowRegressor(
             DAG_workflow={
                 "num->scaled": ["scale.standardize"],
                 "scaled->target": ["elasticnet"]
@@ -86,7 +86,7 @@ class TestEnsembleAlone(LocalResourceTestCase):
         y[y == '1'] = "pear"
         y[y == '2'] = "banana"
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        pipe = XenonClassifier(
+        pipe = AutoFlowClassifier(
             DAG_workflow={
                 "num->target": ["liblinear_svc", "libsvm_svc", "logistic_regression"]
             },
@@ -106,7 +106,7 @@ class TestEnsembleAlone(LocalResourceTestCase):
         assert data_manager.X_train is None
         assert pipe.data_manager.X_train is not None
         #######################################################
-        ensemble_pipe1 = XenonClassifier(
+        ensemble_pipe1 = AutoFlowClassifier(
             resource_manager=self.mock_resource_manager
         )
         data_manager = deepcopy(data_manager)
@@ -123,7 +123,7 @@ class TestEnsembleAlone(LocalResourceTestCase):
         assert score > 0.8
         assert len(ensemble_pipe1.estimator.estimators_list) == 4
         #######################################################
-        ensemble_pipe2 = XenonClassifier(
+        ensemble_pipe2 = AutoFlowClassifier(
             resource_manager=self.mock_resource_manager
         )
         data_manager = deepcopy(data_manager)

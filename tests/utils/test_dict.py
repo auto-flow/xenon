@@ -4,8 +4,8 @@
 # @Contact    : tqichun@gmail.com
 import unittest
 
-from xenon.utils.dict_ import update_data_structure
-from xenon.utils.dict_ import update_mask_from_other_dict
+from autoflow.utils.dict_ import update_data_structure
+from autoflow.utils.dict_ import update_mask_from_other_dict
 
 
 class TestDict(unittest.TestCase):

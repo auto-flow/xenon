@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 import pandas as pd
 import numpy as np
-from xenon.tests.base import SimulateNitrogenTestCase
+from autoflow.tests.base import SimulateNitrogenTestCase
 from sklearn.metrics import accuracy_score
 import json
 

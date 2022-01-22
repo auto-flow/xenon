@@ -10,34 +10,34 @@ from sklearn import datasets
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
-from xenon import datasets
-from xenon.data_container import DataFrameContainer
-from xenon.data_container import NdArrayContainer
-from xenon.hdl.utils import get_default_hp_of_cls
-from xenon.tests.base import LocalResourceTestCase
-from xenon.workflow.components.classification.liblinear_svc import LibLinear_SVC
+from autoflow import datasets
+from autoflow.data_container import DataFrameContainer
+from autoflow.data_container import NdArrayContainer
+from autoflow.hdl.utils import get_default_hp_of_cls
+from autoflow.tests.base import LocalResourceTestCase
+from autoflow.workflow.components.classification.liblinear_svc import LibLinear_SVC
 # todo: 调研并增加超参数
-from xenon.workflow.components.preprocessing.balance.under_sample.all_knn import AllKNN
-from xenon.workflow.components.preprocessing.balance.under_sample.cluster_centroids import ClusterCentroids
-from xenon.workflow.components.preprocessing.balance.under_sample.condensed_nearest_neighbour import CondensedNearestNeighbour
-from xenon.workflow.components.preprocessing.balance.under_sample.edited_nearest_neighbours import EditedNearestNeighbours
-from xenon.workflow.components.preprocessing.balance.under_sample.instance_hardness_threshold import InstanceHardnessThreshold
-from xenon.workflow.components.preprocessing.balance.under_sample.near_miss import NearMiss
-from xenon.workflow.components.preprocessing.balance.under_sample.neighbourhood_cleaning_rule import NeighbourhoodCleaningRule
-from xenon.workflow.components.preprocessing.balance.under_sample.one_sided_selection import OneSidedSelection
-from xenon.workflow.components.preprocessing.balance.under_sample.random import RandomUnderSampler
-from xenon.workflow.components.preprocessing.balance.under_sample.repeated_edited_nearest_neighbours import RepeatedEditedNearestNeighbours
-from xenon.workflow.components.preprocessing.balance.under_sample.tomek_links import TomekLinks
+from autoflow.workflow.components.preprocessing.balance.under_sample.all_knn import AllKNN
+from autoflow.workflow.components.preprocessing.balance.under_sample.cluster_centroids import ClusterCentroids
+from autoflow.workflow.components.preprocessing.balance.under_sample.condensed_nearest_neighbour import CondensedNearestNeighbour
+from autoflow.workflow.components.preprocessing.balance.under_sample.edited_nearest_neighbours import EditedNearestNeighbours
+from autoflow.workflow.components.preprocessing.balance.under_sample.instance_hardness_threshold import InstanceHardnessThreshold
+from autoflow.workflow.components.preprocessing.balance.under_sample.near_miss import NearMiss
+from autoflow.workflow.components.preprocessing.balance.under_sample.neighbourhood_cleaning_rule import NeighbourhoodCleaningRule
+from autoflow.workflow.components.preprocessing.balance.under_sample.one_sided_selection import OneSidedSelection
+from autoflow.workflow.components.preprocessing.balance.under_sample.random import RandomUnderSampler
+from autoflow.workflow.components.preprocessing.balance.under_sample.repeated_edited_nearest_neighbours import RepeatedEditedNearestNeighbours
+from autoflow.workflow.components.preprocessing.balance.under_sample.tomek_links import TomekLinks
 
-from xenon.workflow.components.preprocessing.balance.over_sample.random import RandomOverSampler
-from xenon.workflow.components.preprocessing.balance.over_sample.adasyn import ADASYN
-from xenon.workflow.components.preprocessing.balance.over_sample.borderline_smote import BorderlineSMOTE
-from xenon.workflow.components.preprocessing.balance.over_sample.kmeans_smote import KMeansSMOTE
-from xenon.workflow.components.preprocessing.balance.over_sample.smote import SMOTE
-from xenon.workflow.components.preprocessing.balance.over_sample.svmsmote import SVMSMOTE
+from autoflow.workflow.components.preprocessing.balance.over_sample.random import RandomOverSampler
+from autoflow.workflow.components.preprocessing.balance.over_sample.adasyn import ADASYN
+from autoflow.workflow.components.preprocessing.balance.over_sample.borderline_smote import BorderlineSMOTE
+from autoflow.workflow.components.preprocessing.balance.over_sample.kmeans_smote import KMeansSMOTE
+from autoflow.workflow.components.preprocessing.balance.over_sample.smote import SMOTE
+from autoflow.workflow.components.preprocessing.balance.over_sample.svmsmote import SVMSMOTE
 from sklearn.datasets import load_iris
 
-from xenon.workflow.ml_workflow import ML_Workflow
+from autoflow.workflow.ml_workflow import ML_Workflow
 
 
 class TestBalance(LocalResourceTestCase):
