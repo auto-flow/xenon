@@ -36,3 +36,4 @@ trained_pipeline.fit(
 )
 
 graph = trained_pipeline.hdl_constructor.draw_workflow_space()
+graph.render(view=True, format="pdf", filename="demo_clf")
